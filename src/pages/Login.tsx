@@ -12,8 +12,9 @@ import './Login.css'
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
-  const { login } = useAuth()
-  const [token, setToken] = useState('')
+  const { loginWithCredentials } = useAuth()
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -21,20 +22,22 @@ const Login: React.FC = () => {
     e.preventDefault()
     setError(null)
 
-    if (!token.trim()) {
-      setError('Please enter a valid token')
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter username and password')
       return
     }
 
     setIsLoading(true)
 
     try {
-      // In a real implementation, you would validate the token against the API
-      // For now, we'll just store it
-      login(token)
-      navigate('/dashboard')
+      const result = await loginWithCredentials(username, password)
+      if (result.success) {
+        navigate('/dashboard')
+      } else {
+        setError(result.error || 'Login failed')
+      }
     } catch (err) {
-      setError('Invalid token. Please try again.')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -60,32 +63,36 @@ const Login: React.FC = () => {
         />
       )}
       <LoginForm
-        showHelperText
-        usernameLabel="Access Token"
-        usernameValue={token}
-        onChangeUsername={(_, value) => setToken(value)}
-        isValidUsername={!!token.trim()}
-        isShowPasswordEnabled={false}
+        usernameLabel="Username"
+        usernameValue={username}
+        onChangeUsername={(_, value) => setUsername(value)}
+        passwordLabel="Password"
+        passwordValue={password}
+        onChangePassword={(_, value) => setPassword(value)}
+        isShowPasswordEnabled={true}
         onLoginButtonClick={handleSubmit}
         loginButtonLabel={isLoading ? 'Authenticating...' : 'Log in'}
-        isLoginButtonDisabled={isLoading || !token.trim()}
-        helperText={
-          <div style={{ marginTop: '1rem', textAlign: 'left', fontSize: '0.875rem', color: '#6a6e73' }}>
-            <p>To obtain an access token, run:</p>
-            <code style={{
-              display: 'block',
-              marginTop: '0.5rem',
-              padding: '0.5rem',
-              background: '#f5f5f5',
-              borderRadius: '3px',
-              fontSize: '0.8125rem',
-              fontFamily: 'monospace'
-            }}>
-              kubectl create token fulfillment-admin -n foobar --duration=1h
-            </code>
-          </div>
-        }
+        isLoginButtonDisabled={isLoading || !username.trim() || !password.trim()}
       />
+      <div style={{ marginTop: '1.5rem', textAlign: 'left', fontSize: '0.875rem', color: '#6a6e73' }}>
+        <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Development Login Credentials:</p>
+        <div style={{
+          background: '#f0f0f0',
+          padding: '0.75rem',
+          borderRadius: '4px',
+          marginBottom: '0.5rem'
+        }}>
+          <div style={{ marginBottom: '0.25rem' }}>
+            <strong>Administrator:</strong> <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>admin</code> / <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>admin123</code>
+          </div>
+          <div>
+            <strong>Client:</strong> <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>client</code> / <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>client123</code>
+          </div>
+        </div>
+        <p style={{ fontSize: '0.8125rem', color: '#999', fontStyle: 'italic' }}>
+          Note: Temporary development authentication. Keycloak integration coming soon.
+        </p>
+      </div>
     </LoginPage>
   )
 }
