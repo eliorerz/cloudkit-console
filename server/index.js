@@ -26,9 +26,8 @@ app.post('/api/generate-token', async (req, res) => {
     return res.status(400).json({ error: 'Invalid service account' });
   }
 
-  // Generate kubectl command
-  const kubeconfigPath = process.env.KUBECONFIG || '/etc/kubeconfig/kubeconfig';
-  const command = `KUBECONFIG=${kubeconfigPath} kubectl create token ${serviceAccount} -n ${namespace} --duration=8h`;
+  // Generate kubectl command - use in-cluster config
+  const command = `kubectl create token ${serviceAccount} -n ${namespace} --duration=8h`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {

@@ -25,9 +25,6 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
-        env:
-        - name: KUBECONFIG
-          value: /var/run/secrets/kubernetes.io/serviceaccount/kubeconfig
         livenessProbe:
           httpGet:
             path: /health

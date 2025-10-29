@@ -41,6 +41,5 @@ USER nodejs
 EXPOSE 8080
 
 ENV PORT=8080
-ENV KUBECONFIG=/etc/kubeconfig/kubeconfig
 
 CMD ["node", "server/index.js"]
