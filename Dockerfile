@@ -10,23 +10,37 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM node:20-alpine
 
-# Create nginx user and set up directories with proper permissions
-RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx && \
-    chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx /usr/share/nginx/html && \
-    chmod -R 755 /var/cache/nginx /var/run /var/log/nginx
+# Install kubectl
+RUN apk add --no-cache curl && \
+    KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt) && \
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/ && \
+    apk del curl
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY nginx-main.conf /etc/nginx/nginx.conf
+WORKDIR /app
 
-# Ensure proper permissions
-RUN chown -R nginx:nginx /usr/share/nginx/html /etc/nginx/conf.d /etc/nginx/nginx.conf
+# Copy built application and server
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY server ./server
 
-# Run as non-root user
-USER nginx
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
+# Set permissions
+RUN chown -R nodejs:nodejs /app
+
+USER nodejs
 
 EXPOSE 8080
 
-CMD ["nginx", "-g", "daemon off;"]
+ENV PORT=8080
+ENV KUBECONFIG=/etc/kubeconfig/kubeconfig
+
+CMD ["node", "server/index.js"]
