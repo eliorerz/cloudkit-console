@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudkit-console
+  labels:
+    app: cloudkit-console
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudkit-console
+  template:
+    metadata:
+      labels:
+        app: cloudkit-console
+    spec:
+      imagePullSecrets:
+      - name: quay-pull-secret
+      containers:
+      - name: console
+        image: quay.io/eerez/cloudkit-console:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
