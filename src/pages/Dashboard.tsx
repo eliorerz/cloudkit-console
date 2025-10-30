@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
-  Page,
   PageSection,
   Title,
   Button,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
   Card,
   CardBody,
   CardTitle,
@@ -17,14 +13,11 @@ import {
   Spinner,
 } from '@patternfly/react-core'
 import { CubeIcon, LayerGroupIcon, NetworkIcon, VirtualMachineIcon } from '@patternfly/react-icons'
-import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
 import { getDashboardMetrics } from '../api/dashboard'
 import { DashboardMetrics } from '../api/types'
+import AppLayout from '../components/layouts/AppLayout'
 
 const Dashboard: React.FC = () => {
-  const { logout, username, role } = useAuth()
-  const navigate = useNavigate()
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     clusters: { total: 0, active: 0 },
     templates: { total: 0 },
@@ -54,39 +47,8 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(interval)
   }, [isInitialLoad])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
   return (
-    <Page>
-      <PageSection>
-        <Toolbar>
-          <ToolbarContent>
-            <ToolbarItem>
-              <Title headingLevel="h1" size="2xl">
-                CloudKit Console
-              </Title>
-            </ToolbarItem>
-            <ToolbarItem align={{ default: 'alignEnd' }}>
-              <Flex spaceItems={{ default: 'spaceItemsMd' }} alignItems={{ default: 'alignItemsCenter' }}>
-                <FlexItem>
-                  <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                    Logged in as: <strong>{username}</strong> ({role})
-                  </span>
-                </FlexItem>
-                <FlexItem>
-                  <Button variant="secondary" onClick={handleLogout}>
-                    Logout
-                  </Button>
-                </FlexItem>
-              </Flex>
-            </ToolbarItem>
-          </ToolbarContent>
-        </Toolbar>
-      </PageSection>
-
+    <AppLayout>
       <PageSection>
         <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
           Overview
@@ -215,7 +177,7 @@ const Dashboard: React.FC = () => {
           </FlexItem>
         </Flex>
       </PageSection>
-    </Page>
+    </AppLayout>
   )
 }
 
