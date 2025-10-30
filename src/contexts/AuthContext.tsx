@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 
 interface AuthContextType {
   isAuthenticated: boolean
+  isLoading: boolean
   token: string | null
   username: string | null
   role: string | null
@@ -23,6 +24,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [username, setUsername] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const storedToken = localStorage.getItem('cloudkit_token')
@@ -34,6 +36,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setRole(storedRole)
       setIsAuthenticated(true)
     }
+    setIsLoading(false)
   }, [])
 
   const login = (newToken: string, newUsername: string, newRole: string) => {
@@ -93,7 +96,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, token, username, role, login, logout, loginWithCredentials }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, token, username, role, login, logout, loginWithCredentials }}>
       {children}
     </AuthContext.Provider>
   )
