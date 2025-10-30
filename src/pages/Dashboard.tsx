@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Page,
   PageSection,
@@ -13,26 +14,43 @@ import {
   GalleryItem,
   Flex,
   FlexItem,
+  Spinner,
 } from '@patternfly/react-core'
 import { CubeIcon, LayerGroupIcon, NetworkIcon, VirtualMachineIcon } from '@patternfly/react-icons'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { getDashboardMetrics } from '../api/dashboard'
+import { DashboardMetrics } from '../api/types'
 
 const Dashboard: React.FC = () => {
   const { logout, username, role } = useAuth()
   const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
-  // Placeholder data - will be replaced with real API calls
-  const metrics = {
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
     clusters: { total: 0, active: 0 },
     templates: { total: 0 },
     hubs: { total: 0 },
     vms: { total: 0, running: 0 }
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      setLoading(true)
+      const data = await getDashboardMetrics()
+      setMetrics(data)
+      setLoading(false)
+    }
+
+    fetchMetrics()
+
+    // Refresh metrics every 30 seconds
+    const interval = setInterval(fetchMetrics, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
   }
 
   return (
@@ -67,7 +85,13 @@ const Dashboard: React.FC = () => {
         <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
           Overview
         </Title>
-        <Gallery hasGutter minWidths={{ default: '100%', md: '250px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <Spinner size="xl" />
+            <p style={{ marginTop: '1rem', color: '#6a6e73' }}>Loading metrics...</p>
+          </div>
+        ) : (
+          <Gallery hasGutter minWidths={{ default: '100%', md: '250px' }}>
           <GalleryItem>
             <Card isFullHeight>
               <CardTitle>
@@ -160,6 +184,7 @@ const Dashboard: React.FC = () => {
             </Card>
           </GalleryItem>
         </Gallery>
+        )}
       </PageSection>
 
       <PageSection>
@@ -183,9 +208,6 @@ const Dashboard: React.FC = () => {
             </Button>
           </FlexItem>
         </Flex>
-        <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6a6e73', fontStyle: 'italic' }}>
-          API integration coming soon. Currently displaying placeholder data.
-        </p>
       </PageSection>
     </Page>
   )
