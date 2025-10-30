@@ -69,7 +69,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }
 
   const getToken = () => {
-    return localStorage.getItem('token') || 'No token available'
+    return localStorage.getItem('cloudkit_token') || 'No token available'
   }
 
   const header = (
