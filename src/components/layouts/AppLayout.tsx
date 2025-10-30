@@ -48,6 +48,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const onNavSelect = (selectedItem: { itemId: string | number }) => {
     if (selectedItem.itemId === 'dashboard') {
       navigate('/')
+    } else if (selectedItem.itemId === 'virtual-machines') {
+      navigate('/virtual-machines')
+    } else if (selectedItem.itemId === 'templates') {
+      navigate('/templates')
     }
   }
 
@@ -76,13 +80,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             display: 'flex',
             alignItems: 'center',
             gap: '1rem',
-            padding: '0 1rem'
+            padding: '0 1rem 0 0.75rem'
           }}>
             <Button
               variant="plain"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               aria-label="Toggle sidebar"
-              style={{ padding: '0.5rem' }}
+              style={{ padding: '0.5rem 0.5rem 0.5rem 0' }}
             >
               <BarsIcon />
             </Button>
@@ -155,6 +159,18 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               isActive={location.pathname === '/' || location.pathname === '/dashboard'}
             >
               Dashboard
+            </NavItem>
+            <NavItem
+              itemId="virtual-machines"
+              isActive={location.pathname === '/virtual-machines'}
+            >
+              Virtual Machines
+            </NavItem>
+            <NavItem
+              itemId="templates"
+              isActive={location.pathname === '/templates'}
+            >
+              Templates
             </NavItem>
           </NavList>
         </Nav>
