@@ -32,13 +32,19 @@ const Dashboard: React.FC = () => {
     vms: { total: 0, running: 0 }
   })
   const [loading, setLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      setLoading(true)
+      if (isInitialLoad) {
+        setLoading(true)
+      }
       const data = await getDashboardMetrics()
       setMetrics(data)
-      setLoading(false)
+      if (isInitialLoad) {
+        setLoading(false)
+        setIsInitialLoad(false)
+      }
     }
 
     fetchMetrics()
@@ -46,7 +52,7 @@ const Dashboard: React.FC = () => {
     // Refresh metrics every 30 seconds
     const interval = setInterval(fetchMetrics, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isInitialLoad])
 
   const handleLogout = () => {
     logout()
