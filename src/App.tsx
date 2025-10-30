@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import VirtualMachines from './pages/VirtualMachines'
+import Templates from './pages/Templates'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -15,6 +17,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/virtual-machines"
+            element={
+              <ProtectedRoute>
+                <VirtualMachines />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/templates"
+            element={
+              <ProtectedRoute>
+                <Templates />
               </ProtectedRoute>
             }
           />
