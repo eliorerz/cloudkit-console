@@ -16,15 +16,16 @@ const API_URL = new URL(FULFILLMENT_API);
 app.use(express.json());
 
 // Helper function to make HTTPS requests
-const makeRequest = (path, token) => {
+const makeRequest = (path, token, method = 'GET', body = null) => {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: API_URL.hostname,
       port: API_URL.port || 443,
       path: path,
-      method: 'GET',
+      method: method,
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
       rejectUnauthorized: false
     };
@@ -52,6 +53,10 @@ const makeRequest = (path, token) => {
     req.on('error', (error) => {
       reject(error);
     });
+
+    if (body) {
+      req.write(JSON.stringify(body));
+    }
 
     req.end();
   });
@@ -105,7 +110,7 @@ app.get('/api/clusters', async (req, res) => {
 app.get('/api/templates', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    const data = await makeRequest('/api/fulfillment/v1/cluster_templates', token);
+    const data = await makeRequest('/api/fulfillment/v1/virtual_machine_templates', token);
     res.json(data);
   } catch (error) {
     console.error('Error fetching templates:', error);
@@ -132,6 +137,50 @@ app.get('/api/vms', async (req, res) => {
   } catch (error) {
     console.error('Error fetching vms:', error);
     res.status(error.status || 500).json({ error: 'Failed to fetch vms', details: error.data });
+  }
+});
+
+app.get('/api/vms/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest(`/api/fulfillment/v1/virtual_machines/${req.params.id}`, token);
+    res.json(data);
+  } catch (error) {
+    console.error(`Error fetching vm ${req.params.id}:`, error);
+    res.status(error.status || 500).json({ error: 'Failed to fetch vm', details: error.data });
+  }
+});
+
+app.post('/api/vms', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest('/api/fulfillment/v1/virtual_machines', token, 'POST', req.body);
+    res.json(data);
+  } catch (error) {
+    console.error('Error creating vm:', error);
+    res.status(error.status || 500).json({ error: 'Failed to create vm', details: error.data });
+  }
+});
+
+app.put('/api/vms/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest(`/api/fulfillment/v1/virtual_machines/${req.params.id}`, token, 'PUT', req.body);
+    res.json(data);
+  } catch (error) {
+    console.error(`Error updating vm ${req.params.id}:`, error);
+    res.status(error.status || 500).json({ error: 'Failed to update vm', details: error.data });
+  }
+});
+
+app.delete('/api/vms/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    await makeRequest(`/api/fulfillment/v1/virtual_machines/${req.params.id}`, token, 'DELETE');
+    res.json({ success: true });
+  } catch (error) {
+    console.error(`Error deleting vm ${req.params.id}:`, error);
+    res.status(error.status || 500).json({ error: 'Failed to delete vm', details: error.data });
   }
 });
 
