@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import VirtualMachines from './pages/VirtualMachines'
+import VirtualMachineDetail from './pages/VirtualMachineDetail'
 import Templates from './pages/Templates'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
@@ -25,6 +26,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <VirtualMachines />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/virtual-machines/:id"
+            element={
+              <ProtectedRoute>
+                <VirtualMachineDetail />
               </ProtectedRoute>
             }
           />
