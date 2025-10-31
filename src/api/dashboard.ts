@@ -11,7 +11,7 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
 
     const clusters = clustersResp.items || []
 
-    // VMs endpoint returns 404, so we'll handle it separately
+    // VMs endpoint - handle separately
     let vms: VirtualMachine[] = []
     try {
       const vmsResp = await apiClient.get<ListResponse<VirtualMachine>>('/vms')
@@ -20,8 +20,22 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       console.log('VMs endpoint not available')
     }
 
+    // Calculate cluster metrics
     const activeClusters = clusters.filter(c => c.status === 'Ready' || c.status === 'ready').length
-    const runningVMs = vms.filter(vm => vm.status === 'Running' || vm.status === 'running').length
+
+    // Calculate VM metrics using status.state
+    const runningVMs = vms.filter(vm =>
+      vm.status?.state?.toUpperCase() === 'READY'
+    ).length
+    const failedVMs = vms.filter(vm =>
+      vm.status?.state?.toUpperCase() === 'FAILED'
+    ).length
+    const provisioningVMs = vms.filter(vm =>
+      vm.status?.state?.toUpperCase() === 'PROGRESSING'
+    ).length
+
+    // Calculate operations from provisioning state
+    const activeOperations = provisioningVMs
 
     return {
       clusters: {
@@ -37,6 +51,23 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       vms: {
         total: vms.length,
         running: runningVMs,
+        stopped: 0, // Not tracked in PROGRESSING/READY/FAILED states
+        error: failedVMs,
+        provisioning: provisioningVMs,
+      },
+      operations: {
+        active: activeOperations,
+        provisioning: provisioningVMs,
+        deprovisioning: 0, // Not available from current API
+      },
+      recentActivity: {
+        vmsCreatedLast24h: 0, // Would need Events API
+        vmsCreatedLast7d: 0,  // Would need Events API
+      },
+      resources: {
+        cpuUtilization: 0,    // Not available from current API
+        memoryUtilization: 0, // Not available from current API
+        storageUtilization: 0, // Not available from current API
       },
     }
   } catch (error) {
@@ -45,7 +76,10 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       clusters: { total: 0, active: 0 },
       templates: { total: 0 },
       hubs: { total: 0 },
-      vms: { total: 0, running: 0 },
+      vms: { total: 0, running: 0, stopped: 0, error: 0, provisioning: 0 },
+      operations: { active: 0, provisioning: 0, deprovisioning: 0 },
+      recentActivity: { vmsCreatedLast24h: 0, vmsCreatedLast7d: 0 },
+      resources: { cpuUtilization: 0, memoryUtilization: 0, storageUtilization: 0 },
     }
   }
 }
