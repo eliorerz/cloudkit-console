@@ -11,8 +11,21 @@ import {
   Flex,
   FlexItem,
   Spinner,
+  List,
+  ListItem,
+  Label,
+  Grid,
+  GridItem,
 } from '@patternfly/react-core'
-import { CubeIcon, LayerGroupIcon, NetworkIcon, VirtualMachineIcon } from '@patternfly/react-icons'
+import {
+  CubeIcon,
+  LayerGroupIcon,
+  NetworkIcon,
+  VirtualMachineIcon,
+  ProcessAutomationIcon,
+  ChartLineIcon,
+  ClockIcon
+} from '@patternfly/react-icons'
 import { getDashboardMetrics } from '../api/dashboard'
 import { DashboardMetrics } from '../api/types'
 import AppLayout from '../components/layouts/AppLayout'
@@ -22,7 +35,10 @@ const Dashboard: React.FC = () => {
     clusters: { total: 0, active: 0 },
     templates: { total: 0 },
     hubs: { total: 0 },
-    vms: { total: 0, running: 0 }
+    vms: { total: 0, running: 0, stopped: 0, error: 0, provisioning: 0 },
+    operations: { active: 0, provisioning: 0, deprovisioning: 0 },
+    recentActivity: { vmsCreatedLast24h: 0, vmsCreatedLast7d: 0 },
+    resources: { cpuUtilization: 0, memoryUtilization: 0, storageUtilization: 0 }
   })
   const [loading, setLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
@@ -59,7 +75,9 @@ const Dashboard: React.FC = () => {
             <p style={{ marginTop: '1rem', color: '#6a6e73' }}>Loading metrics...</p>
           </div>
         ) : (
-          <Gallery hasGutter minWidths={{ default: '100%', md: '250px' }}>
+          <Grid hasGutter>
+            <GridItem span={9}>
+              <Gallery hasGutter minWidths={{ default: '100%', md: '300px', lg: '300px', xl: '300px' }}>
           <GalleryItem>
             <Card isFullHeight>
               <CardTitle>
@@ -146,12 +164,111 @@ const Dashboard: React.FC = () => {
               <CardBody>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.vms.total}</div>
                 <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  {metrics.vms.running} running
+                  {metrics.vms.running} running · {metrics.vms.stopped} stopped · {metrics.vms.error} error
                 </div>
               </CardBody>
             </Card>
           </GalleryItem>
-        </Gallery>
+
+          <GalleryItem>
+            <Card isFullHeight>
+              <CardTitle>
+                <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                  <FlexItem>
+                    <span style={{ color: '#3e8635', fontSize: '1.5rem' }}>
+                      <ChartLineIcon />
+                    </span>
+                  </FlexItem>
+                  <FlexItem>
+                    Resource Utilization
+                  </FlexItem>
+                </Flex>
+              </CardTitle>
+              <CardBody>
+                <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                  <strong>CPU:</strong> {metrics.resources.cpuUtilization}%
+                </div>
+                <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                  <strong>Memory:</strong> {metrics.resources.memoryUtilization}%
+                </div>
+                <div style={{ fontSize: '0.875rem' }}>
+                  <strong>Storage:</strong> {metrics.resources.storageUtilization}%
+                </div>
+              </CardBody>
+            </Card>
+          </GalleryItem>
+              </Gallery>
+            </GridItem>
+
+            <GridItem span={3}>
+              <Card isFullHeight>
+                <CardTitle>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                    <FlexItem>
+                      <ProcessAutomationIcon style={{ marginRight: '0.5rem', color: '#009596' }} />
+                    </FlexItem>
+                    <FlexItem>
+                      Active Operations
+                    </FlexItem>
+                  </Flex>
+                </CardTitle>
+                <CardBody>
+                  {metrics.operations.active === 0 ? (
+                    <div style={{ color: '#6a6e73', fontStyle: 'italic', padding: '1rem 0' }}>
+                      No active operations
+                    </div>
+                  ) : (
+                    <List isPlain>
+                      {metrics.operations.provisioning > 0 && (
+                        <ListItem>
+                          <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                            <FlexItem>
+                              <Label color="blue">Provisioning</Label>
+                            </FlexItem>
+                            <FlexItem style={{ marginLeft: '0.5rem' }}>
+                              {metrics.operations.provisioning} VM{metrics.operations.provisioning > 1 ? 's' : ''}
+                            </FlexItem>
+                          </Flex>
+                        </ListItem>
+                      )}
+                      {metrics.operations.deprovisioning > 0 && (
+                        <ListItem>
+                          <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                            <FlexItem>
+                              <Label color="orange">Deprovisioning</Label>
+                            </FlexItem>
+                            <FlexItem style={{ marginLeft: '0.5rem' }}>
+                              {metrics.operations.deprovisioning} VM{metrics.operations.deprovisioning > 1 ? 's' : ''}
+                            </FlexItem>
+                          </Flex>
+                        </ListItem>
+                      )}
+                    </List>
+                  )}
+                </CardBody>
+              </Card>
+            </GridItem>
+
+            <GridItem span={9}>
+              <Card>
+                <CardTitle>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                    <FlexItem>
+                      <ClockIcon style={{ marginRight: '0.5rem', color: '#f0ab00' }} />
+                    </FlexItem>
+                    <FlexItem>
+                      Recent Activity
+                    </FlexItem>
+                  </Flex>
+                </CardTitle>
+                <CardBody>
+                  <div style={{ color: '#6a6e73', fontStyle: 'italic', padding: '1rem 0' }}>
+                    No recent activity data available
+                  </div>
+                </CardBody>
+              </Card>
+            </GridItem>
+          </Grid>
         )}
       </PageSection>
 
