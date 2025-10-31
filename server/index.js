@@ -127,11 +127,33 @@ app.get('/api/hubs', async (req, res) => {
 app.get('/api/vms', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    const data = await makeRequest('/api/fulfillment/v1/virtual_machine_templates', token);
+    const data = await makeRequest('/api/fulfillment/v1/virtual_machines', token);
     res.json(data);
   } catch (error) {
     console.error('Error fetching vms:', error);
     res.status(error.status || 500).json({ error: 'Failed to fetch vms', details: error.data });
+  }
+});
+
+app.get('/api/hosts', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest('/api/fulfillment/v1/hosts', token);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching hosts:', error);
+    res.status(error.status || 500).json({ error: 'Failed to fetch hosts', details: error.data });
+  }
+});
+
+app.get('/api/host_pools', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest('/api/fulfillment/v1/host_pools', token);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching host pools:', error);
+    res.status(error.status || 500).json({ error: 'Failed to fetch host pools', details: error.data });
   }
 });
 
