@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Silent Renew</title>
+</head>
+<body>
+  <script type="module">
+    import { UserManager } from 'https://cdn.jsdelivr.net/npm/oidc-client-ts@3/dist/browser/index.min.js';
+    new UserManager({ response_mode: 'query' }).signinSilentCallback();
+  </script>
+</body>
+</html>
