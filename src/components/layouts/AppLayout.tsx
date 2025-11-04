@@ -14,6 +14,7 @@ import {
   Nav,
   NavList,
   NavItem,
+  NavExpandable,
   Dropdown,
   DropdownList,
   DropdownItem,
@@ -22,8 +23,11 @@ import {
   ModalVariant,
   ModalHeader,
   ModalBody,
+  InputGroup,
+  InputGroupItem,
+  TextInput,
 } from '@patternfly/react-core'
-import { BarsIcon, BellIcon, QuestionCircleIcon } from '@patternfly/react-icons'
+import { BarsIcon, BellIcon, QuestionCircleIcon, CopyIcon } from '@patternfly/react-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 import '../../styles/app.css'
@@ -36,7 +40,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
-  const { logout, username, role } = useAuth()
+  const [isAdminExpanded, setIsAdminExpanded] = useState(true)
+  const { logout, username, role, token } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -52,6 +57,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/virtual-machines')
     } else if (selectedItem.itemId === 'templates') {
       navigate('/templates')
+    } else if (selectedItem.itemId === 'organizations') {
+      navigate('/organizations')
     }
   }
 
@@ -68,8 +75,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     setIsUserDropdownOpen(false)
   }
 
-  const getToken = () => {
-    return localStorage.getItem('cloudkit_token') || 'No token available'
+  const copyToken = () => {
+    if (token) {
+      navigator.clipboard.writeText(token)
+    }
   }
 
   const header = (
@@ -154,6 +163,20 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <PageSidebarBody>
         <Nav onSelect={(_event, result) => onNavSelect(result)} aria-label="Nav">
           <NavList>
+            {role === 'fulfillment-admin' && (
+              <NavExpandable
+                title="Administration"
+                isExpanded={isAdminExpanded}
+                onExpand={() => setIsAdminExpanded(!isAdminExpanded)}
+              >
+                <NavItem
+                  itemId="organizations"
+                  isActive={location.pathname === '/organizations'}
+                >
+                  Organizations
+                </NavItem>
+              </NavExpandable>
+            )}
             <NavItem
               itemId="dashboard"
               isActive={location.pathname === '/' || location.pathname === '/dashboard'}
@@ -191,16 +214,26 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         <ModalHeader title="Authentication Token" labelId="token-modal-title" />
         <ModalBody>
-          <div style={{
-            padding: '1rem',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '4px',
-            wordBreak: 'break-all',
-            fontFamily: 'monospace',
-            fontSize: '0.875rem'
-          }}>
-            {getToken()}
-          </div>
+          <InputGroup>
+            <InputGroupItem isFill>
+              <TextInput
+                type="password"
+                value={token || ''}
+                readOnly
+                aria-label="Authentication token"
+              />
+            </InputGroupItem>
+            <InputGroupItem>
+              <Button
+                variant="control"
+                onClick={copyToken}
+                aria-label="Copy token"
+                isDisabled={!token}
+              >
+                <CopyIcon />
+              </Button>
+            </InputGroupItem>
+          </InputGroup>
         </ModalBody>
       </Modal>
     </>
