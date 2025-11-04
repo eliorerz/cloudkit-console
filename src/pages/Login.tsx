@@ -2,43 +2,34 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LoginPage,
-  LoginForm,
   ListVariant,
   Alert,
   AlertActionCloseButton,
+  Button,
 } from '@patternfly/react-core'
 import { useAuth } from '../contexts/AuthContext'
 import './Login.css'
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
-  const { loginWithCredentials } = useAuth()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const { login, isAuthenticated } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate('/dashboard')
+    return null
+  }
+
+  const handleKeycloakLogin = async () => {
     setError(null)
-
-    if (!username.trim() || !password.trim()) {
-      setError('Please enter username and password')
-      return
-    }
-
     setIsLoading(true)
 
     try {
-      const result = await loginWithCredentials(username, password)
-      if (result.success) {
-        navigate('/dashboard')
-      } else {
-        setError(result.error || 'Login failed')
-      }
+      await login()
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
-    } finally {
+      setError('Failed to redirect to login page. Please try again.')
       setIsLoading(false)
     }
   }
@@ -62,35 +53,26 @@ const Login: React.FC = () => {
           style={{ marginBottom: '1rem' }}
         />
       )}
-      <LoginForm
-        usernameLabel="Username"
-        usernameValue={username}
-        onChangeUsername={(_, value) => setUsername(value)}
-        passwordLabel="Password"
-        passwordValue={password}
-        onChangePassword={(_, value) => setPassword(value)}
-        isShowPasswordEnabled={true}
-        onLoginButtonClick={handleSubmit}
-        loginButtonLabel={isLoading ? 'Authenticating...' : 'Log in'}
-        isLoginButtonDisabled={isLoading || !username.trim() || !password.trim()}
-      />
-      <div style={{ marginTop: '1.5rem', textAlign: 'left', fontSize: '0.875rem', color: '#6a6e73' }}>
-        <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Development Login Credentials:</p>
-        <div style={{
-          background: '#f0f0f0',
-          padding: '0.75rem',
-          borderRadius: '4px',
-          marginBottom: '0.5rem'
-        }}>
-          <div style={{ marginBottom: '0.25rem' }}>
-            <strong>Administrator:</strong> <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>admin</code> / <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>admin123</code>
-          </div>
-          <div>
-            <strong>Client:</strong> <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>client</code> / <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px' }}>client123</code>
-          </div>
-        </div>
-        <p style={{ fontSize: '0.8125rem', color: '#999', fontStyle: 'italic' }}>
-          Note: Temporary development authentication. Keycloak integration coming soon.
+      <div style={{ marginTop: '2rem' }}>
+        <Button
+          variant="primary"
+          isBlock
+          onClick={handleKeycloakLogin}
+          isLoading={isLoading}
+          isDisabled={isLoading}
+        >
+          {isLoading ? 'Redirecting to login...' : 'Log in with Keycloak'}
+        </Button>
+      </div>
+      <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.875rem', color: '#6a6e73' }}>
+        <p style={{ marginBottom: '0.5rem' }}>
+          Use your Keycloak credentials to access the CloudKit Console.
+        </p>
+        <p style={{ fontSize: '0.8125rem', color: '#999' }}>
+          Default users: <strong>admin</strong>, <strong>my_user</strong>, <strong>your_user</strong>
+        </p>
+        <p style={{ fontSize: '0.8125rem', color: '#999', marginTop: '0.5rem' }}>
+          (Password: <strong>admin</strong> for all users)
         </p>
       </div>
     </LoginPage>
