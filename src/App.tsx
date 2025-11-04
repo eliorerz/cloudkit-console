@@ -1,10 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import Login from './pages/Login'
+import { OIDCCallback } from './pages/OIDCCallback'
 import Dashboard from './pages/Dashboard'
 import VirtualMachines from './pages/VirtualMachines'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
 import Templates from './pages/Templates'
+import Organizations from './pages/Organizations'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -13,6 +15,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/callback" element={<OIDCCallback />} />
           <Route
             path="/dashboard"
             element={
@@ -42,6 +45,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Templates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/organizations"
+            element={
+              <ProtectedRoute>
+                <Organizations />
               </ProtectedRoute>
             }
           />
