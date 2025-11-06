@@ -121,11 +121,55 @@ app.get('/api/templates', async (req, res) => {
 app.get('/api/hubs', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    const data = await makeRequest('/api/fulfillment/v1/host_pools', token);
+    const data = await makeRequest('/api/private/v1/hubs', token);
     res.json(data);
   } catch (error) {
     console.error('Error fetching hubs:', error);
     res.status(error.status || 500).json({ error: 'Failed to fetch hubs', details: error.data });
+  }
+});
+
+app.get('/api/hubs/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest(`/api/private/v1/hubs/${req.params.id}`, token);
+    res.json(data);
+  } catch (error) {
+    console.error(`Error fetching hub ${req.params.id}:`, error);
+    res.status(error.status || 500).json({ error: 'Failed to fetch hub', details: error.data });
+  }
+});
+
+app.post('/api/hubs', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest('/api/private/v1/hubs', token, 'POST', req.body);
+    res.json(data);
+  } catch (error) {
+    console.error('Error creating hub:', error);
+    res.status(error.status || 500).json({ error: 'Failed to create hub', details: error.data });
+  }
+});
+
+app.put('/api/hubs/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest(`/api/private/v1/hubs/${req.params.id}`, token, 'PUT', req.body);
+    res.json(data);
+  } catch (error) {
+    console.error(`Error updating hub ${req.params.id}:`, error);
+    res.status(error.status || 500).json({ error: 'Failed to update hub', details: error.data });
+  }
+});
+
+app.delete('/api/hubs/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    await makeRequest(`/api/private/v1/hubs/${req.params.id}`, token, 'DELETE');
+    res.json({ success: true });
+  } catch (error) {
+    console.error(`Error deleting hub ${req.params.id}:`, error);
+    res.status(error.status || 500).json({ error: 'Failed to delete hub', details: error.data });
   }
 });
 
