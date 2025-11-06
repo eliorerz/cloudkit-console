@@ -3,13 +3,21 @@ import { Cluster, Template, Hub, VirtualMachine, DashboardMetrics, ListResponse 
 
 export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   try {
-    const [clustersResp, templatesResp, hubsResp] = await Promise.all([
+    const [clustersResp, templatesResp] = await Promise.all([
       apiClient.get<ListResponse<Cluster>>('/clusters'),
       apiClient.get<ListResponse<Template>>('/templates'),
-      apiClient.get<ListResponse<Hub>>('/hubs'),
     ])
 
     const clusters = clustersResp.items || []
+
+    // Hubs endpoint - handle separately since it may not be implemented yet
+    let hubsTotal = 0
+    try {
+      const hubsResp = await apiClient.get<ListResponse<Hub>>('/hubs')
+      hubsTotal = hubsResp.total
+    } catch (error) {
+      console.log('Hubs endpoint not available')
+    }
 
     // VMs endpoint - handle separately
     let vms: VirtualMachine[] = []
@@ -46,7 +54,7 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
         total: templatesResp.total,
       },
       hubs: {
-        total: hubsResp.total,
+        total: hubsTotal,
       },
       vms: {
         total: vms.length,
