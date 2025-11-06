@@ -7,6 +7,7 @@ import VirtualMachines from './pages/VirtualMachines'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
 import Templates from './pages/Templates'
 import Organizations from './pages/Organizations'
+import Hubs from './pages/Hubs'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -53,6 +54,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Organizations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/hubs"
+            element={
+              <ProtectedRoute>
+                <Hubs />
               </ProtectedRoute>
             }
           />

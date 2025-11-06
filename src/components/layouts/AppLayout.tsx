@@ -59,6 +59,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/templates')
     } else if (selectedItem.itemId === 'organizations') {
       navigate('/organizations')
+    } else if (selectedItem.itemId === 'hubs') {
+      navigate('/hubs')
     }
   }
 
@@ -169,6 +171,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 isExpanded={isAdminExpanded}
                 onExpand={() => setIsAdminExpanded(!isAdminExpanded)}
               >
+                <NavItem
+                  itemId="hubs"
+                  isActive={location.pathname === '/hubs'}
+                >
+                  Hubs
+                </NavItem>
                 <NavItem
                   itemId="organizations"
                   isActive={location.pathname === '/organizations'}

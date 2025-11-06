@@ -28,8 +28,11 @@ export interface Template {
 
 export interface Hub {
   id: string
-  title?: string
-  status?: string
+  metadata?: {
+    creation_timestamp?: string
+  }
+  kubeconfig?: string
+  namespace?: string
 }
 
 export interface VirtualMachine {
