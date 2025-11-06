@@ -16,17 +16,11 @@ import {
   Button,
   Modal,
   ModalVariant,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Pagination,
   Dropdown,
   DropdownList,
   DropdownItem,
   MenuToggle,
-  Form,
-  FormGroup,
-  TextInput,
 } from '@patternfly/react-core'
 import {
   Table,
@@ -41,6 +35,7 @@ import AppLayout from '../components/layouts/AppLayout'
 import { getVirtualMachines, deleteVirtualMachine, createVirtualMachine } from '../api/vms'
 import { getTemplates } from '../api/templates'
 import { VirtualMachine, Template } from '../api/types'
+import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
 
 const VirtualMachines: React.FC = () => {
   const navigate = useNavigate()
@@ -53,13 +48,9 @@ const VirtualMachines: React.FC = () => {
   const [deleting, setDeleting] = useState(false)
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
 
-  // Create VM modal
-  const [createModalOpen, setCreateModalOpen] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [newVmId, setNewVmId] = useState('')
-  const [newVmTemplate, setNewVmTemplate] = useState('')
+  // Create VM wizard
+  const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
-  const [templateDropdownOpen, setTemplateDropdownOpen] = useState(false)
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -157,38 +148,22 @@ const VirtualMachines: React.FC = () => {
     }
   }
 
-  const handleCreateClick = () => {
-    setNewVmId('')
-    setNewVmTemplate('')
-    setCreateModalOpen(true)
+  const handleCreateVMClick = () => {
+    setWizardOpen(true)
   }
 
-  const handleCreateConfirm = async () => {
-    if (!newVmId || !newVmTemplate) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    try {
-      setCreating(true)
-      const newVm = await createVirtualMachine({
-        id: newVmId,
-        spec: {
-          template: newVmTemplate,
-        },
-      })
-      setVms([...vms, newVm])
-      setCreateModalOpen(false)
-      setNewVmId('')
-      setNewVmTemplate('')
-      // Navigate to the new VM detail page
-      navigate(`/virtual-machines/${newVm.id}`)
-    } catch (error) {
-      console.error('Error creating VM:', error)
-      alert('Failed to create virtual machine')
-    } finally {
-      setCreating(false)
-    }
+  const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
+    const newVm = await createVirtualMachine({
+      id: vmId,
+      spec: {
+        template: templateId,
+        template_parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
+      },
+    })
+    setVms([...vms, newVm])
+    // Refresh the VM list to show the new VM
+    const response = await getVirtualMachines()
+    setVms(response.items || [])
   }
 
   const handleRowClick = (vm: VirtualMachine) => {
@@ -249,7 +224,7 @@ const VirtualMachines: React.FC = () => {
           <Title headingLevel="h1" size="2xl">
             Virtual Machines
           </Title>
-          <Button variant="primary" onClick={handleCreateClick}>
+          <Button variant="primary" onClick={handleCreateVMClick}>
             Create VM
           </Button>
         </div>
@@ -409,68 +384,12 @@ const VirtualMachines: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal
-        variant={ModalVariant.medium}
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-      >
-        <ModalHeader title="Create virtual machine" />
-        <ModalBody>
-          <Form>
-            <FormGroup label="VM ID" isRequired fieldId="vm-id">
-              <TextInput
-                isRequired
-                type="text"
-                id="vm-id"
-                name="vm-id"
-                value={newVmId}
-                onChange={(_event, value) => setNewVmId(value)}
-                placeholder="e.g., my-vm-1"
-              />
-            </FormGroup>
-            <FormGroup label="Template" isRequired fieldId="vm-template">
-              <Dropdown
-                isOpen={templateDropdownOpen}
-                onSelect={(_, value) => {
-                  setNewVmTemplate(value as string)
-                  setTemplateDropdownOpen(false)
-                }}
-                onOpenChange={(isOpen) => setTemplateDropdownOpen(isOpen)}
-                toggle={(toggleRef) => (
-                  <MenuToggle
-                    ref={toggleRef}
-                    onClick={() => setTemplateDropdownOpen(!templateDropdownOpen)}
-                    isExpanded={templateDropdownOpen}
-                    style={{ width: '100%' }}
-                  >
-                    {newVmTemplate || 'Select a template'}
-                  </MenuToggle>
-                )}
-              >
-                <DropdownList>
-                  {templates.length > 0 ? (
-                    templates.map((template) => (
-                      <DropdownItem key={template.id} value={template.id}>
-                        {template.title || template.id}
-                      </DropdownItem>
-                    ))
-                  ) : (
-                    <DropdownItem isDisabled>No templates available</DropdownItem>
-                  )}
-                </DropdownList>
-              </Dropdown>
-            </FormGroup>
-          </Form>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="primary" onClick={handleCreateConfirm} isDisabled={creating || !newVmId || !newVmTemplate} isLoading={creating}>
-            {creating ? 'Creating...' : 'Create'}
-          </Button>
-          <Button variant="link" onClick={() => setCreateModalOpen(false)} isDisabled={creating}>
-            Cancel
-          </Button>
-        </ModalFooter>
-      </Modal>
+      <CreateVMWizard
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onCreate={handleCreateVM}
+        templates={templates}
+      />
     </AppLayout>
   )
 }

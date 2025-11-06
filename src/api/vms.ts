@@ -23,7 +23,7 @@ export const getVirtualMachine = async (id: string): Promise<VirtualMachine> => 
 
 export const createVirtualMachine = async (vm: Partial<VirtualMachine>): Promise<VirtualMachine> => {
   try {
-    const response = await apiClient.post<{ object: VirtualMachine }>('/vms', { object: vm })
+    const response = await apiClient.post<{ object: VirtualMachine }>('/vms', vm)
     return response.object
   } catch (error) {
     console.error('Failed to create virtual machine:', error)
@@ -42,7 +42,7 @@ export const deleteVirtualMachine = async (id: string): Promise<void> => {
 
 export const updateVirtualMachine = async (vm: VirtualMachine): Promise<VirtualMachine> => {
   try {
-    const response = await apiClient.put<{ object: VirtualMachine }>(`/vms/${vm.id}`, { object: vm })
+    const response = await apiClient.put<{ object: VirtualMachine }>(`/vms/${vm.id}`, vm)
     return response.object
   } catch (error) {
     console.error(`Failed to update virtual machine ${vm.id}:`, error)
