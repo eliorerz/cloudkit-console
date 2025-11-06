@@ -76,8 +76,8 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <Grid hasGutter>
-            <GridItem span={9}>
-              <Gallery hasGutter minWidths={{ default: '100%', md: '300px', lg: '300px', xl: '300px' }}>
+            <GridItem sm={12} md={12} lg={9} xl={9}>
+              <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '250px', lg: '280px', xl: '300px' }}>
           <GalleryItem>
             <Card isFullHeight>
               <CardTitle>
@@ -200,7 +200,7 @@ const Dashboard: React.FC = () => {
               </Gallery>
             </GridItem>
 
-            <GridItem span={3}>
+            <GridItem sm={12} md={12} lg={3} xl={3}>
               <Card isFullHeight>
                 <CardTitle>
                   <Flex alignItems={{ default: 'alignItemsCenter' }}>
@@ -249,7 +249,7 @@ const Dashboard: React.FC = () => {
               </Card>
             </GridItem>
 
-            <GridItem span={9}>
+            <GridItem sm={12} md={12} lg={9} xl={9}>
               <Card>
                 <CardTitle>
                   <Flex alignItems={{ default: 'alignItemsCenter' }}>
