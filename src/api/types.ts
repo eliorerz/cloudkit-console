@@ -7,10 +7,23 @@ export interface Cluster {
   }
 }
 
+export interface TemplateParameter {
+  name: string
+  title?: string
+  description?: string
+  required?: boolean
+  type: string
+  default?: {
+    '@type': string
+    value?: any
+  }
+}
+
 export interface Template {
   id: string
   title: string
   description?: string
+  parameters?: TemplateParameter[]
 }
 
 export interface Hub {
