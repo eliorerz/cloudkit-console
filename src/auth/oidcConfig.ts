@@ -15,32 +15,46 @@ interface RuntimeConfig {
   namespace: string
 }
 
-// Fallback configuration
-let runtimeConfig: RuntimeConfig = {
-  keycloakUrl: 'https://keycloak-foobar.apps.ostest.test.metalkube.org',
-  keycloakRealm: 'innabox',
-  oidcClientId: 'cloudkit-console',
-  fulfillmentApiUrl: 'https://fulfillment-api-foobar.apps.ostest.test.metalkube.org',
-  namespace: 'innabox-devel'
-}
+// Runtime configuration - MUST be loaded before use
+let runtimeConfig: RuntimeConfig | null = null
 
 const CONSOLE_URL = window.location.origin
 
 // Load configuration from server at runtime
 export async function loadConfig(): Promise<RuntimeConfig> {
+  // If already loaded, return it (idempotent)
+  if (runtimeConfig) {
+    console.log('Config already loaded, returning cached config')
+    return runtimeConfig
+  }
+
   try {
     const response = await fetch('/api/config')
+    if (!response.ok) {
+      throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`)
+    }
     const config = await response.json()
+
+    // Validate required fields
+    if (!config.keycloakUrl || !config.keycloakRealm || !config.oidcClientId) {
+      throw new Error('Invalid configuration: missing required fields (keycloakUrl, keycloakRealm, oidcClientId)')
+    }
+
     runtimeConfig = config
     console.log('Loaded runtime config:', config)
     return config
   } catch (error) {
-    console.warn('Failed to load runtime config, using fallback:', error)
-    return runtimeConfig
+    const errorMsg = `FATAL: Failed to load runtime configuration from /api/config. Ensure cloudkit-console-config ConfigMap is properly configured. Error: ${error}`
+    console.error(errorMsg)
+    throw new Error(errorMsg)
   }
 }
 
 export function getOidcConfig() {
+  if (!runtimeConfig) {
+    throw new Error('FATAL: Runtime configuration not loaded. Call loadConfig() first.')
+  }
+
   return {
     authority: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}`,
     client_id: runtimeConfig.oidcClientId,
@@ -74,23 +88,25 @@ export function getOidcConfig() {
   }
 }
 
+// Singleton userManager instance
+let userManagerInstance: UserManager | null = null
+
 export function getUserManager() {
-  return new UserManager(getOidcConfig())
+  if (!userManagerInstance) {
+    userManagerInstance = new UserManager(getOidcConfig())
+
+    // Setup event handlers when creating the instance
+    userManagerInstance.events.addAccessTokenExpiring(() => {
+      console.log('Access token expiring...')
+    })
+
+    userManagerInstance.events.addAccessTokenExpired(() => {
+      console.log('Access token expired')
+    })
+
+    userManagerInstance.events.addSilentRenewError((error) => {
+      console.error('Silent renew error:', error)
+    })
+  }
+  return userManagerInstance
 }
-
-// Initialize with fallback config
-export let userManager = getUserManager()
-
-// Handle token expiration
-userManager.events.addAccessTokenExpiring(() => {
-  console.log('Access token expiring...')
-})
-
-userManager.events.addAccessTokenExpired(() => {
-  console.log('Access token expired')
-})
-
-// Handle silent renew errors
-userManager.events.addSilentRenewError((error) => {
-  console.error('Silent renew error:', error)
-})
