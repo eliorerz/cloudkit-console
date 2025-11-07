@@ -6,13 +6,44 @@ if (import.meta.env.DEV) {
   Log.setLevel(Log.DEBUG)
 }
 
-// Get URLs from environment or use defaults
-const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || 'https://keycloak-foobar.apps.ostest.test.metalkube.org'
-const CONSOLE_URL = import.meta.env.VITE_CONSOLE_URL || window.location.origin
+// Runtime configuration - will be loaded from server
+interface RuntimeConfig {
+  keycloakUrl: string
+  keycloakRealm: string
+  oidcClientId: string
+  fulfillmentApiUrl: string
+  namespace: string
+}
 
-export const oidcConfig = {
-  authority: `${KEYCLOAK_URL}/realms/innabox`,
-  client_id: 'cloudkit-console',
+// Fallback configuration
+let runtimeConfig: RuntimeConfig = {
+  keycloakUrl: 'https://keycloak-foobar.apps.ostest.test.metalkube.org',
+  keycloakRealm: 'innabox',
+  oidcClientId: 'cloudkit-console',
+  fulfillmentApiUrl: 'https://fulfillment-api-foobar.apps.ostest.test.metalkube.org',
+  namespace: 'innabox-devel'
+}
+
+const CONSOLE_URL = window.location.origin
+
+// Load configuration from server at runtime
+export async function loadConfig(): Promise<RuntimeConfig> {
+  try {
+    const response = await fetch('/api/config')
+    const config = await response.json()
+    runtimeConfig = config
+    console.log('Loaded runtime config:', config)
+    return config
+  } catch (error) {
+    console.warn('Failed to load runtime config, using fallback:', error)
+    return runtimeConfig
+  }
+}
+
+export function getOidcConfig() {
+  return {
+    authority: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}`,
+    client_id: runtimeConfig.oidcClientId,
   redirect_uri: `${CONSOLE_URL}/callback`,
   post_logout_redirect_uri: `${CONSOLE_URL}/`,
   response_type: 'code',
@@ -31,18 +62,24 @@ export const oidcConfig = {
   // Token lifetimes
   accessTokenExpiringNotificationTimeInSeconds: 60,
 
-  // Metadata
-  metadata: {
-    issuer: `${KEYCLOAK_URL}/realms/innabox`,
-    authorization_endpoint: `${KEYCLOAK_URL}/realms/innabox/protocol/openid-connect/auth`,
-    token_endpoint: `${KEYCLOAK_URL}/realms/innabox/protocol/openid-connect/token`,
-    userinfo_endpoint: `${KEYCLOAK_URL}/realms/innabox/protocol/openid-connect/userinfo`,
-    end_session_endpoint: `${KEYCLOAK_URL}/realms/innabox/protocol/openid-connect/logout`,
-    jwks_uri: `${KEYCLOAK_URL}/realms/innabox/protocol/openid-connect/certs`,
-  },
+    // Metadata
+    metadata: {
+      issuer: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}`,
+      authorization_endpoint: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}/protocol/openid-connect/auth`,
+      token_endpoint: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}/protocol/openid-connect/token`,
+      userinfo_endpoint: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}/protocol/openid-connect/userinfo`,
+      end_session_endpoint: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}/protocol/openid-connect/logout`,
+      jwks_uri: `${runtimeConfig.keycloakUrl}/realms/${runtimeConfig.keycloakRealm}/protocol/openid-connect/certs`,
+    },
+  }
 }
 
-export const userManager = new UserManager(oidcConfig)
+export function getUserManager() {
+  return new UserManager(getOidcConfig())
+}
+
+// Initialize with fallback config
+export let userManager = getUserManager()
 
 // Handle token expiration
 userManager.events.addAccessTokenExpiring(() => {
