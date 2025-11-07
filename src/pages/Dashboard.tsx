@@ -77,7 +77,7 @@ const Dashboard: React.FC = () => {
         ) : (
           <Grid hasGutter>
             <GridItem sm={12} md={12} lg={9} xl={9}>
-              <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '250px', lg: '280px', xl: '300px' }}>
+              <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '190px', lg: '210px', xl: '225px' }}>
           <GalleryItem>
             <Card isFullHeight>
               <CardTitle>
