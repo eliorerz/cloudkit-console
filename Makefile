@@ -37,3 +37,17 @@ deploy:
 
 clean:
 	kubectl delete -f deploy/ -n $(NAMESPACE) --ignore-not-found=true
+
+## deploy-image: Update UI deployment with latest unique image
+deploy-image:
+	@echo "Updating UI deployment with latest image..."
+	$(eval LATEST_TAG := $(shell podman images $(REGISTRY)/$(IMAGE_NAME) --format "{{.Tag}}" | grep -E '^[0-9]{8}-[0-9]{6}-' | head -1))
+	@if [ -z "$(LATEST_TAG)" ]; then \
+		echo "No timestamped tag found, using latest"; \
+		kubectl set image deployment/cloudkit-console console=$(REGISTRY)/$(IMAGE_NAME):latest -n $(NAMESPACE); \
+	else \
+		echo "Using tag: $(LATEST_TAG)"; \
+		kubectl set image deployment/cloudkit-console console=$(REGISTRY)/$(IMAGE_NAME):$(LATEST_TAG) -n $(NAMESPACE); \
+	fi
+
+build-and-deploy-image: build-push deploy-image
