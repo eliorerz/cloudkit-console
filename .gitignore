@@ -253,6 +253,9 @@ secrets/
 # Design artifacts
 design/
 
+# Temporary scripts
+scripts/
+
 # Lock files (using npm for this project)
 package-lock.json
 
