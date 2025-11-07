@@ -225,7 +225,7 @@ const Templates: React.FC = () => {
                                     <Tr key={param.name}>
                                       <Td>{param.name}</Td>
                                       <Td>{param.description || 'N/A'}</Td>
-                                      <Td>{param.type.replace('type.googleapis.com/google.protobuf.', '')}</Td>
+                                      <Td>{param.type?.replace('type.googleapis.com/google.protobuf.', '') || 'N/A'}</Td>
                                       <Td>{param.default?.value || 'N/A'}</Td>
                                     </Tr>
                                   ))}
