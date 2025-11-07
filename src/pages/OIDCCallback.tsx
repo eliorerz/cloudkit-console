@@ -10,7 +10,7 @@ import {
   Button
 } from '@patternfly/react-core'
 import { ExclamationCircleIcon } from '@patternfly/react-icons'
-import { userManager } from '../auth/oidcConfig'
+import { loadConfig, getUserManager } from '../auth/oidcConfig'
 
 export const OIDCCallback: React.FC = () => {
   const navigate = useNavigate()
@@ -20,6 +20,12 @@ export const OIDCCallback: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        // Load runtime configuration first
+        await loadConfig()
+
+        // Initialize userManager with loaded config
+        const userManager = getUserManager()
+
         // Complete the OIDC signin process
         const user = await userManager.signinRedirectCallback()
 

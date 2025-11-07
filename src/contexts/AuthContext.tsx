@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { User } from 'oidc-client-ts'
-import { userManager } from '../auth/oidcConfig'
+import { loadConfig, getUserManager } from '../auth/oidcConfig'
+
+let userManager: ReturnType<typeof getUserManager> | null = null
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -26,6 +28,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // Load runtime configuration first
+        await loadConfig()
+
+        // Initialize userManager with loaded config
+        userManager = getUserManager()
+
         // Try to get the current user from storage
         const currentUser = await userManager.getUser()
 
@@ -65,18 +73,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // User can still use the app until token expires
     }
 
-    userManager.events.addUserLoaded(handleUserLoaded)
-    userManager.events.addUserUnloaded(handleUserUnloaded)
-    userManager.events.addSilentRenewError(handleSilentRenewError)
+    if (userManager) {
+      userManager.events.addUserLoaded(handleUserLoaded)
+      userManager.events.addUserUnloaded(handleUserUnloaded)
+      userManager.events.addSilentRenewError(handleSilentRenewError)
+    }
 
     return () => {
-      userManager.events.removeUserLoaded(handleUserLoaded)
-      userManager.events.removeUserUnloaded(handleUserUnloaded)
-      userManager.events.removeSilentRenewError(handleSilentRenewError)
+      if (userManager) {
+        userManager.events.removeUserLoaded(handleUserLoaded)
+        userManager.events.removeUserUnloaded(handleUserUnloaded)
+        userManager.events.removeSilentRenewError(handleSilentRenewError)
+      }
     }
   }, [])
 
   const login = async () => {
+    if (!userManager) {
+      console.error('UserManager not initialized')
+      throw new Error('Authentication not ready')
+    }
+
     try {
       // Get the return URL - default to dashboard if on login page
       const returnUrl = window.location.pathname === '/login'
@@ -94,6 +111,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }
 
   const logout = async () => {
+    if (!userManager) {
+      console.error('UserManager not initialized')
+      return
+    }
+
     try {
       // Redirect to Keycloak logout page
       await userManager.signoutRedirect()
