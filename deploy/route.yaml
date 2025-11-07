@@ -2,7 +2,7 @@ apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: cloudkit-console
-  namespace: foobar
+  namespace: innabox-devel
   labels:
     app: cloudkit-console
 spec:

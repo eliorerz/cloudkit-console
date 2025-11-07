@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cloudkit-console
-  namespace: foobar
+  namespace: innabox-devel
   labels:
     app: cloudkit-console
 spec:
@@ -22,6 +22,9 @@ spec:
       - name: console
         image: quay.io/eerez/cloudkit-console:latest
         imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: cloudkit-console-config
         ports:
         - containerPort: 8080
           name: http
