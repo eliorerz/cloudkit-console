@@ -3,7 +3,7 @@
 IMAGE_NAME ?= cloudkit-console
 IMAGE_TAG ?= latest
 REGISTRY ?= quay.io/eerez
-NAMESPACE ?= foobar
+NAMESPACE ?= innabox-devel
 CONTAINER_TOOL ?= $(shell which podman 2>/dev/null || which docker 2>/dev/null)
 
 help:
