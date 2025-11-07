@@ -12,7 +12,7 @@ export interface TemplateParameter {
   title?: string
   description?: string
   required?: boolean
-  type: string
+  type?: string
   default?: {
     '@type': string
     value?: any
