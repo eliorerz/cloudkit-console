@@ -10,6 +10,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 8080;
 const FULFILLMENT_API = process.env.FULFILLMENT_API_URL || 'https://fulfillment-api-foobar.apps.ostest.test.metalkube.org';
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'https://keycloak-foobar.apps.ostest.test.metalkube.org';
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'innabox';
+const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID || 'cloudkit-console';
+const NAMESPACE = process.env.NAMESPACE || 'innabox-devel';
 const API_URL = new URL(FULFILLMENT_API);
 
 // Middleware
@@ -64,10 +68,10 @@ const makeRequest = (path, token, method = 'GET', body = null) => {
 
 // API endpoint to generate Kubernetes token
 app.post('/api/generate-token', async (req, res) => {
-  const { serviceAccount, namespace } = req.body;
+  const { serviceAccount } = req.body;
 
-  if (!serviceAccount || !namespace) {
-    return res.status(400).json({ error: 'serviceAccount and namespace are required' });
+  if (!serviceAccount) {
+    return res.status(400).json({ error: 'serviceAccount is required' });
   }
 
   // Validate serviceAccount to prevent command injection
@@ -76,8 +80,8 @@ app.post('/api/generate-token', async (req, res) => {
     return res.status(400).json({ error: 'Invalid service account' });
   }
 
-  // Generate kubectl command - use in-cluster config
-  const command = `kubectl create token ${serviceAccount} -n ${namespace} --duration=8h`;
+  // Generate kubectl command - use configured namespace
+  const command = `kubectl create token ${serviceAccount} -n ${NAMESPACE} --duration=8h`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
@@ -248,6 +252,17 @@ app.get('/api/host_pools', async (req, res) => {
     console.error('Error fetching host pools:', error);
     res.status(error.status || 500).json({ error: 'Failed to fetch host pools', details: error.data });
   }
+});
+
+// Configuration endpoint for frontend
+app.get('/api/config', (req, res) => {
+  res.json({
+    keycloakUrl: KEYCLOAK_URL,
+    keycloakRealm: KEYCLOAK_REALM,
+    oidcClientId: OIDC_CLIENT_ID,
+    fulfillmentApiUrl: FULFILLMENT_API,
+    namespace: NAMESPACE
+  });
 });
 
 // Health check endpoint
