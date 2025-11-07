@@ -26,6 +26,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize auth state on mount
   useEffect(() => {
+    // Listen for user loaded events (after login/silent renew)
+    const handleUserLoaded = (loadedUser: User) => {
+      console.log('User loaded event fired')
+      setUser(loadedUser)
+      setIsAuthenticated(true)
+      setIsLoading(false)
+    }
+
+    // Listen for user unloaded events (after logout)
+    const handleUserUnloaded = () => {
+      console.log('User unloaded event fired')
+      setUser(null)
+      setIsAuthenticated(false)
+    }
+
+    // Listen for silent renew errors
+    const handleSilentRenewError = (error: Error) => {
+      console.error('Silent renew error:', error)
+      // Don't automatically logout on silent renew error
+      // User can still use the app until token expires
+    }
+
     const initAuth = async () => {
       try {
         // Load runtime configuration first
@@ -33,6 +55,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Initialize userManager with loaded config
         userManager = getUserManager()
+
+        // Attach event listeners BEFORE checking for user
+        // This ensures they're ready when signinRedirectCallback fires
+        userManager.events.addUserLoaded(handleUserLoaded)
+        userManager.events.addUserUnloaded(handleUserUnloaded)
+        userManager.events.addSilentRenewError(handleSilentRenewError)
 
         // Try to get the current user from storage
         const currentUser = await userManager.getUser()
@@ -52,32 +80,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     initAuth()
-
-    // Listen for user loaded events (after login/silent renew)
-    const handleUserLoaded = (loadedUser: User) => {
-      setUser(loadedUser)
-      setIsAuthenticated(true)
-      setIsLoading(false)
-    }
-
-    // Listen for user unloaded events (after logout)
-    const handleUserUnloaded = () => {
-      setUser(null)
-      setIsAuthenticated(false)
-    }
-
-    // Listen for silent renew errors
-    const handleSilentRenewError = (error: Error) => {
-      console.error('Silent renew error:', error)
-      // Don't automatically logout on silent renew error
-      // User can still use the app until token expires
-    }
-
-    if (userManager) {
-      userManager.events.addUserLoaded(handleUserLoaded)
-      userManager.events.addUserUnloaded(handleUserUnloaded)
-      userManager.events.addSilentRenewError(handleSilentRenewError)
-    }
 
     return () => {
       if (userManager) {

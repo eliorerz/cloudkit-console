@@ -11,35 +11,45 @@ import {
 } from '@patternfly/react-core'
 import { ExclamationCircleIcon } from '@patternfly/react-icons'
 import { loadConfig, getUserManager } from '../auth/oidcConfig'
+import { useAuth } from '../contexts/AuthContext'
 
 export const OIDCCallback: React.FC = () => {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const [targetUrl, setTargetUrl] = useState<string | null>(null)
+  const { isAuthenticated } = useAuth()
 
   // Handle the OAuth callback
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Load runtime configuration first
+        // Ensure config is loaded (safe to call multiple times now that we removed the singleton reset)
         await loadConfig()
 
-        // Initialize userManager with loaded config
+        // Get the userManager
         const userManager = getUserManager()
+
+        console.log('OIDCCallback: Starting signin callback...')
 
         // Complete the OIDC signin process
         const user = await userManager.signinRedirectCallback()
+
+        console.log('OIDCCallback: Signin callback completed, user:', user?.profile?.preferred_username)
 
         if (!user) {
           setError('No user returned from authentication')
           return
         }
 
-        // Get the return URL from state or default to home
-        const url = (user.state as { returnUrl?: string })?.returnUrl || '/'
+        // Get the return URL from state or default to dashboard
+        const url = (user.state as { returnUrl?: string })?.returnUrl || '/dashboard'
 
-        // Navigate immediately - the user is now in storage and
-        // will be picked up by AuthContext on the next page
-        navigate(url, { replace: true })
+        console.log('OIDCCallback: Target URL:', url)
+        console.log('OIDCCallback: User is expired?', user.expired)
+
+        // Store the target URL - the second useEffect will handle navigation
+        // when isAuthenticated becomes true
+        setTargetUrl(url)
       } catch (err) {
         console.error('OIDC callback error:', err)
         setError(err instanceof Error ? err.message : 'An error occurred during login')
@@ -47,7 +57,16 @@ export const OIDCCallback: React.FC = () => {
     }
 
     handleCallback()
-  }, [navigate])
+  }, [])
+
+  // Navigate once authentication state is updated
+  useEffect(() => {
+    console.log('OIDCCallback: Navigation check - targetUrl:', targetUrl, 'isAuthenticated:', isAuthenticated)
+    if (targetUrl && isAuthenticated) {
+      console.log('OIDCCallback: Auth state updated, navigating to:', targetUrl)
+      navigate(targetUrl, { replace: true })
+    }
+  }, [targetUrl, isAuthenticated, navigate])
 
   if (error) {
     return (
