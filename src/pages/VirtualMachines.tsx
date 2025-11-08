@@ -153,11 +153,38 @@ const VirtualMachines: React.FC = () => {
   }
 
   const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
+    console.log('Creating VM with parameters:', JSON.stringify(parameters, null, 2))
+
+    // Convert parameters to ProtoJSON format with @type wrappers
+    const protoJsonParameters: Record<string, any> = {}
+    for (const [key, value] of Object.entries(parameters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        // Determine the type based on the value
+        let typeUrl = 'type.googleapis.com/google.protobuf.StringValue'
+        let wrappedValue = value
+
+        if (typeof value === 'number') {
+          if (Number.isInteger(value)) {
+            typeUrl = 'type.googleapis.com/google.protobuf.Int32Value'
+          } else {
+            typeUrl = 'type.googleapis.com/google.protobuf.DoubleValue'
+          }
+        } else if (typeof value === 'boolean') {
+          typeUrl = 'type.googleapis.com/google.protobuf.BoolValue'
+        }
+
+        protoJsonParameters[key] = {
+          '@type': typeUrl,
+          value: wrappedValue
+        }
+      }
+    }
+
     const newVm = await createVirtualMachine({
       id: vmId,
       spec: {
         template: templateId,
-        template_parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
+        template_parameters: Object.keys(protoJsonParameters).length > 0 ? protoJsonParameters : undefined,
       },
     })
     setVms([...vms, newVm])

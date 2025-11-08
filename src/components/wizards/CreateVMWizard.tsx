@@ -285,25 +285,21 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     }
   }
 
-  // Helper function to wrap values in protobuf Any format for gRPC-Gateway
-  const wrapInProtobufAny = (value: any, type?: string): any => {
-    // Default to StringValue if no type specified
-    const pbType = type || 'type.googleapis.com/google.protobuf.StringValue'
-
-    return {
-      '@type': pbType,
-      value: value
-    }
+  // Helper to wrap values in protobuf Any format for gRPC-Gateway
+  const wrapValueForProtobuf = (value: any, _paramType?: string) => {
+    // For well-known wrapper types in protobuf Any, the canonical JSON is just the unwrapped value
+    // The gRPC-Gateway will handle the conversion
+    return value
   }
 
   const handleCreate = async () => {
     try {
       setIsCreating(true)
 
-      // Wrap all parameters in protobuf Any format
-      const wrappedParams: Record<string, any> = {}
+      // Collect template parameters
+      const params: Record<string, any> = {}
 
-      // Wrap template parameters based on their types
+      // Add template parameters based on what the template defines
       if (selectedTemplate?.parameters) {
         selectedTemplate.parameters.forEach(param => {
           // Check various sources for the parameter value
@@ -319,14 +315,38 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
             value = cloudInitConfig
           }
 
+          // TODO: Hardware configuration (CPU, memory, disk, run strategy) is currently not supported
+          // by the cloudkit.templates.ocp_virt_vm template. The wizard UI collects these values but
+          // they will only be sent if a template explicitly defines these parameters.
+          // The mapping below will work once templates support hardware configuration parameters.
+
+          // Map hardware configuration to template parameter names if they exist
+          // Check common variations for CPU
+          if (param.name === 'cpu_count' || param.name === 'vm_cpu_cores' || param.name === 'cpus') {
+            value = vmCpuCores
+          }
+          // Check common variations for memory
+          if (param.name === 'memory_gb' || param.name === 'vm_memory_size' || param.name === 'memory') {
+            value = vmMemoryGi // Will be sent as integer GB
+          }
+          // Check common variations for disk
+          if (param.name === 'disk_size_gb' || param.name === 'vm_disk_size' || param.name === 'disk_size') {
+            value = vmDiskGi // Will be sent as integer GB
+          }
+          // Check common variations for run strategy
+          if (param.name === 'run_strategy' || param.name === 'vm_run_strategy') {
+            value = vmRunStrategy
+          }
+
           // Only add parameter if it has a value
           if (value !== undefined && value !== null && value !== '') {
-            wrappedParams[param.name] = wrapInProtobufAny(value, param.type)
+            // Wrap value in protobuf format based on parameter type
+            params[param.name] = wrapValueForProtobuf(value, param.type)
           }
         })
       }
 
-      await onCreate(vmId, selectedTemplateId, wrappedParams)
+      await onCreate(vmId, selectedTemplateId, params)
       handleClose()
     } catch (error) {
       console.error('Failed to create VM:', error)
