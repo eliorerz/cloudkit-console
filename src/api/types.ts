@@ -38,6 +38,7 @@ export interface Hub {
 export interface VirtualMachine {
   id: string
   metadata?: {
+    name?: string
     creation_timestamp?: string
     creators?: string[]
   }
