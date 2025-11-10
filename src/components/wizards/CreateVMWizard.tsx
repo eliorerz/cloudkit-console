@@ -195,10 +195,9 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       return steps
     }
 
-    steps.push({ id: 'vmname', name: 'VM name' })
-
     // Only add customization steps if user wants to customize the template
     if (customizeTemplate) {
+      steps.push({ id: 'vmname', name: 'VM name' })
       const categorized = categorizeParameters(selectedTemplate.parameters || [])
 
       // Only show Hardware Configuration step if template has hardware parameters
@@ -331,8 +330,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
           // Check various sources for the parameter value
           let value = templateParameters[param.name]
 
-          // Special handling for vm_name - use vmId if this param exists in template
-          if (param.name === 'vm_name' && vmId) {
+          // Special handling for vm_name - use vmId if this param exists in template and user is customizing
+          if (param.name === 'vm_name' && vmId && customizeTemplate) {
             value = vmId
           }
 
@@ -912,6 +911,17 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                     <p style={{ color: '#6a6e73', whiteSpace: 'pre-wrap', fontSize: '0.875rem', margin: 0 }}>{selectedTemplate.description}</p>
                   </div>
                 )}
+                {selectedTemplateId && (
+                  <FormGroup fieldId="customize-template" style={{ marginTop: '1.5rem' }}>
+                    <Checkbox
+                      id="customize-template"
+                      label="Customize template parameters"
+                      description="Configure hardware, network, and other VM settings. If unchecked, the VM will be created with default template settings and an auto-generated name."
+                      isChecked={customizeTemplate}
+                      onChange={(_event, checked) => setCustomizeTemplate(checked)}
+                    />
+                  </FormGroup>
+                )}
               </Form>
             )}
           </div>
@@ -996,15 +1006,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                   </HelperTextItem>
                 </HelperText>
               </FormHelperText>
-            </FormGroup>
-            <FormGroup fieldId="customize-template">
-              <Checkbox
-                id="customize-template"
-                label="Customize template parameters"
-                description="Configure hardware, network, and other VM settings. If unchecked, the VM will be created with default template settings."
-                isChecked={customizeTemplate}
-                onChange={(_event, checked) => setCustomizeTemplate(checked)}
-              />
             </FormGroup>
           </Form>
         )
