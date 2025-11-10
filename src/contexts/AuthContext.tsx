@@ -131,7 +131,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Extract user information from OIDC user object
   const token = user?.access_token || null
-  const username = user?.profile?.preferred_username || null
+  // Try multiple common username fields in OIDC profile
+  const username = user?.profile?.preferred_username
+    || user?.profile?.name
+    || user?.profile?.email?.split('@')[0]
+    || user?.profile?.sub
+    || null
 
   // Determine role based on groups
   const groups = (user?.profile?.groups as string[]) || []
