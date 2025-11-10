@@ -189,8 +189,7 @@ const VirtualMachines: React.FC = () => {
       case 1: return vm.status?.state || ''
       case 2: return vm.status?.ip_address || ''
       case 3: return vm.status?.hub || ''
-      case 4: return vm.spec?.template || ''
-      case 5: return vm.metadata?.creation_timestamp || ''
+      case 4: return vm.metadata?.creation_timestamp || ''
       default: return ''
     }
   }
@@ -246,7 +245,7 @@ const VirtualMachines: React.FC = () => {
             <ToolbarContent>
               <ToolbarItem>
                 <SearchInput
-                  placeholder="Search by name, IP, hub, or template"
+                  placeholder="Search by name, IP, or hub"
                   value={searchValue}
                   onChange={(_event, value) => setSearchValue(value)}
                   onClear={() => setSearchValue('')}
@@ -306,9 +305,6 @@ const VirtualMachines: React.FC = () => {
                       Hub
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
-                      Template
-                    </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 5 }}>
                       Created
                     </Th>
                     <Th></Th>
@@ -321,7 +317,6 @@ const VirtualMachines: React.FC = () => {
                       <Td dataLabel="State" onClick={() => handleRowClick(vm)}>{getStateBadge(vm.status?.state)}</Td>
                       <Td dataLabel="IP Address" onClick={() => handleRowClick(vm)}>{vm.status?.ip_address || 'N/A'}</Td>
                       <Td dataLabel="Hub" onClick={() => handleRowClick(vm)}>{vm.status?.hub || 'N/A'}</Td>
-                      <Td dataLabel="Template" onClick={() => handleRowClick(vm)}>{vm.spec?.template || 'N/A'}</Td>
                       <Td dataLabel="Created" onClick={() => handleRowClick(vm)}>{formatTimestamp(vm.metadata?.creation_timestamp)}</Td>
                       <Td isActionCell>
                         <Dropdown
