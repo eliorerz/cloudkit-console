@@ -35,6 +35,7 @@ import {
   AlertVariant,
   InputGroup,
   InputGroupItem,
+  Checkbox,
 } from '@patternfly/react-core'
 import { Template, TemplateParameter } from '../../api/types'
 
@@ -65,6 +66,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [templateParameters, setTemplateParameters] = useState<Record<string, any>>({})
   const [isCreating, setIsCreating] = useState(false)
   const [cloudInitConfig, setCloudInitConfig] = useState('')
+  const [customizeTemplate, setCustomizeTemplate] = useState(false)
 
   // Hardware configuration fields (not in template)
   const [vmCpuCores, setVmCpuCores] = useState(2)
@@ -195,28 +197,37 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
     steps.push({ id: 'vmname', name: 'VM name' })
 
-    // Always add Hardware Configuration step (for CPU, Memory, Disk, Run Strategy)
-    steps.push({ id: 'hardware-config', name: 'Hardware Configuration' })
+    // Only add customization steps if user wants to customize the template
+    if (customizeTemplate) {
+      const categorized = categorizeParameters(selectedTemplate.parameters || [])
 
-    const categorized = categorizeParameters(selectedTemplate.parameters || [])
+      // Only show Hardware Configuration step if template has hardware parameters
+      const hasHardwareParams = selectedTemplate.parameters?.some(p =>
+        ['cpu_count', 'vm_cpu_cores', 'cpus', 'memory_gb', 'vm_memory_size', 'memory',
+         'disk_size_gb', 'vm_disk_size', 'disk_size', 'run_strategy', 'vm_run_strategy'].includes(p.name)
+      )
+      if (hasHardwareParams) {
+        steps.push({ id: 'hardware-config', name: 'Hardware Configuration' })
+      }
 
-    if (categorized.general.length > 0) {
-      steps.push({ id: 'general', name: 'General', category: 'general' })
-    }
-    if (categorized.hardware.length > 0) {
-      steps.push({ id: 'hardware', name: 'Additional Hardware', category: 'hardware' })
-    }
-    if (categorized.network.length > 0) {
-      steps.push({ id: 'network', name: 'Network', category: 'network' })
-    }
-    if (categorized.storage.length > 0) {
-      steps.push({ id: 'storage', name: 'Storage', category: 'storage' })
-    }
-    if (categorized.cloudInit.length > 0) {
-      steps.push({ id: 'cloudinit', name: 'Cloud-init', category: 'cloudInit' })
-    }
-    if (categorized.other.length > 0) {
-      steps.push({ id: 'other', name: 'Other', category: 'other' })
+      if (categorized.general.length > 0) {
+        steps.push({ id: 'general', name: 'General', category: 'general' })
+      }
+      if (categorized.hardware.length > 0) {
+        steps.push({ id: 'hardware', name: 'Additional Hardware', category: 'hardware' })
+      }
+      if (categorized.network.length > 0) {
+        steps.push({ id: 'network', name: 'Network', category: 'network' })
+      }
+      if (categorized.storage.length > 0) {
+        steps.push({ id: 'storage', name: 'Storage', category: 'storage' })
+      }
+      if (categorized.cloudInit.length > 0) {
+        steps.push({ id: 'cloudinit', name: 'Cloud-init', category: 'cloudInit' })
+      }
+      if (categorized.other.length > 0) {
+        steps.push({ id: 'other', name: 'Other', category: 'other' })
+      }
     }
 
     steps.push({ id: 'review', name: 'Review' })
@@ -246,6 +257,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       setTemplateParameters({})
       setCloudInitConfig('')
       setUseTemplate(true)
+      setCustomizeTemplate(false)
       // Reset hardware configuration to defaults
       setVmCpuCores(2)
       setVmMemoryGi(4)
@@ -285,11 +297,25 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     }
   }
 
+  // Helper to check if template supports a hardware parameter
+  const templateSupportsParam = (paramNames: string[]): boolean => {
+    if (!selectedTemplate?.parameters) return false
+    return selectedTemplate.parameters.some(p => paramNames.includes(p.name))
+  }
+
   // Helper to wrap values in protobuf Any format for gRPC-Gateway
-  const wrapValueForProtobuf = (value: any, _paramType?: string) => {
-    // For well-known wrapper types in protobuf Any, the canonical JSON is just the unwrapped value
-    // The gRPC-Gateway will handle the conversion
-    return value
+  const wrapValueForProtobuf = (value: any, paramType?: string) => {
+    // If the template parameter has no type specified (empty string), send plain value
+    // Otherwise, wrap it with the @type field for ProtoJSON format
+    if (!paramType || paramType === '') {
+      return value
+    }
+
+    // For typed parameters, wrap in ProtoJSON format
+    return {
+      '@type': paramType,
+      value: value
+    }
   }
 
   const handleCreate = async () => {
@@ -971,6 +997,15 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                 </HelperText>
               </FormHelperText>
             </FormGroup>
+            <FormGroup fieldId="customize-template">
+              <Checkbox
+                id="customize-template"
+                label="Customize template parameters"
+                description="Configure hardware, network, and other VM settings. If unchecked, the VM will be created with default template settings."
+                isChecked={customizeTemplate}
+                onChange={(_event, checked) => setCustomizeTemplate(checked)}
+              />
+            </FormGroup>
           </Form>
         )
 
@@ -987,9 +1022,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
             <Card>
               <CardBody>
                 <Form>
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
               {/* CPU Cores */}
-              <div style={{ flex: 1 }}>
+              {templateSupportsParam(['cpu_count', 'vm_cpu_cores', 'cpus']) && (
+              <div style={{ flex: 1, minWidth: '200px' }}>
                 <FormGroup label="CPU Cores" isRequired fieldId="vm-cpu-cores">
                   <div className="pf-v6-c-number-input-custom">
                     <NumberInput
@@ -1027,9 +1063,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                   `}</style>
                 </FormGroup>
               </div>
+              )}
 
               {/* Memory Size (Gi) */}
-              <div style={{ flex: 1 }}>
+              {templateSupportsParam(['memory_gb', 'vm_memory_size', 'memory']) && (
+              <div style={{ flex: 1, minWidth: '200px' }}>
                 <FormGroup label="Memory Size (Gi)" isRequired fieldId="vm-memory-size">
                   <div className="pf-v6-c-number-input-custom">
                     <NumberInput
@@ -1056,9 +1094,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                   </FormHelperText>
                 </FormGroup>
               </div>
+              )}
 
               {/* Disk Size (Gi) */}
-              <div style={{ flex: 1 }}>
+              {templateSupportsParam(['disk_size_gb', 'vm_disk_size', 'disk_size']) && (
+              <div style={{ flex: 1, minWidth: '200px' }}>
                 <FormGroup label="Disk Size (Gi)" isRequired fieldId="vm-disk-size">
                   <div className="pf-v6-c-number-input-custom">
                     <NumberInput
@@ -1085,9 +1125,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                   </FormHelperText>
                 </FormGroup>
               </div>
+              )}
             </div>
 
                   {/* Run Strategy */}
+                  {templateSupportsParam(['run_strategy', 'vm_run_strategy']) && (
                   <FormGroup label="Run Strategy" isRequired fieldId="vm-run-strategy" style={{ marginTop: '1rem' }}>
                     <Dropdown
                       isOpen={runStrategyDropdownOpen}
@@ -1135,6 +1177,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                       </HelperText>
                     </FormHelperText>
                   </FormGroup>
+                  )}
                 </Form>
               </CardBody>
             </Card>
@@ -1289,6 +1332,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                     {renderCategorySection('storage', 'Storage Configuration', categorizedForReview.storage)}
 
                     {/* Run Strategy Section */}
+                    {templateSupportsParam(['run_strategy', 'vm_run_strategy']) && (
                     <div style={{ marginBottom: '0' }}>
                       <Title headingLevel="h4" size="md" style={{ marginBottom: '0.75rem', color: '#151515' }}>
                         Run Strategy
@@ -1302,11 +1346,16 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                         </DescriptionListGroup>
                       </DescriptionList>
                     </div>
+                    )}
                   </div>
 
+                  {(templateSupportsParam(['cpu_count', 'vm_cpu_cores', 'cpus']) ||
+                    templateSupportsParam(['memory_gb', 'vm_memory_size', 'memory']) ||
+                    templateSupportsParam(['disk_size_gb', 'vm_disk_size', 'disk_size'])) && (
                   <div style={{ flex: '0 0 200px' }}>
                     {/* Right column - Resource Specifications */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {templateSupportsParam(['cpu_count', 'vm_cpu_cores', 'cpus']) && (
                       <Card isCompact style={{ textAlign: 'center', padding: '0.65rem', backgroundColor: '#f5f5f5', width: '180px' }}>
                         <CardBody style={{ padding: '0.65rem' }}>
                           <div style={{ fontSize: '1.5rem', color: '#0066cc', marginBottom: '0.15rem' }}>
@@ -1317,6 +1366,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                           </div>
                         </CardBody>
                       </Card>
+                      )}
+                      {templateSupportsParam(['memory_gb', 'vm_memory_size', 'memory']) && (
                       <Card isCompact style={{ textAlign: 'center', padding: '0.65rem', backgroundColor: '#f5f5f5', width: '180px' }}>
                         <CardBody style={{ padding: '0.65rem' }}>
                           <div style={{ fontSize: '1.5rem', color: '#0066cc', marginBottom: '0.15rem' }}>
@@ -1327,6 +1378,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                           </div>
                         </CardBody>
                       </Card>
+                      )}
+                      {templateSupportsParam(['disk_size_gb', 'vm_disk_size', 'disk_size']) && (
                       <Card isCompact style={{ textAlign: 'center', padding: '0.65rem', backgroundColor: '#f5f5f5', width: '180px' }}>
                         <CardBody style={{ padding: '0.65rem' }}>
                           <div style={{ fontSize: '1.5rem', color: '#0066cc', marginBottom: '0.15rem' }}>
@@ -1337,8 +1390,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                           </div>
                         </CardBody>
                       </Card>
+                      )}
                     </div>
                   </div>
+                  )}
                 </div>
               </CardBody>
             </Card>

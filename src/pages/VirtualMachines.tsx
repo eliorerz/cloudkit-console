@@ -152,39 +152,21 @@ const VirtualMachines: React.FC = () => {
     setWizardOpen(true)
   }
 
-  const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
+  const handleCreateVM = async (_vmId: string, templateId: string, parameters: Record<string, any>) => {
     console.log('Creating VM with parameters:', JSON.stringify(parameters, null, 2))
 
-    // Convert parameters to ProtoJSON format with @type wrappers
-    const protoJsonParameters: Record<string, any> = {}
+    // Filter out empty/null/undefined values
+    const filteredParameters: Record<string, any> = {}
     for (const [key, value] of Object.entries(parameters)) {
       if (value !== undefined && value !== null && value !== '') {
-        // Determine the type based on the value
-        let typeUrl = 'type.googleapis.com/google.protobuf.StringValue'
-        let wrappedValue = value
-
-        if (typeof value === 'number') {
-          if (Number.isInteger(value)) {
-            typeUrl = 'type.googleapis.com/google.protobuf.Int32Value'
-          } else {
-            typeUrl = 'type.googleapis.com/google.protobuf.DoubleValue'
-          }
-        } else if (typeof value === 'boolean') {
-          typeUrl = 'type.googleapis.com/google.protobuf.BoolValue'
-        }
-
-        protoJsonParameters[key] = {
-          '@type': typeUrl,
-          value: wrappedValue
-        }
+        filteredParameters[key] = value
       }
     }
 
     const newVm = await createVirtualMachine({
-      id: vmId,
       spec: {
         template: templateId,
-        template_parameters: Object.keys(protoJsonParameters).length > 0 ? protoJsonParameters : undefined,
+        template_parameters: Object.keys(filteredParameters).length > 0 ? filteredParameters : undefined,
       },
     })
     setVms([...vms, newVm])
