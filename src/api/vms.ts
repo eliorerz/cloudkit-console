@@ -23,6 +23,7 @@ export const getVirtualMachine = async (id: string): Promise<VirtualMachine> => 
 
 export const createVirtualMachine = async (vm: Partial<VirtualMachine>): Promise<VirtualMachine> => {
   try {
+    // The gRPC-Gateway body mapping expects the VM object directly (body: "object" in proto)
     const response = await apiClient.post<{ object: VirtualMachine }>('/vms', vm)
     return response.object
   } catch (error) {
