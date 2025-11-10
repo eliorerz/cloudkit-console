@@ -13,8 +13,9 @@ export const getVirtualMachines = async (): Promise<ListResponse<VirtualMachine>
 
 export const getVirtualMachine = async (id: string): Promise<VirtualMachine> => {
   try {
-    const response = await apiClient.get<{ object: VirtualMachine }>(`/vms/${id}`)
-    return response.object
+    // The gRPC-Gateway response_body: "object" mapping returns the VM directly
+    const response = await apiClient.get<VirtualMachine>(`/vms/${id}`)
+    return response
   } catch (error) {
     console.error(`Failed to fetch virtual machine ${id}:`, error)
     throw error
@@ -23,9 +24,10 @@ export const getVirtualMachine = async (id: string): Promise<VirtualMachine> => 
 
 export const createVirtualMachine = async (vm: Partial<VirtualMachine>): Promise<VirtualMachine> => {
   try {
-    // The gRPC-Gateway body mapping expects the VM object directly (body: "object" in proto)
-    const response = await apiClient.post<{ object: VirtualMachine }>('/vms', vm)
-    return response.object
+    // The gRPC-Gateway body: "object" mapping expects VM directly in request
+    // and response_body: "object" returns VM directly in response
+    const response = await apiClient.post<VirtualMachine>('/vms', vm)
+    return response
   } catch (error) {
     console.error('Failed to create virtual machine:', error)
     throw error
@@ -43,8 +45,10 @@ export const deleteVirtualMachine = async (id: string): Promise<void> => {
 
 export const updateVirtualMachine = async (vm: VirtualMachine): Promise<VirtualMachine> => {
   try {
-    const response = await apiClient.put<{ object: VirtualMachine }>(`/vms/${vm.id}`, vm)
-    return response.object
+    // The gRPC-Gateway body: "object" and response_body: "object" mappings
+    // mean both request and response use the object directly without wrapping
+    const response = await apiClient.put<VirtualMachine>(`/vms/${vm.id}`, vm)
+    return response
   } catch (error) {
     console.error(`Failed to update virtual machine ${vm.id}:`, error)
     throw error
