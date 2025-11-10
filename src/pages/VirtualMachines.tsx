@@ -16,6 +16,9 @@ import {
   Button,
   Modal,
   ModalVariant,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   Pagination,
   Dropdown,
   DropdownList,
@@ -372,12 +375,15 @@ const VirtualMachines: React.FC = () => {
 
       <Modal
         variant={ModalVariant.small}
-        title="Delete virtual machine"
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
+        aria-labelledby="delete-vm-modal-title"
       >
-        <p>Are you sure you want to delete the virtual machine <strong>{vmToDelete?.id}</strong>? This action cannot be undone.</p>
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+        <ModalHeader title="Delete virtual machine" labelId="delete-vm-modal-title" />
+        <ModalBody>
+          Are you sure you want to delete the virtual machine <strong>{vmToDelete?.id}</strong>? This action cannot be undone.
+        </ModalBody>
+        <ModalFooter>
           <Button key="cancel" variant="link" onClick={() => setDeleteModalOpen(false)} isDisabled={deleting}>
             Cancel
           </Button>
@@ -390,7 +396,7 @@ const VirtualMachines: React.FC = () => {
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>
-        </div>
+        </ModalFooter>
       </Modal>
 
       <CreateVMWizard
