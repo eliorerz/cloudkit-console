@@ -68,6 +68,15 @@ const Templates: React.FC = () => {
     setExpandedTemplates(newExpanded)
   }
 
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return 'N/A'
+    try {
+      return new Date(timestamp).toLocaleString()
+    } catch {
+      return timestamp
+    }
+  }
+
   // Sorting logic
   const getSortableValue = (template: Template, columnIndex: number): string => {
     switch (columnIndex) {
@@ -75,6 +84,7 @@ const Templates: React.FC = () => {
       case 1: return template.title
       case 2: return template.description || ''
       case 3: return (template.parameters?.length || 0).toString()
+      case 4: return template.metadata?.creation_timestamp || ''
       default: return ''
     }
   }
@@ -186,6 +196,9 @@ const Templates: React.FC = () => {
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
                       Parameters
                     </Th>
+                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
+                      Created
+                    </Th>
                   </Tr>
                 </Thead>
                 {paginatedTemplates.map((template, rowIndex) => (
@@ -202,39 +215,64 @@ const Templates: React.FC = () => {
                       <Td dataLabel="Title">{template.title}</Td>
                       <Td dataLabel="Description">{template.description || 'N/A'}</Td>
                       <Td dataLabel="Parameters">{template.parameters?.length || 0}</Td>
+                      <Td dataLabel="Created">{formatTimestamp(template.metadata?.creation_timestamp)}</Td>
                     </Tr>
                     <Tr isExpanded={expandedTemplates.has(template.id)}>
-                      <Td colSpan={5}>
+                      <Td colSpan={6}>
                         <ExpandableRowContent>
-                          {template.parameters && template.parameters.length > 0 ? (
-                            <div style={{ padding: '1rem' }}>
-                              <Title headingLevel="h5" size="md" style={{ marginBottom: '0.5rem' }}>
-                                Parameters
-                              </Title>
-                              <Table variant="compact" borders={true}>
-                                <Thead>
-                                  <Tr>
-                                    <Th>Name</Th>
-                                    <Th>Description</Th>
-                                    <Th>Type</Th>
-                                    <Th>Default</Th>
-                                  </Tr>
-                                </Thead>
-                                <Tbody>
-                                  {template.parameters.map((param) => (
-                                    <Tr key={param.name}>
-                                      <Td>{param.name}</Td>
-                                      <Td>{param.description || 'N/A'}</Td>
-                                      <Td>{param.type?.replace('type.googleapis.com/google.protobuf.', '') || 'N/A'}</Td>
-                                      <Td>{param.default?.value || 'N/A'}</Td>
+                          <div style={{ padding: '1rem' }}>
+                            {/* Template metadata */}
+                            {template.metadata?.creators && template.metadata.creators.length > 0 && (
+                              <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                                <strong>Created by:</strong> {template.metadata.creators.join(', ')}
+                              </div>
+                            )}
+
+                            {/* Parameters table */}
+                            {template.parameters && template.parameters.length > 0 ? (
+                              <>
+                                <Title headingLevel="h5" size="md" style={{ marginBottom: '0.5rem' }}>
+                                  Parameters
+                                </Title>
+                                <Table variant="compact" borders={true}>
+                                  <Thead>
+                                    <Tr>
+                                      <Th>Name</Th>
+                                      <Th>Description</Th>
+                                      <Th>Type</Th>
+                                      <Th>Default</Th>
+                                      <Th>Required</Th>
                                     </Tr>
-                                  ))}
-                                </Tbody>
-                              </Table>
-                            </div>
-                          ) : (
-                            <div style={{ padding: '1rem' }}>No parameters</div>
-                          )}
+                                  </Thead>
+                                  <Tbody>
+                                    {template.parameters.map((param) => {
+                                      // Extract type from default's @type field or use param.type
+                                      const paramType = param.default?.['@type']
+                                        ? param.default['@type'].replace('type.googleapis.com/google.protobuf.', '')
+                                        : (param.type ? param.type.replace('type.googleapis.com/google.protobuf.', '') : 'string')
+
+                                      // Get default value, handling empty strings properly
+                                      const defaultValue = param.default?.value !== undefined && param.default?.value !== null
+                                        ? (param.default.value === '' ? '(empty string)' : String(param.default.value))
+                                        : '-'
+
+                                      return (
+                                        <Tr key={param.name}>
+                                          <Td><code style={{ fontSize: '0.9rem' }}>{param.name}</code></Td>
+                                          <Td>{param.description || '-'}</Td>
+                                          <Td>{paramType}</Td>
+                                          <Td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{defaultValue}</Td>
+                                          <Td>{param.required ? 'Yes' : 'No'}</Td>
+                                        </Tr>
+                                      )
+                                    })}
+                                  </Tbody>
+                                </Table>
+                              </>
+                            ) : (
+                              <div>No parameters defined for this template</div>
+                            )}
+                          </div>
                         </ExpandableRowContent>
                       </Td>
                     </Tr>

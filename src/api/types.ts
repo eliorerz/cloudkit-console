@@ -23,6 +23,10 @@ export interface Template {
   id: string
   title: string
   description?: string
+  metadata?: {
+    creation_timestamp?: string
+    creators?: string[]
+  }
   parameters?: TemplateParameter[]
 }
 
