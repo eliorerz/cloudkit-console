@@ -199,7 +199,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
     // Only add customization steps if user wants to customize the template
     if (customizeTemplate) {
-      steps.push({ id: 'vmname', name: 'VM name' })
       const categorized = categorizeParameters(selectedTemplate.parameters || [])
 
       // Only show Hardware Configuration step if template has hardware parameters
@@ -214,9 +213,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       if (categorized.general.length > 0) {
         steps.push({ id: 'general', name: 'General', category: 'general' })
       }
-      if (categorized.hardware.length > 0) {
-        steps.push({ id: 'hardware', name: 'Additional Hardware', category: 'hardware' })
-      }
+      // Skip "Additional Hardware" step - already covered in hardware-config
       if (categorized.network.length > 0) {
         steps.push({ id: 'network', name: 'Network', category: 'network' })
       }
@@ -305,17 +302,32 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     return selectedTemplate.parameters.some(p => paramNames.includes(p.name))
   }
 
+  // Helper to wrap value in protobuf Any format
+  const wrapInProtobufAny = (value: any, type: string) => {
+    return {
+      '@type': type,
+      value: value
+    }
+  }
+
+  // Helper to get parameter type from template
+  const getParameterType = (paramName: string): string | undefined => {
+    const param = selectedTemplate?.parameters?.find(p => p.name === paramName)
+    return param?.type
+  }
+
   const handleCreate = async () => {
     try {
       setIsCreating(true)
       setCreationError(null)
 
+      // Generate a unique VM ID if not provided
+      const generatedVmId = vmId || `vm-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+
       // Build parameter overrides - only include values that differ from defaults
       // The fulfillment service will merge these with template defaults
+      // Each parameter must be wrapped in google.protobuf.Any format
       const vmParameters: Record<string, any> = {}
-
-      // VM name is always required
-      vmParameters.vm_name = vmId
 
       // Only include customized parameters if user chose to customize
       if (customizeTemplate) {
@@ -325,34 +337,39 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         if (templateSupportsParam(['vm_cpu_cores', 'cpu_count', 'cpus'])) {
           const defaultCpu = 2
           if (vmCpuCores !== defaultCpu) {
-            vmParameters.vm_cpu_cores = vmCpuCores
+            const paramType = getParameterType('vm_cpu_cores') || 'type.googleapis.com/google.protobuf.Int64Value'
+            vmParameters.vm_cpu_cores = wrapInProtobufAny(String(vmCpuCores), paramType)
           }
         }
 
         if (templateSupportsParam(['vm_memory_size', 'memory_gb', 'memory', 'vm_memory'])) {
           const defaultMemory = 4
           if (vmMemoryGi !== defaultMemory) {
-            vmParameters.vm_memory_size = `${vmMemoryGi}Gi`
+            const paramType = getParameterType('vm_memory_size') || 'type.googleapis.com/google.protobuf.StringValue'
+            vmParameters.vm_memory_size = wrapInProtobufAny(`${vmMemoryGi}Gi`, paramType)
           }
         }
 
         if (templateSupportsParam(['vm_disk_size', 'disk_size_gb', 'disk_size'])) {
           const defaultDisk = 50
           if (vmDiskGi !== defaultDisk) {
-            vmParameters.vm_disk_size = `${vmDiskGi}Gi`
+            const paramType = getParameterType('vm_disk_size') || 'type.googleapis.com/google.protobuf.StringValue'
+            vmParameters.vm_disk_size = wrapInProtobufAny(`${vmDiskGi}Gi`, paramType)
           }
         }
 
         if (templateSupportsParam(['vm_run_strategy', 'run_strategy'])) {
           const defaultRunStrategy = 'Always'
           if (vmRunStrategy !== defaultRunStrategy) {
-            vmParameters.vm_run_strategy = vmRunStrategy
+            const paramType = getParameterType('vm_run_strategy') || 'type.googleapis.com/google.protobuf.StringValue'
+            vmParameters.vm_run_strategy = wrapInProtobufAny(vmRunStrategy, paramType)
           }
         }
 
         // Cloud-init configuration
         if (cloudInitConfig && cloudInitConfig.trim() !== '') {
-          vmParameters.cloud_init_config = cloudInitConfig
+          const paramType = getParameterType('cloud_init_config') || 'type.googleapis.com/google.protobuf.Value'
+          vmParameters.cloud_init_config = wrapInProtobufAny(cloudInitConfig, paramType)
         }
 
         // Additional user-configured parameters from templateParameters
@@ -364,9 +381,19 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
             }
 
             // Include parameter if user provided a value
-            const userValue = templateParameters[param.name]
+            let userValue = templateParameters[param.name]
             if (userValue !== undefined && userValue !== null && userValue !== '') {
-              vmParameters[param.name] = userValue
+              // Convert Int64Value to string for protobuf JSON encoding
+              if (param.type === 'type.googleapis.com/google.protobuf.Int64Value' && typeof userValue === 'number') {
+                userValue = String(userValue)
+              }
+              // Convert BoolValue to boolean for protobuf JSON encoding
+              if (param.type === 'type.googleapis.com/google.protobuf.BoolValue' && typeof userValue === 'string') {
+                userValue = userValue === 'true'
+              }
+              // Wrap in protobuf Any format
+              const paramType = param.type || 'type.googleapis.com/google.protobuf.StringValue'
+              vmParameters[param.name] = wrapInProtobufAny(userValue, paramType)
             }
           })
         }
@@ -374,7 +401,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
       // Create VM with parameter overrides
       // The fulfillment service will merge these with template defaults
-      await onCreate(vmId, selectedTemplateId, vmParameters)
+      await onCreate(generatedVmId, selectedTemplateId, vmParameters)
 
       handleClose()
     } catch (error) {
@@ -392,12 +419,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         return useTemplate ? !!selectedTemplateId : true
       case 'template':
         return !!selectedTemplateId
-      case 'vmname':
-        // Validate VM name: must be non-empty and follow Kubernetes naming conventions
-        if (!vmId) return false
-        // Basic validation: lowercase alphanumeric and hyphens only
-        const vmNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/
-        return vmNameRegex.test(vmId)
       case 'hardware':
       case 'general':
       case 'network':
@@ -418,10 +439,22 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     }
   }
 
-  const renderParameterFields = (params: TemplateParameter[]) => (
-    <>
-      {params.map((param) => {
-        const paramName = param.name.toLowerCase()
+  const renderParameterFields = (params: TemplateParameter[]) => {
+    // Filter out parameters already handled in hardware-config step
+    const filteredParams = params.filter(param => {
+      const name = param.name
+      // Skip hardware parameters handled in hardware-config step
+      if (['vm_cpu_cores', 'cpu_count', 'cpus', 'vm_memory_size', 'memory_gb', 'memory',
+           'vm_disk_size', 'disk_size_gb', 'disk_size', 'vm_run_strategy', 'run_strategy'].includes(name)) {
+        return false
+      }
+      return true
+    })
+
+    return (
+      <>
+        {filteredParams.map((param) => {
+          const paramName = param.name.toLowerCase()
 
         // CPU cores - number input
         if (paramName.includes('cpu') && (paramName.includes('core') || paramName === 'vm_cpu_cores')) {
@@ -804,9 +837,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
             </FormHelperText>
           </FormGroup>
         )
-      })}
-    </>
-  )
+        })}
+      </>
+    )
+  }
 
   const renderStepContent = () => {
     if (!currentStep) return null
@@ -983,47 +1017,24 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
           </Form>
         )
 
-      case 'vmname':
-        const vmNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/
-        const isVmNameValid = !vmId || vmNameRegex.test(vmId)
-
-        return (
-          <Form>
-            <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-              Name your virtual machine
-            </Title>
-            <FormGroup label="Virtual machine name" isRequired fieldId="vm-name">
-              <TextInput
-                isRequired
-                type="text"
-                id="vm-name"
-                value={vmId}
-                onChange={(_event, value) => setVmId(value.toLowerCase())}
-                placeholder="e.g., my-fedora-vm"
-                validated={vmId && !isVmNameValid ? 'error' : 'default'}
-              />
-              <FormHelperText>
-                <HelperText>
-                  <HelperTextItem variant={vmId && !isVmNameValid ? 'error' : 'default'}>
-                    {vmId && !isVmNameValid
-                      ? 'Name must contain only lowercase letters, numbers, and hyphens. Must start and end with a letter or number.'
-                      : 'A unique identifier for your virtual machine (lowercase letters, numbers, and hyphens)'}
-                  </HelperTextItem>
-                </HelperText>
-              </FormHelperText>
-            </FormGroup>
-          </Form>
-        )
-
       case 'hardware-config':
         return (
           <div>
             <Title headingLevel="h2" size="xl">
               Hardware Configuration
             </Title>
-            <p style={{ color: '#6a6e73', marginBottom: '1.5rem', fontSize: '0.95rem', marginTop: 0 }}>
+            <p style={{ color: '#6a6e73', marginBottom: '1rem', fontSize: '0.95rem', marginTop: 0 }}>
               Define the hardware resources allocated to your VM including CPU, memory, disk space, and run strategy.
             </p>
+
+            <Alert
+              variant={AlertVariant.info}
+              isInline
+              title="Resource allocation"
+              style={{ marginBottom: '1.5rem' }}
+            >
+              Configure the compute resources for your VM. Ensure the values match your workload requirements.
+            </Alert>
 
             <Card>
               <CardBody>
@@ -1240,19 +1251,9 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
             <Title headingLevel="h2" size="xl" style={{ marginBottom: '0.25rem' }}>
               {currentStep.name} Configuration
             </Title>
-            <p style={{ color: '#6a6e73', marginBottom: '0.75rem', fontSize: '0.95rem' }}>
+            <p style={{ color: '#6a6e73', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
               {categoryDescriptions[currentStep.category!] || 'Configure settings for your virtual machine.'}
             </p>
-            {currentStep.category === 'hardware' && (
-              <Alert
-                variant={AlertVariant.info}
-                isInline
-                title="Resource allocation"
-                style={{ marginBottom: '1.5rem' }}
-              >
-                Configure the compute resources for your VM. Ensure the values match your workload requirements.
-              </Alert>
-            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {renderParameterFields(categoryParams)}
             </div>
