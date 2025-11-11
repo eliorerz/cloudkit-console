@@ -1274,7 +1274,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         }
 
         const renderCategorySection = (categoryName: string, categoryLabel: string, params: TemplateParameter[]) => {
+          // Filter out hardware parameters that are shown in the resource boxes
+          const hardwareParamsInBoxes = ['vm_cpu_cores', 'cpu_count', 'cpus', 'vm_memory_size', 'memory_gb', 'memory', 'vm_disk_size', 'disk_size_gb', 'disk_size']
+
           const categoryValues = params
+            .filter(p => !hardwareParamsInBoxes.includes(p.name))  // Skip hardware params shown in boxes
             .map(p => ({ name: p.name, title: p.title || formatLabel(p.name), value: templateParameters[p.name] }))
             .filter(p => p.value !== undefined && p.value !== '' && p.value !== null)
 
