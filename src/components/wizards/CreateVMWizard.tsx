@@ -36,6 +36,7 @@ import {
   InputGroup,
   InputGroupItem,
   Checkbox,
+  Spinner,
 } from '@patternfly/react-core'
 import { Template, TemplateParameter } from '../../api/types'
 
@@ -67,6 +68,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [isCreating, setIsCreating] = useState(false)
   const [cloudInitConfig, setCloudInitConfig] = useState('')
   const [customizeTemplate, setCustomizeTemplate] = useState(false)
+  const [creationError, setCreationError] = useState<string | null>(null)
 
   // Hardware configuration fields (not in template)
   const [vmCpuCores, setVmCpuCores] = useState(2)
@@ -257,6 +259,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       setCloudInitConfig('')
       setUseTemplate(true)
       setCustomizeTemplate(false)
+      setCreationError(null)
       // Reset hardware configuration to defaults
       setVmCpuCores(2)
       setVmMemoryGi(4)
@@ -302,79 +305,81 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     return selectedTemplate.parameters.some(p => paramNames.includes(p.name))
   }
 
-  // Helper to wrap values in protobuf Any format for gRPC-Gateway
-  const wrapValueForProtobuf = (value: any, paramType?: string) => {
-    // If the template parameter has no type specified (empty string), send plain value
-    // Otherwise, wrap it with the @type field for ProtoJSON format
-    if (!paramType || paramType === '') {
-      return value
-    }
-
-    // For typed parameters, wrap in ProtoJSON format
-    return {
-      '@type': paramType,
-      value: value
-    }
-  }
-
   const handleCreate = async () => {
     try {
       setIsCreating(true)
+      setCreationError(null)
 
-      // Collect template parameters
-      const params: Record<string, any> = {}
+      // Build parameter overrides - only include values that differ from defaults
+      // The fulfillment service will merge these with template defaults
+      const vmParameters: Record<string, any> = {}
 
-      // Add template parameters based on what the template defines
-      if (selectedTemplate?.parameters) {
-        selectedTemplate.parameters.forEach(param => {
-          // Check various sources for the parameter value
-          let value = templateParameters[param.name]
+      // VM name is always required
+      vmParameters.vm_name = vmId
 
-          // Special handling for vm_name - use vmId if this param exists in template and user is customizing
-          if (param.name === 'vm_name' && vmId && customizeTemplate) {
-            value = vmId
-          }
+      // Only include customized parameters if user chose to customize
+      if (customizeTemplate) {
+        // Map UI state to template parameter names and add only if customized
 
-          // Special handling for cloud_init_config
-          if (param.name === 'cloud_init_config' && cloudInitConfig) {
-            value = cloudInitConfig
+        // Hardware configuration
+        if (templateSupportsParam(['vm_cpu_cores', 'cpu_count', 'cpus'])) {
+          const defaultCpu = 2
+          if (vmCpuCores !== defaultCpu) {
+            vmParameters.vm_cpu_cores = vmCpuCores
           }
+        }
 
-          // TODO: Hardware configuration (CPU, memory, disk, run strategy) is currently not supported
-          // by the cloudkit.templates.ocp_virt_vm template. The wizard UI collects these values but
-          // they will only be sent if a template explicitly defines these parameters.
-          // The mapping below will work once templates support hardware configuration parameters.
+        if (templateSupportsParam(['vm_memory_size', 'memory_gb', 'memory', 'vm_memory'])) {
+          const defaultMemory = 4
+          if (vmMemoryGi !== defaultMemory) {
+            vmParameters.vm_memory_size = `${vmMemoryGi}Gi`
+          }
+        }
 
-          // Map hardware configuration to template parameter names if they exist
-          // Check common variations for CPU
-          if (param.name === 'cpu_count' || param.name === 'vm_cpu_cores' || param.name === 'cpus') {
-            value = vmCpuCores
+        if (templateSupportsParam(['vm_disk_size', 'disk_size_gb', 'disk_size'])) {
+          const defaultDisk = 50
+          if (vmDiskGi !== defaultDisk) {
+            vmParameters.vm_disk_size = `${vmDiskGi}Gi`
           }
-          // Check common variations for memory
-          if (param.name === 'memory_gb' || param.name === 'vm_memory_size' || param.name === 'memory') {
-            value = vmMemoryGi // Will be sent as integer GB
-          }
-          // Check common variations for disk
-          if (param.name === 'disk_size_gb' || param.name === 'vm_disk_size' || param.name === 'disk_size') {
-            value = vmDiskGi // Will be sent as integer GB
-          }
-          // Check common variations for run strategy
-          if (param.name === 'run_strategy' || param.name === 'vm_run_strategy') {
-            value = vmRunStrategy
-          }
+        }
 
-          // Only add parameter if it has a value
-          if (value !== undefined && value !== null && value !== '') {
-            // Wrap value in protobuf format based on parameter type
-            params[param.name] = wrapValueForProtobuf(value, param.type)
+        if (templateSupportsParam(['vm_run_strategy', 'run_strategy'])) {
+          const defaultRunStrategy = 'Always'
+          if (vmRunStrategy !== defaultRunStrategy) {
+            vmParameters.vm_run_strategy = vmRunStrategy
           }
-        })
+        }
+
+        // Cloud-init configuration
+        if (cloudInitConfig && cloudInitConfig.trim() !== '') {
+          vmParameters.cloud_init_config = cloudInitConfig
+        }
+
+        // Additional user-configured parameters from templateParameters
+        if (selectedTemplate?.parameters) {
+          selectedTemplate.parameters.forEach(param => {
+            // Skip parameters we've already handled
+            if (['vm_name', 'vm_cpu_cores', 'vm_memory_size', 'vm_disk_size', 'vm_run_strategy', 'cloud_init_config'].includes(param.name)) {
+              return
+            }
+
+            // Include parameter if user provided a value
+            const userValue = templateParameters[param.name]
+            if (userValue !== undefined && userValue !== null && userValue !== '') {
+              vmParameters[param.name] = userValue
+            }
+          })
+        }
       }
 
-      await onCreate(vmId, selectedTemplateId, params)
+      // Create VM with parameter overrides
+      // The fulfillment service will merge these with template defaults
+      await onCreate(vmId, selectedTemplateId, vmParameters)
+
       handleClose()
     } catch (error) {
       console.error('Failed to create VM:', error)
+      setCreationError(error instanceof Error ? error.message : 'Failed to create VM')
     } finally {
       setIsCreating(false)
     }
@@ -1301,6 +1306,33 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
             <p style={{ color: '#6a6e73', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
               Please review all settings before creating your virtual machine.
             </p>
+
+            {/* Show creation progress */}
+            {isCreating && (
+              <Alert
+                variant={AlertVariant.info}
+                isInline
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Spinner size="md" />
+                    <span>Creating virtual machine...</span>
+                  </div>
+                }
+                style={{ marginBottom: '1.5rem' }}
+              />
+            )}
+
+            {/* Show error if creation failed */}
+            {creationError && (
+              <Alert
+                variant={AlertVariant.danger}
+                isInline
+                title="Failed to create virtual machine"
+                style={{ marginBottom: '1.5rem' }}
+              >
+                {creationError}
+              </Alert>
+            )}
 
             <Card style={{ marginBottom: '1.5rem' }}>
               <CardBody>
