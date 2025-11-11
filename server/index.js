@@ -122,6 +122,28 @@ app.get('/api/templates', async (req, res) => {
   }
 });
 
+app.post('/api/templates', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const data = await makeRequest('/api/fulfillment/v1/virtual_machine_templates', token, 'POST', req.body);
+    res.json(data);
+  } catch (error) {
+    console.error('Error creating template:', error);
+    res.status(error.status || 500).json({ error: 'Failed to create template', details: error.data });
+  }
+});
+
+app.delete('/api/templates/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    await makeRequest(`/api/fulfillment/v1/virtual_machine_templates/${req.params.id}`, token, 'DELETE');
+    res.json({ success: true });
+  } catch (error) {
+    console.error(`Error deleting template ${req.params.id}:`, error);
+    res.status(error.status || 500).json({ error: 'Failed to delete template', details: error.data });
+  }
+});
+
 app.get('/api/hubs', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
