@@ -12,6 +12,14 @@ import {
   EmptyState,
   EmptyStateBody,
   Pagination,
+  Modal,
+  ModalVariant,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Alert,
+  AlertVariant,
 } from '@patternfly/react-core'
 import {
   Table,
@@ -21,10 +29,11 @@ import {
   Tbody,
   Td,
   ExpandableRowContent,
+  ActionsColumn,
 } from '@patternfly/react-table'
 import { CubeIcon, SearchIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
-import { getTemplates } from '../api/templates'
+import { getTemplates, deleteTemplate } from '../api/templates'
 import { Template } from '../api/types'
 
 const Templates: React.FC = () => {
@@ -32,6 +41,12 @@ const Templates: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchValue, setSearchValue] = useState('')
   const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set())
+
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -68,6 +83,53 @@ const Templates: React.FC = () => {
     setExpandedTemplates(newExpanded)
   }
 
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return 'N/A'
+    try {
+      return new Date(timestamp).toLocaleString()
+    } catch {
+      return timestamp
+    }
+  }
+
+  // Delete handlers
+  const openDeleteModal = (template: Template) => {
+    setTemplateToDelete(template)
+    setDeleteError(null)
+    setIsDeleteModalOpen(true)
+  }
+
+  const closeDeleteModal = () => {
+    if (!isDeleting) {
+      setIsDeleteModalOpen(false)
+      setTemplateToDelete(null)
+      setDeleteError(null)
+    }
+  }
+
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete) return
+
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      await deleteTemplate(templateToDelete.id)
+
+      // Remove template from state
+      setTemplates(templates.filter(t => t.id !== templateToDelete.id))
+
+      // Close modal
+      setIsDeleteModalOpen(false)
+      setTemplateToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete template:', error)
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete template')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   // Sorting logic
   const getSortableValue = (template: Template, columnIndex: number): string => {
     switch (columnIndex) {
@@ -75,6 +137,7 @@ const Templates: React.FC = () => {
       case 1: return template.title
       case 2: return template.description || ''
       case 3: return (template.parameters?.length || 0).toString()
+      case 4: return template.metadata?.creation_timestamp || ''
       default: return ''
     }
   }
@@ -186,6 +249,10 @@ const Templates: React.FC = () => {
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
                       Parameters
                     </Th>
+                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
+                      Created
+                    </Th>
+                    <Th></Th>
                   </Tr>
                 </Thead>
                 {paginatedTemplates.map((template, rowIndex) => (
@@ -202,39 +269,74 @@ const Templates: React.FC = () => {
                       <Td dataLabel="Title">{template.title}</Td>
                       <Td dataLabel="Description">{template.description || 'N/A'}</Td>
                       <Td dataLabel="Parameters">{template.parameters?.length || 0}</Td>
+                      <Td dataLabel="Created">{formatTimestamp(template.metadata?.creation_timestamp)}</Td>
+                      <Td isActionCell>
+                        <ActionsColumn
+                          items={[
+                            {
+                              title: 'Delete',
+                              onClick: () => openDeleteModal(template)
+                            }
+                          ]}
+                        />
+                      </Td>
                     </Tr>
                     <Tr isExpanded={expandedTemplates.has(template.id)}>
-                      <Td colSpan={5}>
+                      <Td colSpan={7}>
                         <ExpandableRowContent>
-                          {template.parameters && template.parameters.length > 0 ? (
-                            <div style={{ padding: '1rem' }}>
-                              <Title headingLevel="h5" size="md" style={{ marginBottom: '0.5rem' }}>
-                                Parameters
-                              </Title>
-                              <Table variant="compact" borders={true}>
-                                <Thead>
-                                  <Tr>
-                                    <Th>Name</Th>
-                                    <Th>Description</Th>
-                                    <Th>Type</Th>
-                                    <Th>Default</Th>
-                                  </Tr>
-                                </Thead>
-                                <Tbody>
-                                  {template.parameters.map((param) => (
-                                    <Tr key={param.name}>
-                                      <Td>{param.name}</Td>
-                                      <Td>{param.description || 'N/A'}</Td>
-                                      <Td>{param.type?.replace('type.googleapis.com/google.protobuf.', '') || 'N/A'}</Td>
-                                      <Td>{param.default?.value || 'N/A'}</Td>
+                          <div style={{ padding: '1rem' }}>
+                            {/* Template metadata */}
+                            {template.metadata?.creators && template.metadata.creators.length > 0 && (
+                              <div style={{ marginBottom: '1.5rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                                <strong>Created by:</strong> {template.metadata.creators.join(', ')}
+                              </div>
+                            )}
+
+                            {/* Parameters table */}
+                            {template.parameters && template.parameters.length > 0 ? (
+                              <>
+                                <Title headingLevel="h5" size="md" style={{ marginBottom: '0.5rem' }}>
+                                  Parameters
+                                </Title>
+                                <Table variant="compact" borders={true}>
+                                  <Thead>
+                                    <Tr>
+                                      <Th>Name</Th>
+                                      <Th>Description</Th>
+                                      <Th>Type</Th>
+                                      <Th>Default</Th>
+                                      <Th>Required</Th>
                                     </Tr>
-                                  ))}
-                                </Tbody>
-                              </Table>
-                            </div>
-                          ) : (
-                            <div style={{ padding: '1rem' }}>No parameters</div>
-                          )}
+                                  </Thead>
+                                  <Tbody>
+                                    {template.parameters.map((param) => {
+                                      // Extract type from default's @type field or use param.type
+                                      const paramType = param.default?.['@type']
+                                        ? param.default['@type'].replace('type.googleapis.com/google.protobuf.', '')
+                                        : (param.type ? param.type.replace('type.googleapis.com/google.protobuf.', '') : 'string')
+
+                                      // Get default value, handling empty strings properly
+                                      const defaultValue = param.default?.value !== undefined && param.default?.value !== null
+                                        ? (param.default.value === '' ? '(empty string)' : String(param.default.value))
+                                        : '-'
+
+                                      return (
+                                        <Tr key={param.name}>
+                                          <Td><code style={{ fontSize: '0.9rem' }}>{param.name}</code></Td>
+                                          <Td>{param.description || '-'}</Td>
+                                          <Td>{paramType}</Td>
+                                          <Td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{defaultValue}</Td>
+                                          <Td>{param.required ? 'Yes' : 'No'}</Td>
+                                        </Tr>
+                                      )
+                                    })}
+                                  </Tbody>
+                                </Table>
+                              </>
+                            ) : (
+                              <div>No parameters defined for this template</div>
+                            )}
+                          </div>
                         </ExpandableRowContent>
                       </Td>
                     </Tr>
@@ -265,6 +367,36 @@ const Templates: React.FC = () => {
           )}
         </Card>
       </PageSection>
+
+      {/* Delete confirmation modal */}
+      <Modal
+        variant={ModalVariant.small}
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        aria-label="Delete template confirmation"
+      >
+        <ModalHeader title="Delete template" />
+        <ModalBody>
+          {deleteError && (
+            <Alert variant={AlertVariant.danger} isInline title="Error" style={{ marginBottom: '1rem' }}>
+              {deleteError}
+            </Alert>
+          )}
+          <p>Are you sure you want to delete template <strong>{templateToDelete?.title}</strong>?</p>
+          <p style={{ marginTop: '0.5rem', color: '#6a6e73' }}>
+            ID: <code>{templateToDelete?.id}</code>
+          </p>
+          <p style={{ marginTop: '1rem', color: '#c9190b' }}>This action cannot be undone.</p>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="danger" onClick={handleDeleteTemplate} isDisabled={isDeleting} isLoading={isDeleting}>
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+          <Button variant="link" onClick={closeDeleteModal} isDisabled={isDeleting}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </Modal>
     </AppLayout>
   )
 }

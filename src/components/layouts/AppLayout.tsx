@@ -26,6 +26,12 @@ import {
   InputGroup,
   InputGroupItem,
   TextInput,
+  Tooltip,
+  DescriptionList,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  DescriptionListDescription,
+  Divider,
 } from '@patternfly/react-core'
 import { BarsIcon, BellIcon, QuestionCircleIcon, CopyIcon } from '@patternfly/react-icons'
 import { useAuth } from '../../contexts/AuthContext'
@@ -41,9 +47,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
   const [isAdminExpanded, setIsAdminExpanded] = useState(true)
-  const { logout, username, role, token } = useAuth()
+  const { logout, username, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+
+  // Get user UUID (sub) and organization
+  const userUuid = user?.profile?.sub || ''
+  const last12Digits = userUuid.length >= 12 ? userUuid.slice(-12) : userUuid
+  const primaryOrg = organizations
+    .filter(org => org !== '/admins')
+    .map(org => org.replace(/^\//, ''))
+    .find(org => org.length > 0) || 'No Organization'
 
   const handleLogout = () => {
     logout()
@@ -144,14 +158,45 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   </MenuToggle>
                 )}
               >
-                <DropdownList>
-                  <DropdownItem key="token" onClick={showTokenModal}>
-                    View Token
-                  </DropdownItem>
-                  <DropdownItem key="logout" onClick={handleLogout}>
-                    Logout
-                  </DropdownItem>
-                </DropdownList>
+                <div style={{ padding: '0.75rem 1rem', minWidth: '240px' }}>
+                  <DescriptionList isCompact>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm style={{ color: '#6a6e73', fontSize: '0.875rem', fontWeight: 700 }}>
+                        Username:
+                      </DescriptionListTerm>
+                      <DescriptionListDescription style={{ color: '#6a6e73', fontSize: '0.875rem' }}>
+                        {username || 'N/A'}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm style={{ color: '#6a6e73', fontSize: '0.875rem', fontWeight: 700 }}>
+                        Account number:
+                      </DescriptionListTerm>
+                      <DescriptionListDescription style={{ color: '#6a6e73', fontSize: '0.875rem' }}>
+                        <Tooltip content={<div>{userUuid}</div>}>
+                          <span style={{ cursor: 'help' }}>{last12Digits}</span>
+                        </Tooltip>
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm style={{ color: '#6a6e73', fontSize: '0.875rem', fontWeight: 700 }}>
+                        Organization:
+                      </DescriptionListTerm>
+                      <DescriptionListDescription style={{ color: '#6a6e73', fontSize: '0.875rem' }}>
+                        {primaryOrg}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
+                  <Divider style={{ margin: '1rem 0' }} />
+                  <DropdownList style={{ marginLeft: '-1rem', marginRight: '-1rem' }}>
+                    <DropdownItem key="token" onClick={showTokenModal}>
+                      View Token
+                    </DropdownItem>
+                    <DropdownItem key="logout" onClick={handleLogout}>
+                      Logout
+                    </DropdownItem>
+                  </DropdownList>
+                </div>
               </Dropdown>
             </ToolbarItem>
           </ToolbarContent>
