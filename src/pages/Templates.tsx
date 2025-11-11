@@ -12,6 +12,14 @@ import {
   EmptyState,
   EmptyStateBody,
   Pagination,
+  Modal,
+  ModalVariant,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+  Alert,
+  AlertVariant,
 } from '@patternfly/react-core'
 import {
   Table,
@@ -21,10 +29,11 @@ import {
   Tbody,
   Td,
   ExpandableRowContent,
+  ActionsColumn,
 } from '@patternfly/react-table'
 import { CubeIcon, SearchIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
-import { getTemplates } from '../api/templates'
+import { getTemplates, deleteTemplate } from '../api/templates'
 import { Template } from '../api/types'
 
 const Templates: React.FC = () => {
@@ -32,6 +41,12 @@ const Templates: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchValue, setSearchValue] = useState('')
   const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set())
+
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -74,6 +89,44 @@ const Templates: React.FC = () => {
       return new Date(timestamp).toLocaleString()
     } catch {
       return timestamp
+    }
+  }
+
+  // Delete handlers
+  const openDeleteModal = (template: Template) => {
+    setTemplateToDelete(template)
+    setDeleteError(null)
+    setIsDeleteModalOpen(true)
+  }
+
+  const closeDeleteModal = () => {
+    if (!isDeleting) {
+      setIsDeleteModalOpen(false)
+      setTemplateToDelete(null)
+      setDeleteError(null)
+    }
+  }
+
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete) return
+
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      await deleteTemplate(templateToDelete.id)
+
+      // Remove template from state
+      setTemplates(templates.filter(t => t.id !== templateToDelete.id))
+
+      // Close modal
+      setIsDeleteModalOpen(false)
+      setTemplateToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete template:', error)
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete template')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -199,6 +252,7 @@ const Templates: React.FC = () => {
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
                       Created
                     </Th>
+                    <Th></Th>
                   </Tr>
                 </Thead>
                 {paginatedTemplates.map((template, rowIndex) => (
@@ -216,9 +270,19 @@ const Templates: React.FC = () => {
                       <Td dataLabel="Description">{template.description || 'N/A'}</Td>
                       <Td dataLabel="Parameters">{template.parameters?.length || 0}</Td>
                       <Td dataLabel="Created">{formatTimestamp(template.metadata?.creation_timestamp)}</Td>
+                      <Td isActionCell>
+                        <ActionsColumn
+                          items={[
+                            {
+                              title: 'Delete',
+                              onClick: () => openDeleteModal(template)
+                            }
+                          ]}
+                        />
+                      </Td>
                     </Tr>
                     <Tr isExpanded={expandedTemplates.has(template.id)}>
-                      <Td colSpan={6}>
+                      <Td colSpan={7}>
                         <ExpandableRowContent>
                           <div style={{ padding: '1rem' }}>
                             {/* Template metadata */}
@@ -303,6 +367,36 @@ const Templates: React.FC = () => {
           )}
         </Card>
       </PageSection>
+
+      {/* Delete confirmation modal */}
+      <Modal
+        variant={ModalVariant.small}
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        aria-label="Delete template confirmation"
+      >
+        <ModalHeader title="Delete template" />
+        <ModalBody>
+          {deleteError && (
+            <Alert variant={AlertVariant.danger} isInline title="Error" style={{ marginBottom: '1rem' }}>
+              {deleteError}
+            </Alert>
+          )}
+          <p>Are you sure you want to delete template <strong>{templateToDelete?.title}</strong>?</p>
+          <p style={{ marginTop: '0.5rem', color: '#6a6e73' }}>
+            ID: <code>{templateToDelete?.id}</code>
+          </p>
+          <p style={{ marginTop: '1rem', color: '#c9190b' }}>This action cannot be undone.</p>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="danger" onClick={handleDeleteTemplate} isDisabled={isDeleting} isLoading={isDeleting}>
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+          <Button variant="link" onClick={closeDeleteModal} isDisabled={isDeleting}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </Modal>
     </AppLayout>
   )
 }
