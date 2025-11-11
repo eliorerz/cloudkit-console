@@ -23,6 +23,10 @@ export interface Template {
   id: string
   title: string
   description?: string
+  metadata?: {
+    creation_timestamp?: string
+    creators?: string[]
+  }
   parameters?: TemplateParameter[]
 }
 
@@ -38,6 +42,7 @@ export interface Hub {
 export interface VirtualMachine {
   id: string
   metadata?: {
+    name?: string
     creation_timestamp?: string
     creators?: string[]
   }

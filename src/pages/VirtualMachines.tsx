@@ -16,6 +16,9 @@ import {
   Button,
   Modal,
   ModalVariant,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   Pagination,
   Dropdown,
   DropdownList,
@@ -152,12 +155,21 @@ const VirtualMachines: React.FC = () => {
     setWizardOpen(true)
   }
 
-  const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
+  const handleCreateVM = async (_vmId: string, templateId: string, parameters: Record<string, any>) => {
+    console.log('Creating VM with parameters:', JSON.stringify(parameters, null, 2))
+
+    // Filter out empty/null/undefined values
+    const filteredParameters: Record<string, any> = {}
+    for (const [key, value] of Object.entries(parameters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        filteredParameters[key] = value
+      }
+    }
+
     const newVm = await createVirtualMachine({
-      id: vmId,
       spec: {
         template: templateId,
-        template_parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
+        template_parameters: Object.keys(filteredParameters).length > 0 ? filteredParameters : undefined,
       },
     })
     setVms([...vms, newVm])
@@ -177,8 +189,7 @@ const VirtualMachines: React.FC = () => {
       case 1: return vm.status?.state || ''
       case 2: return vm.status?.ip_address || ''
       case 3: return vm.status?.hub || ''
-      case 4: return vm.spec?.template || ''
-      case 5: return vm.metadata?.creation_timestamp || ''
+      case 4: return vm.metadata?.creation_timestamp || ''
       default: return ''
     }
   }
@@ -234,7 +245,7 @@ const VirtualMachines: React.FC = () => {
             <ToolbarContent>
               <ToolbarItem>
                 <SearchInput
-                  placeholder="Search by name, IP, hub, or template"
+                  placeholder="Search by name, IP, or hub"
                   value={searchValue}
                   onChange={(_event, value) => setSearchValue(value)}
                   onClear={() => setSearchValue('')}
@@ -294,9 +305,6 @@ const VirtualMachines: React.FC = () => {
                       Hub
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
-                      Template
-                    </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 5 }}>
                       Created
                     </Th>
                     <Th></Th>
@@ -309,7 +317,6 @@ const VirtualMachines: React.FC = () => {
                       <Td dataLabel="State" onClick={() => handleRowClick(vm)}>{getStateBadge(vm.status?.state)}</Td>
                       <Td dataLabel="IP Address" onClick={() => handleRowClick(vm)}>{vm.status?.ip_address || 'N/A'}</Td>
                       <Td dataLabel="Hub" onClick={() => handleRowClick(vm)}>{vm.status?.hub || 'N/A'}</Td>
-                      <Td dataLabel="Template" onClick={() => handleRowClick(vm)}>{vm.spec?.template || 'N/A'}</Td>
                       <Td dataLabel="Created" onClick={() => handleRowClick(vm)}>{formatTimestamp(vm.metadata?.creation_timestamp)}</Td>
                       <Td isActionCell>
                         <Dropdown
@@ -363,12 +370,15 @@ const VirtualMachines: React.FC = () => {
 
       <Modal
         variant={ModalVariant.small}
-        title="Delete virtual machine"
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
+        aria-labelledby="delete-vm-modal-title"
       >
-        <p>Are you sure you want to delete the virtual machine <strong>{vmToDelete?.id}</strong>? This action cannot be undone.</p>
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+        <ModalHeader title="Delete virtual machine" labelId="delete-vm-modal-title" />
+        <ModalBody>
+          Are you sure you want to delete the virtual machine <strong>{vmToDelete?.id}</strong>? This action cannot be undone.
+        </ModalBody>
+        <ModalFooter>
           <Button key="cancel" variant="link" onClick={() => setDeleteModalOpen(false)} isDisabled={deleting}>
             Cancel
           </Button>
@@ -381,7 +391,7 @@ const VirtualMachines: React.FC = () => {
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>
-        </div>
+        </ModalFooter>
       </Modal>
 
       <CreateVMWizard
