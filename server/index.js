@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,56 @@ app.get('/api/config', (req, res) => {
     fulfillmentApiUrl: FULFILLMENT_API,
     namespace: NAMESPACE
   });
+});
+
+// OS Images catalog endpoint
+app.get('/api/os-images', (req, res) => {
+  const osImagesPath = path.join(__dirname, '../config/os-images.json');
+
+  try {
+    // Check if file exists (mounted from ConfigMap in production)
+    if (fs.existsSync(osImagesPath)) {
+      const osImagesData = fs.readFileSync(osImagesPath, 'utf8');
+      res.json(JSON.parse(osImagesData));
+    } else {
+      // Fallback data for local development
+      res.json({
+        images: [
+          {
+            os: "fedora",
+            displayName: "Fedora",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fedora/fedora-original.svg",
+            repository: "quay.io/containerdisks/fedora",
+            versions: ["43", "42", "41"]
+          },
+          {
+            os: "centos-stream",
+            displayName: "CentOS Stream",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/centos/centos-original.svg",
+            repository: "quay.io/containerdisks/centos-stream",
+            versions: ["10", "9"]
+          },
+          {
+            os: "ubuntu",
+            displayName: "Ubuntu",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ubuntu/ubuntu-original.svg",
+            repository: "quay.io/containerdisks/ubuntu",
+            versions: ["25.04", "24.04"]
+          },
+          {
+            os: "debian",
+            displayName: "Debian",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/debian/debian-original.svg",
+            repository: "quay.io/containerdisks/debian",
+            versions: ["13", "12", "11"]
+          }
+        ]
+      });
+    }
+  } catch (error) {
+    console.error('Error reading OS images config:', error);
+    res.status(500).json({ error: 'Failed to load OS images catalog' });
+  }
 });
 
 // Health check endpoint

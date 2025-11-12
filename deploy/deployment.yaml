@@ -29,6 +29,10 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
+        volumeMounts:
+        - name: os-images
+          mountPath: /app/config
+          readOnly: true
         livenessProbe:
           httpGet:
             path: /health
@@ -48,3 +52,7 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
+      volumes:
+      - name: os-images
+        configMap:
+          name: cloudkit-os-images

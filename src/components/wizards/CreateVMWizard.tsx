@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Modal,
   ModalVariant,
@@ -37,8 +37,10 @@ import {
   InputGroupItem,
   Checkbox,
   Spinner,
+  Switch,
 } from '@patternfly/react-core'
 import { Template, TemplateParameter } from '../../api/types'
+import { fetchAllOSImages, getImagePath, OSImage } from '../../utils/imageRegistry'
 
 interface CreateVMWizardProps {
   isOpen: boolean
@@ -83,7 +85,45 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [diskUnitDropdownOpen, setDiskUnitDropdownOpen] = useState(false)
   const [networkTypeDropdownOpen, setNetworkTypeDropdownOpen] = useState(false)
 
+  // Image selection state
+  const [availableOSImages, setAvailableOSImages] = useState<OSImage[]>([])
+  const [loadingImages, setLoadingImages] = useState(false)
+  const [imageSelectionMode, setImageSelectionMode] = useState<'preset' | 'custom'>('preset')
+  const [selectedOS, setSelectedOS] = useState<string>('')
+  const [selectedVersion, setSelectedVersion] = useState<string>('')
+  const [customImagePath, setCustomImagePath] = useState<string>('')
+  const [osDropdownOpen, setOsDropdownOpen] = useState(false)
+  const [versionDropdownOpen, setVersionDropdownOpen] = useState(false)
+
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
+
+  // Fetch available OS images when wizard opens
+  useEffect(() => {
+    if (isOpen && availableOSImages.length === 0) {
+      setLoadingImages(true)
+      fetchAllOSImages()
+        .then((images) => {
+          setAvailableOSImages(images)
+          // Do not auto-select - user must choose
+        })
+        .catch((error) => {
+          console.error('Failed to fetch OS images:', error)
+        })
+        .finally(() => {
+          setLoadingImages(false)
+        })
+    }
+  }, [isOpen, availableOSImages.length])
+
+  // Get currently selected OS image
+  const selectedOSImage = availableOSImages.find(os => os.os === selectedOS)
+
+  // Get full image path for current selection
+  const currentImagePath = imageSelectionMode === 'custom'
+    ? customImagePath
+    : selectedOSImage && selectedVersion
+      ? getImagePath(selectedOSImage.repository, selectedVersion)
+      : ''
 
   // Helper to convert snake_case to user-friendly labels
   const formatLabel = (paramName: string): string => {
@@ -197,6 +237,9 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       return steps
     }
 
+    // Add VM Configuration step (name + image selection) - always required
+    steps.push({ id: 'vm-config', name: 'VM Configuration' })
+
     // Only add customization steps if user wants to customize the template
     if (customizeTemplate) {
       const categorized = categorizeParameters(selectedTemplate.parameters || [])
@@ -262,6 +305,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       setVmMemoryGi(4)
       setVmDiskGi(50)
       setVmRunStrategy('Always')
+      // Reset image selection
+      setImageSelectionMode('preset')
+      setCustomImagePath('')
+      setSelectedOS('')
+      setSelectedVersion('')
       onClose()
     }
   }
@@ -329,6 +377,12 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       // Each parameter must be wrapped in google.protobuf.Any format
       const vmParameters: Record<string, any> = {}
 
+      // Always include image source (required parameter)
+      if (currentImagePath && templateSupportsParam(['vm_image_source', 'image_source'])) {
+        const paramType = getParameterType('vm_image_source') || 'type.googleapis.com/google.protobuf.StringValue'
+        vmParameters.vm_image_source = wrapInProtobufAny(currentImagePath, paramType)
+      }
+
       // Only include customized parameters if user chose to customize
       if (customizeTemplate) {
         // Map UI state to template parameter names and add only if customized
@@ -376,7 +430,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         if (selectedTemplate?.parameters) {
           selectedTemplate.parameters.forEach(param => {
             // Skip parameters we've already handled
-            if (['vm_name', 'vm_cpu_cores', 'vm_memory_size', 'vm_disk_size', 'vm_run_strategy', 'cloud_init_config'].includes(param.name)) {
+            if (['vm_name', 'vm_cpu_cores', 'vm_memory_size', 'vm_disk_size', 'vm_run_strategy', 'cloud_init_config', 'vm_image_source', 'image_source'].includes(param.name)) {
               return
             }
 
@@ -417,6 +471,14 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       case 'method':
         // If using template, require template selection; otherwise allow proceed
         return useTemplate ? !!selectedTemplateId : true
+      case 'vm-config':
+        // Require VM name to be provided and non-empty
+        const hasValidName = !!vmId && vmId.trim().length > 0
+        // Require image selection (either from catalog or custom)
+        const hasValidImage = imageSelectionMode === 'custom'
+          ? !!customImagePath && customImagePath.trim().length > 0
+          : !!selectedOS && !!selectedVersion
+        return hasValidName && hasValidImage
       case 'template':
         return !!selectedTemplateId
       case 'hardware':
@@ -440,12 +502,16 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   }
 
   const renderParameterFields = (params: TemplateParameter[]) => {
-    // Filter out parameters already handled in hardware-config step
+    // Filter out parameters already handled in hardware-config and vm-config steps
     const filteredParams = params.filter(param => {
       const name = param.name
       // Skip hardware parameters handled in hardware-config step
       if (['vm_cpu_cores', 'cpu_count', 'cpus', 'vm_memory_size', 'memory_gb', 'memory',
            'vm_disk_size', 'disk_size_gb', 'disk_size', 'vm_run_strategy', 'run_strategy'].includes(name)) {
+        return false
+      }
+      // Skip image source parameter handled in vm-config step
+      if (['vm_image_source', 'image_source'].includes(name)) {
         return false
       }
       return true
@@ -964,6 +1030,173 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               </Form>
             )}
           </div>
+        )
+
+      case 'vm-config':
+        return (
+          <Form>
+            <Title headingLevel="h2" size="xl" style={{ marginBottom: '0.5rem' }}>
+              Configure your virtual machine
+            </Title>
+            <p style={{ color: '#6a6e73', marginBottom: 0, fontSize: '0.95rem', marginTop: 0 }}>
+              Provide a name for your VM and select the operating system image.
+            </p>
+
+            {/* VM Name */}
+            <FormGroup
+              label="Virtual Machine Name"
+              isRequired
+              fieldId="vm-name"
+            >
+              <TextInput
+                isRequired
+                type="text"
+                id="vm-name"
+                name="vm-name"
+                value={vmId}
+                onChange={(_event, value) => setVmId(value)}
+                placeholder="Enter VM name (e.g., 'web-server-prod', 'database-test')"
+                validated={vmId && vmId.trim().length > 0 ? 'success' : 'default'}
+              />
+              {!vmId || vmId.trim().length === 0 ? (
+                <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                  VM name is required and must follow Kubernetes naming conventions (lowercase alphanumeric, hyphens allowed)
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.875rem', color: '#3e8635', marginTop: '0.5rem' }}>
+                  ✓ Valid VM name
+                </div>
+              )}
+            </FormGroup>
+
+            {/* Image Source */}
+            <FormGroup
+              label="Image Source"
+              isRequired
+              fieldId="image-source"
+              style={{ marginTop: '1rem' }}
+            >
+              <div style={{ marginBottom: '1rem' }}>
+                <Switch
+                  id="image-mode-switch"
+                  label={imageSelectionMode === 'custom' ? 'Custom image path' : 'Select from catalog'}
+                  isChecked={imageSelectionMode === 'custom'}
+                  onChange={(_event, checked) => {
+                    setImageSelectionMode(checked ? 'custom' : 'preset')
+                  }}
+                />
+              </div>
+
+              {loadingImages ? (
+                <div style={{ padding: '1rem', textAlign: 'center' }}>
+                  <Spinner size="md" />
+                  <div style={{ marginTop: '0.5rem', color: '#6a6e73' }}>Loading available images...</div>
+                </div>
+              ) : imageSelectionMode === 'custom' ? (
+                <TextInput
+                  type="text"
+                  id="custom-image-path"
+                  value={customImagePath}
+                  onChange={(_event, value) => {
+                    setCustomImagePath(value)
+                  }}
+                  placeholder="quay.io/containerdisks/fedora:41"
+                />
+              ) : (
+                <>
+                  <Grid hasGutter>
+                    <GridItem span={6}>
+                      <FormGroup label="Operating System" fieldId="os-select">
+                        <Dropdown
+                          isOpen={osDropdownOpen}
+                          onSelect={(_, value) => {
+                            const newOS = value as string
+                            setSelectedOS(newOS)
+                            const newOSImage = availableOSImages.find(os => os.os === newOS)
+                            if (newOSImage && newOSImage.versions.length > 0) {
+                              setSelectedVersion(newOSImage.versions[0])
+                            }
+                            setOsDropdownOpen(false)
+                          }}
+                          onOpenChange={(isOpen) => setOsDropdownOpen(isOpen)}
+                          toggle={(toggleRef) => (
+                            <MenuToggle
+                              ref={toggleRef}
+                              onClick={() => setOsDropdownOpen(!osDropdownOpen)}
+                              isExpanded={osDropdownOpen}
+                              style={{ width: '100%' }}
+                            >
+                              {selectedOSImage ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <img src={selectedOSImage.icon} alt={selectedOSImage.displayName} style={{ width: '20px', height: '20px' }} />
+                                  {selectedOSImage.displayName}
+                                </div>
+                              ) : 'Select OS'}
+                            </MenuToggle>
+                          )}
+                        >
+                          <DropdownList>
+                            {availableOSImages.map((osImage) => (
+                              <DropdownItem key={osImage.os} value={osImage.os}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <img src={osImage.icon} alt={osImage.displayName} style={{ width: '20px', height: '20px' }} />
+                                  {osImage.displayName}
+                                </div>
+                              </DropdownItem>
+                            ))}
+                          </DropdownList>
+                        </Dropdown>
+                      </FormGroup>
+                    </GridItem>
+                    <GridItem span={6}>
+                      <FormGroup label="Version" fieldId="version-select">
+                        <Dropdown
+                          isOpen={versionDropdownOpen}
+                          onSelect={(_, value) => {
+                            setSelectedVersion(value as string)
+                            setVersionDropdownOpen(false)
+                          }}
+                          onOpenChange={(isOpen) => setVersionDropdownOpen(isOpen)}
+                          toggle={(toggleRef) => (
+                            <MenuToggle
+                              ref={toggleRef}
+                              onClick={() => setVersionDropdownOpen(!versionDropdownOpen)}
+                              isExpanded={versionDropdownOpen}
+                              style={{ width: '100%' }}
+                              isDisabled={!selectedOSImage || selectedOSImage.versions.length === 0}
+                            >
+                              {selectedVersion || 'Select version'}
+                            </MenuToggle>
+                          )}
+                        >
+                          <DropdownList>
+                            {selectedOSImage?.versions.map((version) => (
+                              <DropdownItem key={version} value={version}>
+                                {version}
+                              </DropdownItem>
+                            ))}
+                          </DropdownList>
+                        </Dropdown>
+                      </FormGroup>
+                    </GridItem>
+                  </Grid>
+                  {currentImagePath && (
+                    <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                      <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginBottom: '0.25rem' }}>
+                        Image path:
+                      </div>
+                      <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>
+                        {currentImagePath}
+                      </code>
+                    </div>
+                  )}
+                </>
+              )}
+              <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                Container disk image for the VM
+              </div>
+            </FormGroup>
+          </Form>
         )
 
       case 'template':
