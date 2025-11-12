@@ -79,7 +79,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [vmRunStrategy, setVmRunStrategy] = useState('Always')
 
   // Dropdown states for enhanced UI
-  const [osTypeDropdownOpen, setOsTypeDropdownOpen] = useState(false)
   const [runStrategyDropdownOpen, setRunStrategyDropdownOpen] = useState(false)
   const [memoryUnitDropdownOpen, setMemoryUnitDropdownOpen] = useState(false)
   const [diskUnitDropdownOpen, setDiskUnitDropdownOpen] = useState(false)
@@ -383,6 +382,13 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         vmParameters.vm_image_source = wrapInProtobufAny(currentImagePath, paramType)
       }
 
+      // Automatically set OS type based on selected image
+      if (templateSupportsParam(['vm_os_type'])) {
+        const osType = imageSelectionMode === 'custom' ? 'linux' : (selectedOSImage?.osType || 'linux')
+        const paramType = getParameterType('vm_os_type') || 'type.googleapis.com/google.protobuf.StringValue'
+        vmParameters.vm_os_type = wrapInProtobufAny(osType, paramType)
+      }
+
       // Only include customized parameters if user chose to customize
       if (customizeTemplate) {
         // Map UI state to template parameter names and add only if customized
@@ -430,7 +436,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         if (selectedTemplate?.parameters) {
           selectedTemplate.parameters.forEach(param => {
             // Skip parameters we've already handled
-            if (['vm_name', 'vm_cpu_cores', 'vm_memory_size', 'vm_disk_size', 'vm_run_strategy', 'cloud_init_config', 'vm_image_source', 'image_source'].includes(param.name)) {
+            if (['vm_name', 'vm_cpu_cores', 'vm_memory_size', 'vm_disk_size', 'vm_run_strategy', 'cloud_init_config', 'vm_image_source', 'image_source', 'vm_os_type'].includes(param.name)) {
               return
             }
 
@@ -512,6 +518,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       }
       // Skip image source parameter handled in vm-config step
       if (['vm_image_source', 'image_source'].includes(name)) {
+        return false
+      }
+      // Skip OS type - automatically filled based on selected image
+      if (name === 'vm_os_type') {
         return false
       }
       return true
@@ -747,54 +757,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               <FormHelperText>
                 <HelperText>
                   <HelperTextItem>{param.description || 'How the VM should be started and maintained'}</HelperTextItem>
-                </HelperText>
-              </FormHelperText>
-            </FormGroup>
-          )
-        }
-
-        // OS type - dropdown
-        if (param.name === 'vm_os_type') {
-          const osTypes = ['linux', 'windows', 'other']
-          const selectedOsType = templateParameters[param.name] || param.default?.value
-          return (
-            <FormGroup
-              key={param.name}
-              label={param.title || 'Operating System Type'}
-              isRequired={param.required}
-              fieldId={`param-${param.name}`}
-            >
-              <Dropdown
-                isOpen={osTypeDropdownOpen}
-                onSelect={(_, value) => {
-                  setTemplateParameters({ ...templateParameters, [param.name]: value as string })
-                  setOsTypeDropdownOpen(false)
-                }}
-                onOpenChange={(isOpen) => setOsTypeDropdownOpen(isOpen)}
-                toggle={(toggleRef) => (
-                  <MenuToggle
-                    ref={toggleRef}
-                    onClick={() => setOsTypeDropdownOpen(!osTypeDropdownOpen)}
-                    isExpanded={osTypeDropdownOpen}
-                    style={{ width: '100%' }}
-                  >
-                    {selectedOsType
-                      ? selectedOsType.charAt(0).toUpperCase() + selectedOsType.slice(1)
-                      : 'Select OS type'}
-                  </MenuToggle>
-                )}
-              >
-                <DropdownList>
-                  {osTypes.map((os) => (
-                    <DropdownItem key={os} value={os}>
-                      {os.charAt(0).toUpperCase() + os.slice(1)}
-                    </DropdownItem>
-                  ))}
-                </DropdownList>
-              </Dropdown>
-              <FormHelperText>
-                <HelperText>
-                  <HelperTextItem>{param.description || 'OS type for optimization'}</HelperTextItem>
                 </HelperText>
               </FormHelperText>
             </FormGroup>
@@ -1472,7 +1434,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
         // Add helpful descriptions for each category
         const categoryDescriptions: Record<string, string> = {
-          general: 'Configure basic settings for your virtual machine including name, OS type, and SSH keys.',
+          general: 'Configure basic settings for your virtual machine including SSH keys and other options.',
           hardware: 'Define the hardware resources allocated to your VM including CPU, memory, and disk space.',
           network: 'Configure network settings including interfaces, IP addresses, and network types.',
           storage: 'Set up storage configuration including disk images, sizes, and storage classes.',
@@ -1592,6 +1554,24 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                           <DescriptionListTerm style={{ minWidth: '150px' }}>Template</DescriptionListTerm>
                           <DescriptionListDescription>
                             {selectedTemplate?.title || selectedTemplateId}
+                          </DescriptionListDescription>
+                        </DescriptionListGroup>
+                        <DescriptionListGroup>
+                          <DescriptionListTerm style={{ minWidth: '150px' }}>Image</DescriptionListTerm>
+                          <DescriptionListDescription>
+                            {imageSelectionMode === 'custom' ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{customImagePath}</code>
+                              </div>
+                            ) : selectedOSImage ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <img src={selectedOSImage.icon} alt={selectedOSImage.displayName} style={{ width: '20px', height: '20px' }} />
+                                <span>{selectedOSImage.displayName} {selectedVersion}</span>
+                                <code style={{ fontSize: '0.85rem', color: '#6a6e73', marginLeft: '0.25rem' }}>({currentImagePath})</code>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#6a6e73', fontStyle: 'italic' }}>(not set)</span>
+                            )}
                           </DescriptionListDescription>
                         </DescriptionListGroup>
                       </DescriptionList>
