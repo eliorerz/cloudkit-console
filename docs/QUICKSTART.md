@@ -83,7 +83,18 @@ VITE v5.0.8  ready in 325 ms
 ➜  press h + enter to show help
 ```
 
-### Step 5: Access the Application
+### Step 5: Install CA Certificates (Required)
+
+Since the CloudKit Console makes direct API calls from the browser to the Fulfillment API, you need to install the CA certificates to avoid certificate warnings:
+
+```bash
+# Install CA certificates to system trust store
+./scripts/install-ca-certificates.sh
+```
+
+**Important:** Restart your browser after installing certificates for changes to take effect.
+
+### Step 6: Access the Application
 
 Open your browser and navigate to:
 
@@ -212,6 +223,13 @@ Templates can be used to create new VMs with predefined configurations.
 - Check that the Fulfillment API is accessible
 - Inspect network tab in browser developer tools
 - Verify your token has proper permissions
+
+**Problem**: Certificate errors when accessing API
+
+**Solution**:
+- Run the CA installation script: `./scripts/install-ca-certificates.sh`
+- Restart your browser after installing certificates
+- Verify certificates are installed: `trust list | grep -E "Innabox|ingress-operator"`
 
 ### Development Server Issues
 

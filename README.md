@@ -52,7 +52,15 @@ CloudKit Console provides a user-friendly interface for managing virtual machine
    VITE_OIDC_REDIRECT_URI=http://localhost:5173/callback
    ```
 
-4. **Start development server**
+4. **Install CA certificates**
+   ```bash
+   # Required for direct browser API calls to work without certificate warnings
+   ./scripts/install-ca-certificates.sh
+   ```
+
+   **Important:** Restart your browser after installing certificates.
+
+5. **Start development server**
    ```bash
    npm run dev
    ```
@@ -100,7 +108,8 @@ See [Deployment Guide](./docs/DEPLOYMENT.md) for detailed deployment instruction
 
 ### API Communication
 - **Axios**: HTTP client with interceptors
-- **REST API**: Integration with Fulfillment API
+- **REST API**: Direct browser calls to Fulfillment API with CORS
+- **Certificate Management**: System CA trust for self-signed certificates
 
 ### Build & Deployment
 - **Docker/Podman**: Containerization
