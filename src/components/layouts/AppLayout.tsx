@@ -47,7 +47,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
   const [isAdminExpanded, setIsAdminExpanded] = useState(true)
-  const { logout, username, role, token, user, organizations } = useAuth()
+  const { logout, username, displayName, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -154,7 +154,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     isExpanded={isUserDropdownOpen}
                     style={{ fontSize: '0.875rem', color: '#151515' }}
                   >
-                    {username} ({role})
+                    {displayName} ({role})
                   </MenuToggle>
                 )}
               >
