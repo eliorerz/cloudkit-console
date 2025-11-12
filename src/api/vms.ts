@@ -3,7 +3,7 @@ import { VirtualMachine, ListResponse } from './types'
 
 export const getVirtualMachines = async (): Promise<ListResponse<VirtualMachine>> => {
   try {
-    const response = await apiClient.get<ListResponse<VirtualMachine>>('/vms')
+    const response = await apiClient.get<ListResponse<VirtualMachine>>('/virtual_machines')
     return response
   } catch (error) {
     console.error('Failed to fetch virtual machines:', error)
@@ -14,7 +14,7 @@ export const getVirtualMachines = async (): Promise<ListResponse<VirtualMachine>
 export const getVirtualMachine = async (id: string): Promise<VirtualMachine> => {
   try {
     // The gRPC-Gateway response_body: "object" mapping returns the VM directly
-    const response = await apiClient.get<VirtualMachine>(`/vms/${id}`)
+    const response = await apiClient.get<VirtualMachine>(`/virtual_machines/${id}`)
     return response
   } catch (error) {
     console.error(`Failed to fetch virtual machine ${id}:`, error)
@@ -26,7 +26,7 @@ export const createVirtualMachine = async (vm: Partial<VirtualMachine>): Promise
   try {
     // The gRPC-Gateway body: "object" mapping expects VM directly in request
     // and response_body: "object" returns VM directly in response
-    const response = await apiClient.post<VirtualMachine>('/vms', vm)
+    const response = await apiClient.post<VirtualMachine>('/virtual_machines', vm)
     return response
   } catch (error) {
     console.error('Failed to create virtual machine:', error)
@@ -36,7 +36,7 @@ export const createVirtualMachine = async (vm: Partial<VirtualMachine>): Promise
 
 export const deleteVirtualMachine = async (id: string): Promise<void> => {
   try {
-    await apiClient.delete(`/vms/${id}`)
+    await apiClient.delete(`/virtual_machines/${id}`)
   } catch (error) {
     console.error(`Failed to delete virtual machine ${id}:`, error)
     throw error
@@ -47,7 +47,7 @@ export const updateVirtualMachine = async (vm: VirtualMachine): Promise<VirtualM
   try {
     // The gRPC-Gateway body: "object" and response_body: "object" mappings
     // mean both request and response use the object directly without wrapping
-    const response = await apiClient.put<VirtualMachine>(`/vms/${vm.id}`, vm)
+    const response = await apiClient.put<VirtualMachine>(`/virtual_machines/${vm.id}`, vm)
     return response
   } catch (error) {
     console.error(`Failed to update virtual machine ${vm.id}:`, error)
