@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <Grid hasGutter>
-            <GridItem sm={12} md={12} lg={9} xl={9}>
+            <GridItem sm={12} md={12} lg={9} xl={9} rowSpan={1}>
               <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '190px', lg: '210px', xl: '225px' }}>
           {role === 'fulfillment-admin' && (
             <GalleryItem>
@@ -206,8 +206,8 @@ const Dashboard: React.FC = () => {
               </Gallery>
             </GridItem>
 
-            <GridItem sm={12} md={12} lg={3} xl={3}>
-              <Card isFullHeight>
+            <GridItem sm={12} md={12} lg={3} xl={3} rowSpan={2}>
+              <Card style={{ height: '100%' }}>
                 <CardTitle>
                   <Flex alignItems={{ default: 'alignItemsCenter' }}>
                     <FlexItem>
@@ -255,7 +255,7 @@ const Dashboard: React.FC = () => {
               </Card>
             </GridItem>
 
-            <GridItem sm={12} md={12} lg={9} xl={9}>
+            <GridItem sm={12} md={12} lg={9} xl={9} rowSpan={1}>
               <Card>
                 <CardTitle>
                   <Flex alignItems={{ default: 'alignItemsCenter' }}>
