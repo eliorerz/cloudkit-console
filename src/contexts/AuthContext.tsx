@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null
   token: string | null
   username: string | null
+  displayName: string | null
   role: string | null
   groups: string[]
   organizations: string[]
@@ -131,9 +132,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Extract user information from OIDC user object
   const token = user?.access_token || null
-  // Try multiple common username fields in OIDC profile
+
+  // Debug: Log user profile to see available fields
+  if (user?.profile) {
+    console.log('User profile fields:', {
+      preferred_username: user.profile.preferred_username,
+      username: (user.profile as any).username,
+      name: user.profile.name,
+      email: user.profile.email,
+      sub: user.profile.sub,
+      given_name: (user.profile as any).given_name,
+      family_name: (user.profile as any).family_name,
+    })
+    console.log('Full profile object:', user.profile)
+  }
+
+  // Username (actual username from preferred_username or username field)
   const username = user?.profile?.preferred_username
-    || user?.profile?.name
+    || (user?.profile as any)?.username
+    || user?.profile?.email?.split('@')[0]
+    || user?.profile?.sub
+    || null
+
+  // Display name (full name for display purposes)
+  const displayName = user?.profile?.name
+    || user?.profile?.preferred_username
     || user?.profile?.email?.split('@')[0]
     || user?.profile?.sub
     || null
@@ -151,6 +174,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         token,
         username,
+        displayName,
         role,
         groups,
         organizations,

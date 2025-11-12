@@ -29,8 +29,10 @@ import {
 import { getDashboardMetrics } from '../api/dashboard'
 import { DashboardMetrics } from '../api/types'
 import AppLayout from '../components/layouts/AppLayout'
+import { useAuth } from '../contexts/AuthContext'
 
 const Dashboard: React.FC = () => {
+  const { role } = useAuth()
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     clusters: { total: 0, active: 0 },
     templates: { total: 0 },
@@ -78,28 +80,30 @@ const Dashboard: React.FC = () => {
           <Grid hasGutter>
             <GridItem sm={12} md={12} lg={9} xl={9}>
               <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '190px', lg: '210px', xl: '225px' }}>
-          <GalleryItem>
-            <Card isFullHeight>
-              <CardTitle>
-                <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                  <FlexItem>
-                    <span style={{ color: '#06c', fontSize: '1.5rem' }}>
-                      <CubeIcon />
-                    </span>
-                  </FlexItem>
-                  <FlexItem>
-                    Clusters
-                  </FlexItem>
-                </Flex>
-              </CardTitle>
-              <CardBody>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.clusters.total}</div>
-                <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  {metrics.clusters.active} active
-                </div>
-              </CardBody>
-            </Card>
-          </GalleryItem>
+          {role === 'fulfillment-admin' && (
+            <GalleryItem>
+              <Card isFullHeight>
+                <CardTitle>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                    <FlexItem>
+                      <span style={{ color: '#06c', fontSize: '1.5rem' }}>
+                        <CubeIcon />
+                      </span>
+                    </FlexItem>
+                    <FlexItem>
+                      Clusters
+                    </FlexItem>
+                  </Flex>
+                </CardTitle>
+                <CardBody>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.clusters.total}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                    {metrics.clusters.active} active
+                  </div>
+                </CardBody>
+              </Card>
+            </GalleryItem>
+          )}
 
           <GalleryItem>
             <Card isFullHeight>
@@ -124,28 +128,30 @@ const Dashboard: React.FC = () => {
             </Card>
           </GalleryItem>
 
-          <GalleryItem>
-            <Card isFullHeight>
-              <CardTitle>
-                <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                  <FlexItem>
-                    <span style={{ color: '#f0ab00', fontSize: '1.5rem' }}>
-                      <NetworkIcon />
-                    </span>
-                  </FlexItem>
-                  <FlexItem>
-                    Hubs
-                  </FlexItem>
-                </Flex>
-              </CardTitle>
-              <CardBody>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.hubs.total}</div>
-                <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  management hubs
-                </div>
-              </CardBody>
-            </Card>
-          </GalleryItem>
+          {role === 'fulfillment-admin' && (
+            <GalleryItem>
+              <Card isFullHeight>
+                <CardTitle>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                    <FlexItem>
+                      <span style={{ color: '#f0ab00', fontSize: '1.5rem' }}>
+                        <NetworkIcon />
+                      </span>
+                    </FlexItem>
+                    <FlexItem>
+                      Hubs
+                    </FlexItem>
+                  </Flex>
+                </CardTitle>
+                <CardBody>
+                  <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.hubs.total}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                    management hubs
+                  </div>
+                </CardBody>
+              </Card>
+            </GalleryItem>
+          )}
 
           <GalleryItem>
             <Card isFullHeight>
@@ -277,21 +283,25 @@ const Dashboard: React.FC = () => {
           Quick Actions
         </Title>
         <Flex spaceItems={{ default: 'spaceItemsMd' }}>
-          <FlexItem>
-            <Button variant="primary" isDisabled>
-              Create Cluster
-            </Button>
-          </FlexItem>
+          {role === 'fulfillment-admin' && (
+            <FlexItem>
+              <Button variant="primary" isDisabled>
+                Create Cluster
+              </Button>
+            </FlexItem>
+          )}
           <FlexItem>
             <Button variant="secondary" isDisabled>
               View Templates
             </Button>
           </FlexItem>
-          <FlexItem>
-            <Button variant="secondary" isDisabled>
-              Manage Hubs
-            </Button>
-          </FlexItem>
+          {role === 'fulfillment-admin' && (
+            <FlexItem>
+              <Button variant="secondary" isDisabled>
+                Manage Hubs
+              </Button>
+            </FlexItem>
+          )}
         </Flex>
       </PageSection>
     </AppLayout>
