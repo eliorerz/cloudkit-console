@@ -348,7 +348,7 @@ const Templates: React.FC = () => {
 
           {filteredTemplates.length > 0 && (
             <Toolbar>
-              <ToolbarContent>
+              <ToolbarContent style={{ paddingRight: '1rem' }}>
                 <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
                   <Pagination
                     itemCount={totalItems}
