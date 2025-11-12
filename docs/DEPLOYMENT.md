@@ -26,6 +26,23 @@ This guide covers deploying CloudKit Console to production environments using Do
 - **Keycloak**: Configured with `innabox` realm
 - **Container Registry**: For storing images
 
+### Certificate Installation
+
+The CloudKit Console makes direct API calls to the Fulfillment API from the browser. For this to work without certificate warnings, you need to install the CA certificates on your local machine:
+
+```bash
+# Run the CA installation script
+./scripts/install-ca-certificates.sh
+```
+
+This script will:
+1. Extract the OpenShift Ingress CA certificate
+2. Extract the Innabox Root CA certificate
+3. Install both certificates to your system trust store
+4. Verify the installation
+
+**Note:** After installing certificates, restart your browser for the changes to take effect.
+
 ## Building the Container Image
 
 ### Using Make (Recommended)

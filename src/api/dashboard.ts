@@ -5,7 +5,7 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   try {
     const [clustersResp, templatesResp] = await Promise.all([
       apiClient.get<ListResponse<Cluster>>('/clusters'),
-      apiClient.get<ListResponse<Template>>('/templates'),
+      apiClient.get<ListResponse<Template>>('/virtual_machine_templates'),
     ])
 
     const clusters = clustersResp.items || []
@@ -13,16 +13,16 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
     // Hubs endpoint - handle separately since it may not be implemented yet
     let hubsTotal = 0
     try {
-      const hubsResp = await apiClient.get<ListResponse<Hub>>('/hubs')
+      const hubsResp = await apiClient.get<ListResponse<Hub>>('/host_pools')
       hubsTotal = hubsResp.total
     } catch (error) {
-      console.log('Hubs endpoint not available')
+      console.log('Host pools endpoint not available')
     }
 
     // VMs endpoint - handle separately
     let vms: VirtualMachine[] = []
     try {
-      const vmsResp = await apiClient.get<ListResponse<VirtualMachine>>('/vms')
+      const vmsResp = await apiClient.get<ListResponse<VirtualMachine>>('/virtual_machines')
       vms = vmsResp.items || []
     } catch (error) {
       console.log('VMs endpoint not available')
