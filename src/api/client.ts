@@ -1,18 +1,36 @@
 import axios, { AxiosInstance } from 'axios'
 
+// Get fulfillment API URL from runtime config
+const getFulfillmentApiUrl = async (): Promise<string> => {
+  const response = await fetch('/api/config')
+  if (!response.ok) {
+    throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`)
+  }
+  const config = await response.json()
+  if (!config.fulfillmentApiUrl) {
+    throw new Error('fulfillmentApiUrl not found in configuration')
+  }
+  return config.fulfillmentApiUrl
+}
+
 class APIClient {
   private client: AxiosInstance
+  private baseURL: string = ''
+  private initialized: boolean = false
+  private initPromise: Promise<void> | null = null
 
   constructor() {
     this.client = axios.create({
-      baseURL: '/api',
       headers: {
         'Content-Type': 'application/json',
       },
     })
 
     this.client.interceptors.request.use(
-      (config) => {
+      async (config) => {
+        // Ensure client is initialized before making requests
+        await this.ensureInitialized()
+
         const token = localStorage.getItem('cloudkit_token')
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
@@ -21,6 +39,31 @@ class APIClient {
       },
       (error) => Promise.reject(error)
     )
+  }
+
+  private async ensureInitialized(): Promise<void> {
+    if (this.initialized) {
+      return
+    }
+
+    // Prevent multiple simultaneous initialization attempts
+    if (this.initPromise) {
+      return this.initPromise
+    }
+
+    this.initPromise = (async () => {
+      try {
+        this.baseURL = await getFulfillmentApiUrl()
+        this.client.defaults.baseURL = `${this.baseURL}/api/fulfillment/v1`
+        this.initialized = true
+        console.log('API client initialized with baseURL:', this.client.defaults.baseURL)
+      } catch (error) {
+        console.error('Failed to initialize API client:', error)
+        throw error
+      }
+    })()
+
+    return this.initPromise
   }
 
   async get<T>(endpoint: string): Promise<T> {
