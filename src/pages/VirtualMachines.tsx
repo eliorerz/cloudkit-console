@@ -155,7 +155,8 @@ const VirtualMachines: React.FC = () => {
     setWizardOpen(true)
   }
 
-  const handleCreateVM = async (_vmId: string, templateId: string, parameters: Record<string, any>) => {
+  const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
+    console.log('Creating VM with name:', vmId)
     console.log('Creating VM with parameters:', JSON.stringify(parameters, null, 2))
 
     // Filter out empty/null/undefined values
@@ -167,6 +168,9 @@ const VirtualMachines: React.FC = () => {
     }
 
     const newVm = await createVirtualMachine({
+      metadata: {
+        name: vmId,
+      },
       spec: {
         template: templateId,
         template_parameters: Object.keys(filteredParameters).length > 0 ? filteredParameters : undefined,
@@ -185,7 +189,7 @@ const VirtualMachines: React.FC = () => {
   // Sorting logic
   const getSortableValue = (vm: VirtualMachine, columnIndex: number): string => {
     switch (columnIndex) {
-      case 0: return vm.id
+      case 0: return vm.metadata?.name || vm.id
       case 1: return vm.status?.state || ''
       case 2: return vm.status?.ip_address || ''
       case 3: return vm.status?.hub || ''
@@ -205,6 +209,7 @@ const VirtualMachines: React.FC = () => {
     const searchLower = searchValue.toLowerCase()
     return (
       vm.id.toLowerCase().includes(searchLower) ||
+      vm.metadata?.name?.toLowerCase().includes(searchLower) ||
       vm.status?.ip_address?.toLowerCase().includes(searchLower) ||
       vm.status?.hub?.toLowerCase().includes(searchLower) ||
       vm.spec?.template?.toLowerCase().includes(searchLower)
@@ -313,7 +318,7 @@ const VirtualMachines: React.FC = () => {
                 <Tbody>
                   {paginatedVMs.map((vm) => (
                     <Tr key={vm.id} style={{ cursor: 'pointer' }}>
-                      <Td dataLabel="Name" onClick={() => handleRowClick(vm)}>{vm.id}</Td>
+                      <Td dataLabel="Name" onClick={() => handleRowClick(vm)}>{vm.metadata?.name || vm.id}</Td>
                       <Td dataLabel="State" onClick={() => handleRowClick(vm)}>{getStateBadge(vm.status?.state)}</Td>
                       <Td dataLabel="IP Address" onClick={() => handleRowClick(vm)}>{vm.status?.ip_address || 'N/A'}</Td>
                       <Td dataLabel="Hub" onClick={() => handleRowClick(vm)}>{vm.status?.hub || 'N/A'}</Td>

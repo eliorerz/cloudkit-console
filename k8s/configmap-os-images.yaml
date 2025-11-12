@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudkit-os-images
+  namespace: innabox-devel
+data:
+  os-images.json: |
+    {
+      "images": [
+        {
+          "os": "fedora",
+          "displayName": "Fedora",
+          "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fedora/fedora-original.svg",
+          "repository": "quay.io/containerdisks/fedora",
+          "versions": ["43", "42", "41"]
+        },
+        {
+          "os": "centos-stream",
+          "displayName": "CentOS Stream",
+          "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/centos/centos-original.svg",
+          "repository": "quay.io/containerdisks/centos-stream",
+          "versions": ["10", "9"]
+        },
+        {
+          "os": "ubuntu",
+          "displayName": "Ubuntu",
+          "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ubuntu/ubuntu-original.svg",
+          "repository": "quay.io/containerdisks/ubuntu",
+          "versions": ["25.04", "24.04"]
+        },
+        {
+          "os": "debian",
+          "displayName": "Debian",
+          "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/debian/debian-original.svg",
+          "repository": "quay.io/containerdisks/debian",
+          "versions": ["13", "12", "11"]
+        }
+      ]
+    }
