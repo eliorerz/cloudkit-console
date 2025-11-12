@@ -91,6 +91,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [])
 
+  // Sync access token to localStorage for API client
+  useEffect(() => {
+    if (user?.access_token) {
+      console.log('Storing access token in localStorage for API client')
+      localStorage.setItem('cloudkit_token', user.access_token)
+    } else {
+      console.log('Removing access token from localStorage')
+      localStorage.removeItem('cloudkit_token')
+    }
+  }, [user])
+
   const login = async () => {
     if (!userManager) {
       console.error('UserManager not initialized')
@@ -120,11 +131,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
+      // Clear token from localStorage before logout
+      localStorage.removeItem('cloudkit_token')
       // Redirect to Keycloak logout page
       await userManager.signoutRedirect()
     } catch (error) {
       console.error('Logout error:', error)
       // Even if redirect fails, clear local state
+      localStorage.removeItem('cloudkit_token')
       setUser(null)
       setIsAuthenticated(false)
     }
