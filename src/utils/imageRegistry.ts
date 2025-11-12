@@ -4,6 +4,7 @@ export interface OSImage {
   icon: string
   versions: string[]
   repository: string
+  osType: string
 }
 
 // Get full image path for a specific version
