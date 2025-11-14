@@ -7,6 +7,7 @@ import {
   BreadcrumbItem,
   Card,
   CardBody,
+  CardTitle,
   Tabs,
   Tab,
   TabTitleText,
@@ -19,10 +20,23 @@ import {
   DescriptionListTerm,
   DescriptionListDescription,
   Alert,
+  Flex,
+  FlexItem,
 } from '@patternfly/react-core'
+import {
+  CpuIcon,
+  MemoryIcon,
+  DatabaseIcon,
+  PlayIcon,
+  StopIcon,
+  SyncIcon,
+  TrashIcon,
+  DesktopIcon,
+} from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { getVirtualMachine } from '../api/vms'
 import { VirtualMachine } from '../api/types'
+import { fetchAllOSImages, OSImage } from '../utils/imageRegistry'
 
 const VirtualMachineDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -31,6 +45,7 @@ const VirtualMachineDetail: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0)
+  const [availableOSImages, setAvailableOSImages] = useState<OSImage[]>([])
 
   useEffect(() => {
     const fetchVM = async () => {
@@ -51,6 +66,19 @@ const VirtualMachineDetail: React.FC = () => {
 
     fetchVM()
   }, [id])
+
+  // Fetch OS images for icon display
+  useEffect(() => {
+    if (availableOSImages.length === 0) {
+      fetchAllOSImages()
+        .then((images) => {
+          setAvailableOSImages(images)
+        })
+        .catch((error) => {
+          console.error('Failed to fetch OS images:', error)
+        })
+    }
+  }, [availableOSImages.length])
 
   const getStateBadge = (state?: string) => {
     if (!state) return <Label color="grey">Unknown</Label>
@@ -74,6 +102,52 @@ const VirtualMachineDetail: React.FC = () => {
       return new Date(timestamp).toLocaleString()
     } catch {
       return timestamp
+    }
+  }
+
+  const getOSIcon = (imageSource?: string): string | null => {
+    if (!imageSource || availableOSImages.length === 0) return null
+
+    // Extract OS type from image source (e.g., "quay.io/containerdisks/fedora:43" -> "fedora")
+    const imageLower = imageSource.toLowerCase()
+
+    // Try to find matching OS image
+    const osImage = availableOSImages.find(img => {
+      const repoLower = img.repository.toLowerCase()
+      return imageLower.includes(repoLower) || imageLower.includes(img.os.toLowerCase())
+    })
+
+    return osImage?.icon || null
+  }
+
+  const getOSName = (imageSource?: string): string => {
+    if (!imageSource || availableOSImages.length === 0) return 'N/A'
+
+    const imageLower = imageSource.toLowerCase()
+
+    const osImage = availableOSImages.find(img => {
+      const repoLower = img.repository.toLowerCase()
+      return imageLower.includes(repoLower) || imageLower.includes(img.os.toLowerCase())
+    })
+
+    return osImage?.displayName || 'N/A'
+  }
+
+  const parseTemplateParameters = (params: any) => {
+    if (!params) return null
+
+    return {
+      cpu: params.vm_cpu_cores?.value || 'N/A',
+      memory: params.vm_memory_size?.value || 'N/A',
+      disk: params.vm_disk_size?.value || 'N/A',
+      osType: params.vm_os_type?.value || 'Unknown',
+      imageSource: params.vm_image_source?.value || 'N/A',
+      namespace: params.vm_namespace?.value || 'N/A',
+      networkType: params.vm_network_type?.value || 'N/A',
+      storageClass: params.storage_class?.value || 'N/A',
+      exposeService: params.vm_expose_service?.value || false,
+      runStrategy: params.vm_run_strategy?.value || 'N/A',
+      serviceType: params.vm_service_type?.value || 'N/A',
     }
   }
 
@@ -109,11 +183,11 @@ const VirtualMachineDetail: React.FC = () => {
           <BreadcrumbItem to="/virtual-machines" onClick={(e) => { e.preventDefault(); navigate('/virtual-machines'); }}>
             Virtual Machines
           </BreadcrumbItem>
-          <BreadcrumbItem isActive>{vm.id}</BreadcrumbItem>
+          <BreadcrumbItem isActive>{vm.metadata?.name || vm.id}</BreadcrumbItem>
         </Breadcrumb>
 
         <Title headingLevel="h1" size="2xl" style={{ marginBottom: '0.5rem' }}>
-          {vm.id}
+          {vm.metadata?.name || vm.id}
         </Title>
         <div style={{ marginBottom: '1.5rem' }}>
           {getStateBadge(vm.status?.state)}
@@ -123,16 +197,39 @@ const VirtualMachineDetail: React.FC = () => {
           <Tab eventKey={0} title={<TabTitleText>Overview</TabTitleText>}>
             <div style={{ padding: '1.5rem 0' }}>
               <Grid hasGutter>
-                <GridItem span={6}>
-                  <Card>
-                    <CardBody>
-                      <Title headingLevel="h3" size="lg" style={{ marginBottom: '1rem' }}>
-                        VM Information
-                      </Title>
+                <GridItem span={7}>
+                  <Card isFullHeight>
+                    <CardBody style={{ position: 'relative' }}>
+                      {(() => {
+                        const params = parseTemplateParameters(vm.spec?.template_parameters)
+                        const iconUrl = getOSIcon(params?.imageSource)
+                        return iconUrl ? (
+                          <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                            <img src={iconUrl} alt="OS" style={{ width: '64px', height: '64px' }} />
+                          </div>
+                        ) : null
+                      })()}
                       <DescriptionList>
+                        <DescriptionListGroup>
+                          <DescriptionListTerm>Name</DescriptionListTerm>
+                          <DescriptionListDescription>{vm.metadata?.name || 'N/A'}</DescriptionListDescription>
+                        </DescriptionListGroup>
                         <DescriptionListGroup>
                           <DescriptionListTerm>ID</DescriptionListTerm>
                           <DescriptionListDescription>{vm.id}</DescriptionListDescription>
+                        </DescriptionListGroup>
+                        <DescriptionListGroup>
+                          <DescriptionListTerm>Template</DescriptionListTerm>
+                          <DescriptionListDescription>{vm.spec?.template || 'N/A'}</DescriptionListDescription>
+                        </DescriptionListGroup>
+                        <DescriptionListGroup>
+                          <DescriptionListTerm>Operating System</DescriptionListTerm>
+                          <DescriptionListDescription>
+                            {(() => {
+                              const params = parseTemplateParameters(vm.spec?.template_parameters)
+                              return getOSName(params?.imageSource)
+                            })()}
+                          </DescriptionListDescription>
                         </DescriptionListGroup>
                         <DescriptionListGroup>
                           <DescriptionListTerm>State</DescriptionListTerm>
@@ -151,24 +248,65 @@ const VirtualMachineDetail: React.FC = () => {
                   </Card>
                 </GridItem>
 
-                <GridItem span={6}>
-                  <Card>
-                    <CardBody>
-                      <Title headingLevel="h3" size="lg" style={{ marginBottom: '1rem' }}>
-                        Network & Hub
-                      </Title>
-                      <DescriptionList>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>IP Address</DescriptionListTerm>
-                          <DescriptionListDescription>{vm.status?.ip_address || 'N/A'}</DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Hub</DescriptionListTerm>
-                          <DescriptionListDescription>{vm.status?.hub || 'N/A'}</DescriptionListDescription>
-                        </DescriptionListGroup>
-                      </DescriptionList>
-                    </CardBody>
-                  </Card>
+                <GridItem span={5}>
+                  <Flex direction={{ default: 'column' }} style={{ height: '100%' }}>
+                    <FlexItem style={{ marginBottom: '1rem' }}>
+                      <Card>
+                        <CardBody>
+                          <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
+                            <FlexItem>
+                              <img
+                                src="/terminal.png"
+                                alt="Terminal Console"
+                                style={{
+                                  width: '250px',
+                                  height: 'auto'
+                                }}
+                              />
+                            </FlexItem>
+                            <FlexItem>
+                              <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsSm' }}>
+                                <FlexItem>
+                                  <Label color="blue" icon={<PlayIcon />} style={{ cursor: 'pointer', width: '110px', justifyContent: 'center' }}>Start</Label>
+                                </FlexItem>
+                                <FlexItem>
+                                  <Label color="red" icon={<StopIcon />} style={{ cursor: 'pointer', width: '110px', justifyContent: 'center' }}>Stop</Label>
+                                </FlexItem>
+                                <FlexItem>
+                                  <Label color="grey" icon={<SyncIcon />} style={{ cursor: 'pointer', width: '110px', justifyContent: 'center' }}>Restart</Label>
+                                </FlexItem>
+                                <FlexItem>
+                                  <Label color="green" icon={<DesktopIcon />} style={{ cursor: 'pointer', width: '110px', justifyContent: 'center' }}>Console</Label>
+                                </FlexItem>
+                                <FlexItem>
+                                  <Label color="red" icon={<TrashIcon />} style={{ cursor: 'pointer', width: '110px', justifyContent: 'center' }}>Delete</Label>
+                                </FlexItem>
+                              </Flex>
+                            </FlexItem>
+                          </Flex>
+                        </CardBody>
+                      </Card>
+                    </FlexItem>
+                    <FlexItem grow={{ default: 'grow' }}>
+                      <Card isFullHeight>
+                        <CardBody>
+                          <Title headingLevel="h3" size="lg" style={{ marginBottom: '1rem' }}>
+                            Network & Hub
+                          </Title>
+                          <DescriptionList>
+                            <DescriptionListGroup>
+                              <DescriptionListTerm>IP Address</DescriptionListTerm>
+                              <DescriptionListDescription>{vm.status?.ip_address || 'N/A'}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                            <DescriptionListGroup>
+                              <DescriptionListTerm>Hub</DescriptionListTerm>
+                              <DescriptionListDescription>{vm.status?.hub || 'N/A'}</DescriptionListDescription>
+                            </DescriptionListGroup>
+                          </DescriptionList>
+                        </CardBody>
+                      </Card>
+                    </FlexItem>
+                  </Flex>
                 </GridItem>
               </Grid>
             </div>
@@ -176,31 +314,148 @@ const VirtualMachineDetail: React.FC = () => {
 
           <Tab eventKey={1} title={<TabTitleText>Spec</TabTitleText>}>
             <div style={{ padding: '1.5rem 0' }}>
-              <Card>
-                <CardBody>
-                  <Title headingLevel="h3" size="lg" style={{ marginBottom: '1rem' }}>
-                    Specification
-                  </Title>
-                  <DescriptionList>
-                    <DescriptionListGroup>
-                      <DescriptionListTerm>Template</DescriptionListTerm>
-                      <DescriptionListDescription>{vm.spec?.template || 'N/A'}</DescriptionListDescription>
-                    </DescriptionListGroup>
-                    <DescriptionListGroup>
-                      <DescriptionListTerm>Template Parameters</DescriptionListTerm>
-                      <DescriptionListDescription>
-                        {vm.spec?.template_parameters ? (
-                          <pre style={{ fontSize: '0.875rem', background: '#f5f5f5', padding: '0.5rem', borderRadius: '4px' }}>
-                            {JSON.stringify(vm.spec.template_parameters, null, 2)}
-                          </pre>
-                        ) : (
-                          'N/A'
-                        )}
-                      </DescriptionListDescription>
-                    </DescriptionListGroup>
-                  </DescriptionList>
-                </CardBody>
-              </Card>
+              <Grid hasGutter>
+                {(() => {
+                  const params = parseTemplateParameters(vm.spec?.template_parameters)
+                  if (!params) {
+                    return (
+                      <GridItem span={12}>
+                        <Alert variant="info" title="No specification available" isInline>
+                          Template parameters not found
+                        </Alert>
+                      </GridItem>
+                    )
+                  }
+
+                  return (
+                    <>
+                      <GridItem span={12}>
+                        <Title headingLevel="h2" size="xl" style={{ marginBottom: '1rem' }}>
+                          Resources
+                        </Title>
+                      </GridItem>
+
+                      <GridItem span={4}>
+                        <Card isFullHeight>
+                          <CardBody>
+                            <Flex direction={{ default: 'column' }} alignItems={{ default: 'alignItemsCenter' }} style={{ textAlign: 'center' }}>
+                              <FlexItem style={{ fontSize: '3rem', color: '#06c' }}>
+                                <CpuIcon />
+                              </FlexItem>
+                              <FlexItem>
+                                <Title headingLevel="h3" size="xl" style={{ marginTop: '0.5rem' }}>
+                                  {params.cpu}
+                                </Title>
+                                <div style={{ color: '#6a6e73', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                                  vCPU Cores
+                                </div>
+                              </FlexItem>
+                            </Flex>
+                          </CardBody>
+                        </Card>
+                      </GridItem>
+
+                      <GridItem span={4}>
+                        <Card isFullHeight>
+                          <CardBody>
+                            <Flex direction={{ default: 'column' }} alignItems={{ default: 'alignItemsCenter' }} style={{ textAlign: 'center' }}>
+                              <FlexItem style={{ fontSize: '3rem', color: '#06c' }}>
+                                <MemoryIcon />
+                              </FlexItem>
+                              <FlexItem>
+                                <Title headingLevel="h3" size="xl" style={{ marginTop: '0.5rem' }}>
+                                  {params.memory}
+                                </Title>
+                                <div style={{ color: '#6a6e73', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                                  Memory
+                                </div>
+                              </FlexItem>
+                            </Flex>
+                          </CardBody>
+                        </Card>
+                      </GridItem>
+
+                      <GridItem span={4}>
+                        <Card isFullHeight>
+                          <CardBody>
+                            <Flex direction={{ default: 'column' }} alignItems={{ default: 'alignItemsCenter' }} style={{ textAlign: 'center' }}>
+                              <FlexItem style={{ fontSize: '3rem', color: '#06c' }}>
+                                <DatabaseIcon />
+                              </FlexItem>
+                              <FlexItem>
+                                <Title headingLevel="h3" size="xl" style={{ marginTop: '0.5rem' }}>
+                                  {params.disk}
+                                </Title>
+                                <div style={{ color: '#6a6e73', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                                  Disk Size
+                                </div>
+                              </FlexItem>
+                            </Flex>
+                          </CardBody>
+                        </Card>
+                      </GridItem>
+
+                      <GridItem span={12}>
+                        <Title headingLevel="h2" size="xl" style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+                          Configuration
+                        </Title>
+                      </GridItem>
+
+                      <GridItem span={6}>
+                        <Card>
+                          <CardTitle>System Configuration</CardTitle>
+                          <CardBody>
+                            <DescriptionList>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Operating System</DescriptionListTerm>
+                                <DescriptionListDescription>{params.osType}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Image Source</DescriptionListTerm>
+                                <DescriptionListDescription>{params.imageSource}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Namespace</DescriptionListTerm>
+                                <DescriptionListDescription>{params.namespace}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Run Strategy</DescriptionListTerm>
+                                <DescriptionListDescription>{params.runStrategy}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                            </DescriptionList>
+                          </CardBody>
+                        </Card>
+                      </GridItem>
+
+                      <GridItem span={6}>
+                        <Card>
+                          <CardTitle>Network & Storage</CardTitle>
+                          <CardBody>
+                            <DescriptionList>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Network Type</DescriptionListTerm>
+                                <DescriptionListDescription>{params.networkType}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Storage Class</DescriptionListTerm>
+                                <DescriptionListDescription>{params.storageClass}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Expose Service</DescriptionListTerm>
+                                <DescriptionListDescription>{params.exposeService ? 'Yes' : 'No'}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                              <DescriptionListGroup>
+                                <DescriptionListTerm>Service Type</DescriptionListTerm>
+                                <DescriptionListDescription>{params.serviceType}</DescriptionListDescription>
+                              </DescriptionListGroup>
+                            </DescriptionList>
+                          </CardBody>
+                        </Card>
+                      </GridItem>
+                    </>
+                  )
+                })()}
+              </Grid>
             </div>
           </Tab>
 
