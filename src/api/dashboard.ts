@@ -1,5 +1,6 @@
 import { apiClient } from './client'
-import { Cluster, Template, Hub, VirtualMachine, DashboardMetrics, ListResponse } from './types'
+import { getHubs } from './hubs'
+import { Cluster, Template, VirtualMachine, DashboardMetrics, ListResponse } from './types'
 
 export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   try {
@@ -10,13 +11,13 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
 
     const clusters = clustersResp.items || []
 
-    // Hubs endpoint - handle separately since it may not be implemented yet
+    // Hubs - use gRPC-Web client to fetch from private.v1.Hubs
     let hubsTotal = 0
     try {
-      const hubsResp = await apiClient.get<ListResponse<Hub>>('/host_pools')
-      hubsTotal = hubsResp.total
+      const hubsResp = await getHubs()
+      hubsTotal = hubsResp.total || (hubsResp.items?.length ?? 0)
     } catch (error) {
-      console.log('Host pools endpoint not available')
+      console.log('Hubs endpoint not available:', error)
     }
 
     // VMs endpoint - handle separately
