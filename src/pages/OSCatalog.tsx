@@ -195,8 +195,8 @@ const OSCatalog: React.FC = () => {
                     src={image.icon}
                     alt={`${image.displayName} logo`}
                     style={{
-                      width: '78px',
-                      height: '78px',
+                      width: '64px',
+                      height: '64px',
                       borderRadius: '8px',
                       padding: '4px',
                       backgroundColor: '#f8f8f8',
@@ -208,8 +208,8 @@ const OSCatalog: React.FC = () => {
                       if (parent) {
                         parent.innerHTML = `
                           <div style="
-                            width: 78px;
-                            height: 78px;
+                            width: 64px;
+                            height: 64px;
                             background-color: #333333;
                             border-radius: 8px;
                             display: flex;
@@ -217,7 +217,7 @@ const OSCatalog: React.FC = () => {
                             justify-content: center;
                             color: white;
                             font-weight: bold;
-                            font-size: 22px;
+                            font-size: 20px;
                           ">
                             ${image.displayName.substring(0, 2).toUpperCase()}
                           </div>
