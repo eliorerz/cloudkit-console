@@ -171,6 +171,7 @@ const OSCatalog: React.FC = () => {
               display: 'flex',
               flexDirection: 'column'
             }}
+            onClick={() => handleViewDetails(image)}
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'
               e.currentTarget.style.transform = 'translateY(-2px)'
@@ -305,8 +306,11 @@ const OSCatalog: React.FC = () => {
                       variant="primary"
                       size="sm"
                       icon={<RocketIcon style={{ fontSize: '18px' }} />}
-                      onClick={() => handleDeploy(image)}
-                      style={{ width: '100%', fontSize: '17px', padding: '8px 12px', height: '39px', fontWeight: '500' }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeploy(image)
+                      }}
+                      style={{ width: '100%', fontSize: '17px', padding: '8px 12px', height: '39px' }}
                     >
                       Create VM
                     </Button>
@@ -316,8 +320,11 @@ const OSCatalog: React.FC = () => {
                       variant="secondary"
                       size="sm"
                       icon={<InfoCircleIcon style={{ fontSize: '18px' }} />}
-                      onClick={() => handleViewDetails(image)}
-                      style={{ fontSize: '17px', padding: '8px 10px', height: '39px', fontWeight: '500' }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleViewDetails(image)
+                      }}
+                      style={{ fontSize: '17px', padding: '8px 10px', height: '39px' }}
                     >
                       Details
                     </Button>
@@ -343,7 +350,9 @@ const OSCatalog: React.FC = () => {
               padding: '1rem',
               borderBottom: idx < filteredImages.length - 1 ? '1px solid #f0f0f0' : 'none',
               transition: 'background-color 0.2s',
+              cursor: 'pointer'
             }}
+            onClick={() => handleViewDetails(image)}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#f5f5f5'
             }}
@@ -415,7 +424,10 @@ const OSCatalog: React.FC = () => {
                     <Button
                       variant="primary"
                       icon={<RocketIcon />}
-                      onClick={() => handleDeploy(image)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeploy(image)
+                      }}
                       size="sm"
                       style={{ minWidth: '120px' }}
                     >
@@ -427,7 +439,10 @@ const OSCatalog: React.FC = () => {
                       variant="secondary"
                       icon={<InfoCircleIcon />}
                       size="sm"
-                      onClick={() => handleViewDetails(image)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleViewDetails(image)
+                      }}
                       style={{ minWidth: '120px' }}
                     >
                       Details
