@@ -1,0 +1,36 @@
+{
+  "images": [
+    {
+      "os": "fedora",
+      "displayName": "Fedora",
+      "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fedora/fedora-original.svg",
+      "repository": "quay.io/containerdisks/fedora",
+      "versions": ["43", "42", "41"],
+      "osType": "linux"
+    },
+    {
+      "os": "centos-stream",
+      "displayName": "CentOS Stream",
+      "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/centos/centos-original.svg",
+      "repository": "quay.io/containerdisks/centos-stream",
+      "versions": ["10", "9"],
+      "osType": "linux"
+    },
+    {
+      "os": "ubuntu",
+      "displayName": "Ubuntu",
+      "icon": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo-ubuntu_cof-orange-hex.svg",
+      "repository": "quay.io/containerdisks/ubuntu",
+      "versions": ["25.04", "24.04"],
+      "osType": "linux"
+    },
+    {
+      "os": "debian",
+      "displayName": "Debian",
+      "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/debian/debian-original.svg",
+      "repository": "quay.io/containerdisks/debian",
+      "versions": ["13", "12", "11"],
+      "osType": "linux"
+    }
+  ]
+}
