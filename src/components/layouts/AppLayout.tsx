@@ -71,6 +71,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/virtual-machines')
     } else if (selectedItem.itemId === 'templates') {
       navigate('/templates')
+    } else if (selectedItem.itemId === 'os-catalog') {
+      navigate('/os-catalog')
     } else if (selectedItem.itemId === 'organizations') {
       navigate('/organizations')
     } else if (selectedItem.itemId === 'hubs') {
@@ -241,6 +243,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               isActive={location.pathname === '/virtual-machines'}
             >
               Virtual Machines
+            </NavItem>
+            <NavItem
+              itemId="os-catalog"
+              isActive={location.pathname === '/os-catalog'}
+            >
+              OS Catalog
             </NavItem>
             <NavItem
               itemId="templates"

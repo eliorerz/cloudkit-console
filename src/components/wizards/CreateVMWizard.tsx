@@ -47,6 +47,8 @@ interface CreateVMWizardProps {
   onClose: () => void
   onCreate: (vmId: string, templateId: string, parameters: Record<string, any>) => Promise<void>
   templates: Template[]
+  initialOS?: string
+  initialVersion?: string
 }
 
 interface WizardStep {
@@ -60,6 +62,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   onClose,
   onCreate,
   templates,
+  initialOS,
+  initialVersion,
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [useTemplate, setUseTemplate] = useState(true)
@@ -103,7 +107,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       fetchAllOSImages()
         .then((images) => {
           setAvailableOSImages(images)
-          // Do not auto-select - user must choose
+          // Set initial OS and version if provided (from catalog)
+          if (initialOS && initialVersion) {
+            setSelectedOS(initialOS)
+            setSelectedVersion(initialVersion)
+          }
         })
         .catch((error) => {
           console.error('Failed to fetch OS images:', error)
@@ -112,7 +120,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
           setLoadingImages(false)
         })
     }
-  }, [isOpen, availableOSImages.length])
+  }, [isOpen, availableOSImages.length, initialOS, initialVersion])
 
   // Get currently selected OS image
   const selectedOSImage = availableOSImages.find(os => os.os === selectedOS)
