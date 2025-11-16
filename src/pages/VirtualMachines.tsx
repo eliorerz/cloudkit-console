@@ -24,6 +24,9 @@ import {
   DropdownList,
   DropdownItem,
   MenuToggle,
+  ButtonVariant,
+  Flex,
+  FlexItem,
 } from '@patternfly/react-core'
 import {
   Table,
@@ -33,12 +36,42 @@ import {
   Tbody,
   Td,
 } from '@patternfly/react-table'
-import { VirtualMachineIcon, SearchIcon, EllipsisVIcon } from '@patternfly/react-icons'
+import { VirtualMachineIcon, SearchIcon, EllipsisVIcon, ThIcon, ListIcon, PlayIcon, PowerOffIcon, RedoIcon, DesktopIcon, TrashIcon, CpuIcon, MemoryIcon, DatabaseIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { getVirtualMachines, deleteVirtualMachine, createVirtualMachine } from '../api/vms'
 import { getTemplates } from '../api/templates'
 import { VirtualMachine, Template } from '../api/types'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
+import osImagesConfig from '../config/os-images.json'
+
+type ViewType = 'cards' | 'table'
+
+// Helper function to get OS icon from image source
+const getOSIcon = (vm: VirtualMachine): string | null => {
+  const imageSource = vm.spec?.template_parameters?.vm_image_source?.value || vm.spec?.template_parameters?.vm_image_source
+  if (!imageSource) return null
+
+  // Try to match the image source with known OS images
+  for (const osImage of osImagesConfig.images) {
+    if (imageSource.includes(osImage.repository)) {
+      return osImage.icon
+    }
+  }
+
+  // Fallback: try to detect OS from image path
+  const imageLower = imageSource.toLowerCase()
+  if (imageLower.includes('ubuntu')) {
+    return 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo-ubuntu_cof-orange-hex.svg'
+  } else if (imageLower.includes('fedora')) {
+    return 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fedora/fedora-original.svg'
+  } else if (imageLower.includes('centos')) {
+    return 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/centos/centos-original.svg'
+  } else if (imageLower.includes('debian')) {
+    return 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/debian/debian-original.svg'
+  }
+
+  return null
+}
 
 const VirtualMachines: React.FC = () => {
   const navigate = useNavigate()
@@ -50,6 +83,7 @@ const VirtualMachines: React.FC = () => {
   const [vmToDelete, setVmToDelete] = useState<VirtualMachine | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
+  const [viewType, setViewType] = useState<ViewType>('cards')
 
   // Create VM wizard
   const [wizardOpen, setWizardOpen] = useState(false)
@@ -233,6 +267,200 @@ const VirtualMachines: React.FC = () => {
   const endIndex = startIndex + perPage
   const paginatedVMs = filteredVMs.slice(startIndex, endIndex)
 
+  const renderCardsView = () => (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, 396px)',
+      gap: '1rem',
+      width: '100%',
+      padding: '0'
+    }}>
+      {paginatedVMs.map((vm) => {
+        const osIcon = getOSIcon(vm)
+
+        return (
+        <Card
+          key={vm.id}
+          style={{
+            height: '320px',
+            width: '396px',
+            border: '1px solid #d2d2d2',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'all 0.2s ease-in-out',
+            cursor: 'pointer',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+          onClick={() => handleRowClick(vm)}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'
+            e.currentTarget.style.transform = 'translateY(-2px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
+        >
+          <CardBody style={{ padding: '1rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Header with OS icon, name, state and actions */}
+            <div style={{ marginBottom: '1rem' }}>
+              <Flex alignItems={{ default: 'alignItemsCenter' }} justifyContent={{ default: 'justifyContentSpaceBetween' }}>
+                <FlexItem flex={{ default: 'flex_1' }}>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
+                    <FlexItem>
+                      {osIcon ? (
+                        <img
+                          src={osIcon}
+                          alt="OS Logo"
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            objectFit: 'contain'
+                          }}
+                          onError={(e) => {
+                            // Fallback to generic icon on error
+                            const target = e.currentTarget
+                            const parent = target.parentElement
+                            if (parent) {
+                              parent.innerHTML = `
+                                <svg width="48" height="48" viewBox="0 0 48 48">
+                                  <rect x="4" y="4" width="40" height="40" rx="4" fill="#E8F4F8"/>
+                                  <circle cx="16" cy="16" r="6" fill="#FF6B6B"/>
+                                  <circle cx="32" cy="16" r="6" fill="#4ECDC4"/>
+                                  <circle cx="16" cy="32" r="6" fill="#45B7D1"/>
+                                  <circle cx="32" cy="32" r="6" fill="#FFA07A"/>
+                                  <rect x="20" y="20" width="8" height="8" rx="1" fill="#96CEB4"/>
+                                </svg>
+                              `
+                            }
+                          }}
+                        />
+                      ) : (
+                        <svg width="48" height="48" viewBox="0 0 48 48">
+                          <rect x="4" y="4" width="40" height="40" rx="4" fill="#E8F4F8"/>
+                          <circle cx="16" cy="16" r="6" fill="#FF6B6B"/>
+                          <circle cx="32" cy="16" r="6" fill="#4ECDC4"/>
+                          <circle cx="16" cy="32" r="6" fill="#45B7D1"/>
+                          <circle cx="32" cy="32" r="6" fill="#FFA07A"/>
+                          <rect x="20" y="20" width="8" height="8" rx="1" fill="#96CEB4"/>
+                        </svg>
+                      )}
+                    </FlexItem>
+                    <FlexItem>
+                      <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#151515', marginBottom: '0.15rem' }}>
+                        {vm.metadata?.name || vm.id}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#6a6e73' }}>
+                        {vm.id}
+                      </div>
+                    </FlexItem>
+                  </Flex>
+                </FlexItem>
+                <FlexItem>
+                  <Dropdown
+                    isOpen={openActionMenuId === vm.id}
+                    onSelect={() => setOpenActionMenuId(null)}
+                    toggle={(toggleRef) => (
+                      <MenuToggle
+                        ref={toggleRef}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setOpenActionMenuId(openActionMenuId === vm.id ? null : vm.id)
+                        }}
+                        variant="plain"
+                      >
+                        <EllipsisVIcon />
+                      </MenuToggle>
+                    )}
+                  >
+                    <DropdownList>
+                      <DropdownItem key="start" onClick={(e) => { e?.stopPropagation(); }} icon={<PlayIcon style={{ color: '#3e8635' }} />}>
+                        Start
+                      </DropdownItem>
+                      <DropdownItem key="stop" onClick={(e) => { e?.stopPropagation(); }} icon={<PowerOffIcon style={{ color: '#f0ab00' }} />}>
+                        Stop
+                      </DropdownItem>
+                      <DropdownItem key="restart" onClick={(e) => { e?.stopPropagation(); }} icon={<RedoIcon style={{ color: '#0066cc' }} />}>
+                        Restart
+                      </DropdownItem>
+                      <DropdownItem key="console" onClick={(e) => { e?.stopPropagation(); }} icon={<DesktopIcon />}>
+                        Console
+                      </DropdownItem>
+                      <DropdownItem key="delete" onClick={(e) => { e?.stopPropagation(); handleDeleteClick(vm); }} icon={<TrashIcon style={{ color: '#c9190b' }} />}>
+                        Delete
+                      </DropdownItem>
+                    </DropdownList>
+                  </Dropdown>
+                </FlexItem>
+              </Flex>
+            </div>
+
+            {/* VM Details */}
+            <div style={{ fontSize: '0.875rem', color: '#6a6e73', flex: 1, paddingLeft: '0.5rem' }}>
+              <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <strong>IP Address:</strong> {vm.status?.ip_address || 'N/A'}
+                </div>
+                {getStateBadge(vm.status?.state)}
+              </div>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <strong>Hub:</strong> {vm.status?.hub || 'N/A'}
+              </div>
+              <div>
+                <strong>Created:</strong> {formatTimestamp(vm.metadata?.creation_timestamp)}
+              </div>
+            </div>
+
+            {/* Hardware specs at bottom */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: 'auto',
+              minHeight: '100px'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
+                  <CpuIcon />
+                </div>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515', marginTop: '-0.25rem' }}>
+                  {vm.spec?.template_parameters?.vm_cpu_cores?.value || vm.spec?.template_parameters?.vm_cpu_cores || 'N/A'}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
+                  vCPU Cores
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
+                  <MemoryIcon />
+                </div>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515', marginTop: '-0.25rem' }}>
+                  {vm.spec?.template_parameters?.vm_memory_size?.value || vm.spec?.template_parameters?.vm_memory_size || 'N/A'}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
+                  Memory
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
+                  <DatabaseIcon />
+                </div>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515', marginTop: '-0.25rem' }}>
+                  {vm.spec?.template_parameters?.vm_disk_size?.value || vm.spec?.template_parameters?.vm_disk_size || 'N/A'}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
+                  Disk Size
+                </div>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+        )
+      })}
+    </div>
+  )
+
   return (
     <AppLayout>
       <PageSection>
@@ -257,18 +485,29 @@ const VirtualMachines: React.FC = () => {
                   style={{ width: '400px' }}
                 />
               </ToolbarItem>
-              <ToolbarItem variant="pagination" align={{ default: 'alignEnd' }}>
-                <Pagination
-                  itemCount={totalItems}
-                  perPage={perPage}
-                  page={page}
-                  onSetPage={(_event, pageNumber) => setPage(pageNumber)}
-                  onPerPageSelect={(_event, newPerPage) => {
-                    setPerPage(newPerPage)
-                    setPage(1)
-                  }}
-                  variant="top"
-                />
+              <ToolbarItem>
+                <Flex spaceItems={{ default: 'spaceItemsSm' }}>
+                  <FlexItem>
+                    <Button
+                      variant={viewType === 'cards' ? ButtonVariant.primary : ButtonVariant.secondary}
+                      icon={<ThIcon />}
+                      onClick={() => setViewType('cards')}
+                      size="sm"
+                    >
+                      Cards
+                    </Button>
+                  </FlexItem>
+                  <FlexItem>
+                    <Button
+                      variant={viewType === 'table' ? ButtonVariant.primary : ButtonVariant.secondary}
+                      icon={<ListIcon />}
+                      onClick={() => setViewType('table')}
+                      size="sm"
+                    >
+                      Table
+                    </Button>
+                  </FlexItem>
+                </Flex>
               </ToolbarItem>
             </ToolbarContent>
           </Toolbar>
@@ -293,6 +532,8 @@ const VirtualMachines: React.FC = () => {
                     : "No virtual machines match your search criteria. Try adjusting your filters."}
                 </EmptyStateBody>
               </EmptyState>
+            ) : viewType === 'cards' ? (
+              renderCardsView()
             ) : (
               <Table aria-label="Virtual Machines Table" variant="compact">
                 <Thead>
