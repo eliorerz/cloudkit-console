@@ -413,18 +413,26 @@ const VirtualMachines: React.FC = () => {
               </div>
             </div>
 
+            {/* Separator line */}
+            <div style={{
+              borderTop: '1px solid #d2d2d2',
+              marginTop: '1.5rem',
+              marginBottom: '0.75rem',
+              marginLeft: '1.5rem',
+              marginRight: '1.5rem'
+            }} />
+
             {/* Hardware specs at bottom */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              marginTop: 'auto',
               minHeight: '100px'
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
                 <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
                   <CpuIcon />
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515', marginTop: '-0.25rem' }}>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515' }}>
                   {vm.spec?.template_parameters?.vm_cpu_cores?.value || vm.spec?.template_parameters?.vm_cpu_cores || 'N/A'}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
@@ -435,7 +443,7 @@ const VirtualMachines: React.FC = () => {
                 <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
                   <MemoryIcon />
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515', marginTop: '-0.25rem' }}>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515' }}>
                   {vm.spec?.template_parameters?.vm_memory_size?.value || vm.spec?.template_parameters?.vm_memory_size || 'N/A'}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
@@ -446,7 +454,7 @@ const VirtualMachines: React.FC = () => {
                 <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
                   <DatabaseIcon />
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515', marginTop: '-0.25rem' }}>
+                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515' }}>
                   {vm.spec?.template_parameters?.vm_disk_size?.value || vm.spec?.template_parameters?.vm_disk_size || 'N/A'}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
