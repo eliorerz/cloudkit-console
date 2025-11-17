@@ -41,6 +41,8 @@ interface OSImage {
   repository: string
   versions: string[]
   osType: string
+  available?: boolean
+  comingSoon?: boolean
 }
 
 interface OSImageWithVersion extends OSImage {
@@ -144,6 +146,7 @@ const OSCatalog: React.FC = () => {
     if (os.includes('ubuntu')) return 'Canonical'
     if (os.includes('debian')) return 'Debian Project'
     if (os.includes('rhel')) return 'Red Hat'
+    if (os.includes('windows')) return 'Microsoft'
     return 'Community'
   }
 
@@ -283,6 +286,18 @@ const OSCatalog: React.FC = () => {
                       Container Disk
                     </Badge>
                   </FlexItem>
+                  {image.available === false && image.comingSoon && (
+                    <FlexItem>
+                      <Badge style={{
+                        fontSize: '14px',
+                        padding: '4px 9px',
+                        backgroundColor: '#ffa500',
+                        color: '#fff'
+                      }}>
+                        Coming Soon
+                      </Badge>
+                    </FlexItem>
+                  )}
                 </Flex>
               </div>
 
@@ -310,9 +325,10 @@ const OSCatalog: React.FC = () => {
                         e.stopPropagation()
                         handleDeploy(image)
                       }}
+                      isDisabled={image.available === false}
                       style={{ width: '100%', fontSize: '17px', padding: '8px 12px', height: '39px' }}
                     >
-                      Create VM
+                      {image.available === false ? 'Not Available' : 'Create VM'}
                     </Button>
                   </FlexItem>
                   <FlexItem>
@@ -416,6 +432,16 @@ const OSCatalog: React.FC = () => {
                   <FlexItem>
                     <Badge isRead color="blue">Container Disk</Badge>
                   </FlexItem>
+                  {image.available === false && image.comingSoon && (
+                    <FlexItem>
+                      <Badge style={{
+                        backgroundColor: '#ffa500',
+                        color: '#fff'
+                      }}>
+                        Coming Soon
+                      </Badge>
+                    </FlexItem>
+                  )}
                 </Flex>
               </FlexItem>
               <FlexItem>
@@ -428,10 +454,11 @@ const OSCatalog: React.FC = () => {
                         e.stopPropagation()
                         handleDeploy(image)
                       }}
+                      isDisabled={image.available === false}
                       size="sm"
                       style={{ minWidth: '120px' }}
                     >
-                      Create VM
+                      {image.available === false ? 'Not Available' : 'Create VM'}
                     </Button>
                   </FlexItem>
                   <FlexItem>

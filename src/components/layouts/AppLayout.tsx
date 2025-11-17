@@ -47,6 +47,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
   const [isAdminExpanded, setIsAdminExpanded] = useState(true)
+  const [isCatalogExpanded, setIsCatalogExpanded] = useState(true)
   const { logout, username, displayName, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -65,6 +66,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }
 
   const onNavSelect = (selectedItem: { itemId: string | number }) => {
+    // Auto-collapse catalog when navigating to non-catalog items
+    const catalogItems = ['os-catalog', 'templates']
+    if (!catalogItems.includes(selectedItem.itemId as string)) {
+      setIsCatalogExpanded(false)
+    }
+
     if (selectedItem.itemId === 'dashboard') {
       navigate('/')
     } else if (selectedItem.itemId === 'virtual-machines') {
@@ -252,18 +259,24 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             >
               Virtual Machines
             </NavItem>
-            <NavItem
-              itemId="os-catalog"
-              isActive={location.pathname === '/os-catalog'}
+            <NavExpandable
+              title="Catalog"
+              isExpanded={isCatalogExpanded}
+              onExpand={() => setIsCatalogExpanded(!isCatalogExpanded)}
             >
-              OS Catalog
-            </NavItem>
-            <NavItem
-              itemId="templates"
-              isActive={location.pathname === '/templates'}
-            >
-              Templates
-            </NavItem>
+              <NavItem
+                itemId="os-catalog"
+                isActive={location.pathname === '/os-catalog'}
+              >
+                OS Catalog
+              </NavItem>
+              <NavItem
+                itemId="templates"
+                isActive={location.pathname === '/templates'}
+              >
+                Templates
+              </NavItem>
+            </NavExpandable>
           </NavList>
         </Nav>
       </PageSidebarBody>

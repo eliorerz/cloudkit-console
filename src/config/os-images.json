@@ -6,7 +6,8 @@
       "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fedora/fedora-original.svg",
       "repository": "quay.io/containerdisks/fedora",
       "versions": ["43", "42", "41"],
-      "osType": "linux"
+      "osType": "linux",
+      "available": true
     },
     {
       "os": "centos-stream",
@@ -14,7 +15,18 @@
       "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/centos/centos-original.svg",
       "repository": "quay.io/containerdisks/centos-stream",
       "versions": ["10", "9"],
-      "osType": "linux"
+      "osType": "linux",
+      "available": true
+    },
+    {
+      "os": "rhel",
+      "displayName": "Red Hat Enterprise Linux",
+      "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/redhat/redhat-original.svg",
+      "repository": "quay.io/containerdisks/rhel",
+      "versions": ["9", "8"],
+      "osType": "linux",
+      "available": false,
+      "comingSoon": true
     },
     {
       "os": "ubuntu",
@@ -22,7 +34,8 @@
       "icon": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo-ubuntu_cof-orange-hex.svg",
       "repository": "quay.io/containerdisks/ubuntu",
       "versions": ["25.04", "24.04"],
-      "osType": "linux"
+      "osType": "linux",
+      "available": true
     },
     {
       "os": "debian",
@@ -30,7 +43,18 @@
       "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/debian/debian-original.svg",
       "repository": "quay.io/containerdisks/debian",
       "versions": ["13", "12", "11"],
-      "osType": "linux"
+      "osType": "linux",
+      "available": true
+    },
+    {
+      "os": "windows-server",
+      "displayName": "Windows Server",
+      "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/windows8/windows8-original.svg",
+      "repository": "quay.io/containerdisks/windows-server",
+      "versions": ["2022", "2019"],
+      "osType": "windows",
+      "available": false,
+      "comingSoon": true
     }
   ]
 }
