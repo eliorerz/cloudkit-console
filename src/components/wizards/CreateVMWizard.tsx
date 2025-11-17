@@ -515,10 +515,18 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       case 'vm-config':
         // Require VM name to be provided and non-empty
         const hasValidName = !!vmId && vmId.trim().length > 0
-        // Require image selection (either from catalog or custom)
-        const hasValidImage = imageSelectionMode === 'custom'
-          ? !!customImagePath && customImagePath.trim().length > 0
-          : !!selectedOS && !!selectedVersion
+        // Require image selection (either from catalog, custom, or template with image)
+        let hasValidImage = false
+        if (selectedTemplateId && selectedTemplateId !== genericTemplateId) {
+          // Template selected (not generic) - check if it has an image source parameter
+          const template = templates.find(t => t.id === selectedTemplateId)
+          const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
+          hasValidImage = !!imageParam?.default?.value || (!!selectedOS && !!selectedVersion)
+        } else if (imageSelectionMode === 'custom') {
+          hasValidImage = !!customImagePath && customImagePath.trim().length > 0
+        } else {
+          hasValidImage = !!selectedOS && !!selectedVersion
+        }
         return hasValidName && hasValidImage
       case 'template':
         return !!selectedTemplateId
@@ -1125,22 +1133,74 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               fieldId="image-source"
               style={{ marginTop: '1rem' }}
             >
-              <div style={{ marginBottom: '1rem' }}>
-                <Switch
-                  id="image-mode-switch"
-                  label={imageSelectionMode === 'custom' ? 'Custom image path' : 'Select from catalog'}
-                  isChecked={imageSelectionMode === 'custom'}
-                  onChange={(_event, checked) => {
-                    setImageSelectionMode(checked ? 'custom' : 'preset')
-                  }}
-                />
-              </div>
+              {/* Only show the switch if creating manually (using generic template) and not from catalog */}
+              {!initialOS && !initialVersion && selectedTemplateId === genericTemplateId && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <Switch
+                    id="image-mode-switch"
+                    label={imageSelectionMode === 'custom' ? 'Custom image path' : 'Select from catalog'}
+                    isChecked={imageSelectionMode === 'custom'}
+                    onChange={(_event, checked) => {
+                      setImageSelectionMode(checked ? 'custom' : 'preset')
+                    }}
+                  />
+                </div>
+              )}
 
               {loadingImages ? (
                 <div style={{ padding: '1rem', textAlign: 'center' }}>
                   <Spinner size="md" />
                   <div style={{ marginTop: '0.5rem', color: '#6a6e73' }}>Loading available images...</div>
                 </div>
+              ) : ((initialOS && initialVersion) || (selectedTemplateId && selectedTemplateId !== genericTemplateId)) ? (
+                /* Read-only display when coming from catalog or using a template */
+                (() => {
+                  // Get image source value from template or catalog
+                  let imageValue = currentImagePath
+                  if (selectedTemplateId && selectedTemplateId !== genericTemplateId) {
+                    // Find vm_image_source parameter from selected template
+                    const template = templates.find(t => t.id === selectedTemplateId)
+                    const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
+                    if (imageParam?.default) {
+                      imageValue = imageParam.default.value || ''
+                    }
+                  }
+
+                  return (
+                    <div style={{
+                      padding: '0.75rem',
+                      backgroundColor: '#f5f5f5',
+                      border: '1px solid #d2d2d2',
+                      borderRadius: '4px'
+                    }}>
+                      {selectedOSImage ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <img
+                            src={selectedOSImage.icon}
+                            alt={selectedOSImage.displayName}
+                            style={{ width: '32px', height: '32px' }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', fontSize: '0.95rem', color: '#151515' }}>
+                              {selectedOSImage.displayName} {selectedVersion}
+                            </div>
+                            <code style={{ fontSize: '0.85rem', color: '#6a6e73' }}>
+                              {imageValue}
+                            </code>
+                          </div>
+                        </div>
+                      ) : imageValue ? (
+                        <code style={{ fontSize: '0.95rem', color: '#151515' }}>
+                          {imageValue}
+                        </code>
+                      ) : (
+                        <div style={{ fontSize: '0.9rem', color: '#6a6e73', fontStyle: 'italic' }}>
+                          No image source defined in template
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()
               ) : imageSelectionMode === 'custom' ? (
                 <TextInput
                   type="text"
@@ -1242,7 +1302,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                 </>
               )}
               <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                Container disk image for the VM
+                {(initialOS && initialVersion)
+                  ? 'Image pre-selected from catalog'
+                  : (selectedTemplateId && selectedTemplateId !== genericTemplateId)
+                    ? 'Image defined by selected template'
+                    : 'Container disk image for the VM'}
               </div>
             </FormGroup>
           </Form>
