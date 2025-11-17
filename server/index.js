@@ -13,6 +13,7 @@ const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'https://keycloak-innabox-devel
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'innabox';
 const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID || 'cloudkit-console';
 const NAMESPACE = process.env.NAMESPACE || 'innabox-devel';
+const GENERIC_TEMPLATE_ID = process.env.GENERIC_TEMPLATE_ID || 'cloudkit.templates.ocp_virt_vm';
 
 // Middleware
 app.use(express.json());
@@ -25,7 +26,8 @@ app.get('/api/config', (req, res) => {
     keycloakRealm: KEYCLOAK_REALM,
     oidcClientId: OIDC_CLIENT_ID,
     fulfillmentApiUrl: FULFILLMENT_API,
-    namespace: NAMESPACE
+    namespace: NAMESPACE,
+    genericTemplateId: GENERIC_TEMPLATE_ID
   });
 });
 
