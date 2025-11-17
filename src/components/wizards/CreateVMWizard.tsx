@@ -39,6 +39,9 @@ import {
   Spinner,
   Switch,
   FileUpload,
+  Slider,
+  Flex,
+  FlexItem,
 } from '@patternfly/react-core'
 import { Template, TemplateParameter } from '../../api/types'
 import { fetchAllOSImages, getImagePath, OSImage } from '../../utils/imageRegistry'
@@ -58,6 +61,48 @@ interface WizardStep {
   id: string
   name: string
   category?: string
+}
+
+// Machine size presets organized by tiers
+const machineSizeTiers = {
+  standard: {
+    title: 'Standard Series',
+    sizes: [
+      { id: 'small', name: 'Small', cpu: 2, memory: 16, description: '2 vCPU / 16 Gi RAM' },
+      { id: 'medium', name: 'Medium', cpu: 4, memory: 32, description: '4 vCPU / 32 Gi RAM' },
+      { id: 'large', name: 'Large', cpu: 8, memory: 64, description: '8 vCPU / 64 Gi RAM' },
+    ]
+  },
+  highPerformance: {
+    title: 'High-Performance Series',
+    sizes: [
+      { id: 'xlarge', name: 'XLarge', cpu: 16, memory: 128, description: '16 vCPU / 128 Gi RAM' },
+      { id: '2xlarge', name: '2XLarge', cpu: 32, memory: 256, description: '32 vCPU / 256 Gi RAM' },
+      { id: '4xlarge', name: '4XLarge', cpu: 48, memory: 384, description: '48 vCPU / 384 Gi RAM' },
+      { id: '8xlarge', name: '8XLarge', cpu: 64, memory: 512, description: '64 vCPU / 512 Gi RAM' },
+    ]
+  }
+}
+
+// Disk size slider - value-based configuration (using actual Gi values)
+// Only labeled values are included for cleaner visual alignment
+const diskSizeOptions = [
+  { value: 50, label: '' },     // Minimum value
+  { value: 100, label: '' },
+  { value: 200, label: '200Gi' },
+  { value: 500, label: '500Gi' },
+  { value: 1024, label: '1Ti' },    // 1Ti = 1024 Gi
+  { value: 2048, label: '2Ti' },    // 2Ti = 2048 Gi
+  { value: 5120, label: '5Ti' },    // 5Ti = 5120 Gi
+]
+
+// Helper function to format disk size for display
+const formatDiskSize = (sizeInGi: number): string => {
+  if (sizeInGi >= 1024) {
+    const ti = sizeInGi / 1024
+    return ti % 1 === 0 ? `${ti} Ti` : `${ti.toFixed(1)} Ti`
+  }
+  return `${sizeInGi} Gi`
 }
 
 export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
@@ -88,7 +133,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   // Hardware configuration fields (not in template)
   const [vmCpuCores, setVmCpuCores] = useState(2)
   const [vmMemoryGi, setVmMemoryGi] = useState(4)  // Store as numeric Gi
-  const [vmDiskGi, setVmDiskGi] = useState(50)     // Store as numeric Gi
+  const [vmDiskGi, setVmDiskGi] = useState(200)    // Store as numeric Gi, default 200 Gi
   const [vmRunStrategy, setVmRunStrategy] = useState('Always')
 
   // Dropdown states for enhanced UI
@@ -96,6 +141,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [memoryUnitDropdownOpen, setMemoryUnitDropdownOpen] = useState(false)
   const [diskUnitDropdownOpen, setDiskUnitDropdownOpen] = useState(false)
   const [networkTypeDropdownOpen, setNetworkTypeDropdownOpen] = useState(false)
+
+  // Machine size presets
+  const [advancedHardwareMode, setAdvancedHardwareMode] = useState(false)
+  const [selectedSizePreset, setSelectedSizePreset] = useState('medium')
 
   // Image selection state
   const [availableOSImages, setAvailableOSImages] = useState<OSImage[]>([])
@@ -169,6 +218,21 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         })
     }
   }, [isOpen, availableOSImages.length, initialOS, initialVersion])
+
+  // Sync preset selection with hardware values when not in advanced mode
+  useEffect(() => {
+    if (!advancedHardwareMode && selectedSizePreset) {
+      // Find preset in either tier
+      let preset = machineSizeTiers.standard.sizes.find(p => p.id === selectedSizePreset)
+      if (!preset) {
+        preset = machineSizeTiers.highPerformance.sizes.find(p => p.id === selectedSizePreset)
+      }
+      if (preset) {
+        setVmCpuCores(preset.cpu)
+        setVmMemoryGi(preset.memory)
+      }
+    }
+  }, [advancedHardwareMode, selectedSizePreset])
 
   // Get currently selected OS image
   const selectedOSImage = availableOSImages.find(os => os.os === selectedOS)
@@ -266,8 +330,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       }
       // General
       else if (name.includes('name') || name.includes('os') || name.includes('description') ||
-               name.includes('ssh') ||
-               title.includes('name') || title.includes('ssh')) {
+               name.includes('ssh') || name.includes('run') && name.includes('strategy') ||
+               title.includes('name') || title.includes('ssh') || title.includes('run') && title.includes('strategy')) {
         categories.general.push(param)
       }
       else {
@@ -302,7 +366,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       // Only show Hardware Configuration step if template has hardware parameters
       const hasHardwareParams = selectedTemplate.parameters?.some(p =>
         ['cpu_count', 'vm_cpu_cores', 'cpus', 'memory_gb', 'vm_memory_size', 'memory',
-         'disk_size_gb', 'vm_disk_size', 'disk_size', 'run_strategy', 'vm_run_strategy'].includes(p.name)
+         'disk_size_gb', 'vm_disk_size', 'disk_size'].includes(p.name)
       )
       if (hasHardwareParams) {
         steps.push({ id: 'hardware-config', name: 'Hardware Configuration' })
@@ -355,8 +419,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       // Reset hardware configuration to defaults
       setVmCpuCores(2)
       setVmMemoryGi(4)
-      setVmDiskGi(50)
+      setVmDiskGi(200)
       setVmRunStrategy('Always')
+      setAdvancedHardwareMode(false)
+      setSelectedSizePreset('medium')
       // Reset image selection
       setImageSelectionMode('preset')
       setCustomImagePath('')
@@ -471,7 +537,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         }
 
         if (templateSupportsParam(['vm_disk_size', 'disk_size_gb', 'disk_size'])) {
-          const defaultDisk = 50
+          const defaultDisk = 200
           if (vmDiskGi !== defaultDisk) {
             const paramType = getParameterType('vm_disk_size') || 'type.googleapis.com/google.protobuf.StringValue'
             vmParameters.vm_disk_size = wrapInProtobufAny(`${vmDiskGi}Gi`, paramType)
@@ -583,7 +649,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
       // Skip hardware parameters handled in hardware-config step
       if (['vm_cpu_cores', 'cpu_count', 'cpus', 'vm_memory_size', 'memory_gb', 'memory',
-           'vm_disk_size', 'disk_size_gb', 'disk_size', 'vm_run_strategy', 'run_strategy'].includes(param.name)) {
+           'vm_disk_size', 'disk_size_gb', 'disk_size'].includes(param.name)) {
         return false
       }
       // Skip image source parameter handled in vm-config step
@@ -1391,187 +1457,130 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       case 'hardware-config':
         return (
           <div>
-            <Title headingLevel="h2" size="xl">
+            <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
               Hardware Configuration
             </Title>
-            <p style={{ color: '#6a6e73', marginBottom: '1rem', fontSize: '0.95rem', marginTop: 0 }}>
-              Define the hardware resources allocated to your VM including CPU, memory, disk space, and run strategy.
-            </p>
 
-            <Alert
-              variant={AlertVariant.info}
-              isInline
-              title="Resource allocation"
-              style={{ marginBottom: '1.5rem' }}
-            >
-              Configure the compute resources for your VM. Ensure the values match your workload requirements.
-            </Alert>
-
-            <Card>
-              <CardBody>
-                <Form>
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* CPU Cores */}
-              {templateSupportsParam(['cpu_count', 'vm_cpu_cores', 'cpus']) && (
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <FormGroup label="CPU Cores" isRequired fieldId="vm-cpu-cores">
-                  <div className="pf-v6-c-number-input-custom">
-                    <NumberInput
-                      value={vmCpuCores}
-                      min={1}
-                      max={64}
-                      onMinus={() => vmCpuCores > 1 && setVmCpuCores(vmCpuCores - 1)}
-                      onPlus={() => vmCpuCores < 64 && setVmCpuCores(vmCpuCores + 1)}
-                      onChange={(event) => {
-                        const value = (event.target as HTMLInputElement).value
-                        const num = parseInt(value)
-                        if (!isNaN(num) && num >= 1 && num <= 64) {
-                          setVmCpuCores(num)
-                        }
-                      }}
-                      inputAriaLabel="CPU cores"
-                      widthChars={14}
-                    />
+            <Form>
+              {/* Machine Size - Tiered Selection */}
+              <FormGroup fieldId="machine-size" style={{ marginBottom: '0' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '2rem' }}>
+                  <div style={{ minWidth: '180px', paddingTop: '0.5rem' }}>
+                    <Title headingLevel="h3" size="lg" style={{ marginBottom: '0.5rem' }}>
+                      Machine Size
+                    </Title>
+                    <Title headingLevel="h4" size="md" style={{ color: '#6a6e73', fontWeight: 400 }}>
+                      Standard Series
+                    </Title>
                   </div>
-                  <FormHelperText>
-                    <HelperText>
-                      <HelperTextItem>Number of virtual CPU cores (1-64)</HelperTextItem>
-                    </HelperText>
-                  </FormHelperText>
-                  <style>{`
-                    .pf-v6-c-number-input-custom .pf-v6-c-number-input__input {
-                      text-align: center !important;
-                      line-height: 1.5;
-                      padding-top: 0.25rem;
-                      padding-bottom: 0.25rem;
-                    }
-                    .pf-v6-c-number-input-custom input[type="number"] {
-                      text-align: center !important;
-                    }
-                  `}</style>
-                </FormGroup>
-              </div>
-              )}
-
-              {/* Memory Size (Gi) */}
-              {templateSupportsParam(['memory_gb', 'vm_memory_size', 'memory']) && (
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <FormGroup label="Memory Size (Gi)" isRequired fieldId="vm-memory-size">
-                  <div className="pf-v6-c-number-input-custom">
-                    <NumberInput
-                      value={vmMemoryGi}
-                      min={1}
-                      max={1024}
-                      onMinus={() => vmMemoryGi > 1 && setVmMemoryGi(vmMemoryGi - 1)}
-                      onPlus={() => vmMemoryGi < 1024 && setVmMemoryGi(vmMemoryGi + 1)}
-                      onChange={(event) => {
-                        const value = (event.target as HTMLInputElement).value
-                        const num = parseInt(value)
-                        if (!isNaN(num) && num >= 1 && num <= 1024) {
-                          setVmMemoryGi(num)
-                        }
-                      }}
-                      inputAriaLabel="Memory size in Gi"
-                      widthChars={14}
-                    />
+                  <div style={{ flex: 1, display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    {machineSizeTiers.standard.sizes.map((size) => (
+                      <Card
+                        key={size.id}
+                        isSelectable
+                        isSelected={selectedSizePreset === size.id}
+                        onClick={() => setSelectedSizePreset(size.id)}
+                        style={{
+                          cursor: 'pointer',
+                          border: selectedSizePreset === size.id ? '3px solid #0066cc' : '1px solid #d2d2d2',
+                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : '#ffffff',
+                          transition: 'all 0.2s ease',
+                          width: '200px',
+                          height: '120px',
+                          flex: '0 0 200px'
+                        }}
+                      >
+                        <CardBody>
+                          <Title headingLevel="h5" size="lg" style={{
+                            marginBottom: '0.5rem',
+                            color: selectedSizePreset === size.id ? '#0066cc' : '#151515',
+                            fontWeight: selectedSizePreset === size.id ? 700 : 600
+                          }}>
+                            {size.name}
+                          </Title>
+                          <div style={{
+                            fontSize: '0.875rem',
+                            color: '#6a6e73'
+                          }}>
+                            {size.description}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
                   </div>
-                  <FormHelperText>
-                    <HelperText>
-                      <HelperTextItem>Amount of RAM allocated to the VM (1-1024 Gi)</HelperTextItem>
-                    </HelperText>
-                  </FormHelperText>
-                </FormGroup>
-              </div>
-              )}
+                </div>
 
-              {/* Disk Size (Gi) */}
+                {/* High-Performance Series */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem' }}>
+                  <div style={{ minWidth: '180px', paddingTop: '0.5rem' }}>
+                    <Title headingLevel="h4" size="md" style={{ color: '#6a6e73', fontWeight: 400, lineHeight: '1.3' }}>
+                      High-Performance<br />Series
+                    </Title>
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    {machineSizeTiers.highPerformance.sizes.map((size) => (
+                      <Card
+                        key={size.id}
+                        isSelectable
+                        isSelected={selectedSizePreset === size.id}
+                        onClick={() => setSelectedSizePreset(size.id)}
+                        style={{
+                          cursor: 'pointer',
+                          border: selectedSizePreset === size.id ? '3px solid #0066cc' : '1px solid #d2d2d2',
+                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : '#ffffff',
+                          transition: 'all 0.2s ease',
+                          width: '200px',
+                          height: '120px',
+                          flex: '0 0 200px'
+                        }}
+                      >
+                        <CardBody>
+                          <Title headingLevel="h5" size="lg" style={{
+                            marginBottom: '0.5rem',
+                            color: selectedSizePreset === size.id ? '#0066cc' : '#151515',
+                            fontWeight: selectedSizePreset === size.id ? 700 : 600
+                          }}>
+                            {size.name}
+                          </Title>
+                          <div style={{
+                            fontSize: '0.875rem',
+                            color: '#6a6e73'
+                          }}>
+                            {size.description}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </FormGroup>
+
+              {/* Disk Size Slider */}
               {templateSupportsParam(['disk_size_gb', 'vm_disk_size', 'disk_size']) && (
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <FormGroup label="Disk Size (Gi)" isRequired fieldId="vm-disk-size">
-                  <div className="pf-v6-c-number-input-custom">
-                    <NumberInput
+                <FormGroup
+                  label={`Disk Size: ${formatDiskSize(vmDiskGi)}`}
+                  isRequired
+                  fieldId="disk-size"
+                  style={{ marginBottom: '2rem' }}
+                >
+                  <div style={{ paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
+                    <Slider
                       value={vmDiskGi}
-                      min={1}
-                      max={10240}
-                      onMinus={() => vmDiskGi > 1 && setVmDiskGi(vmDiskGi - 1)}
-                      onPlus={() => vmDiskGi < 10240 && setVmDiskGi(vmDiskGi + 1)}
-                      onChange={(event) => {
-                        const value = (event.target as HTMLInputElement).value
-                        const num = parseInt(value)
-                        if (!isNaN(num) && num >= 1 && num <= 10240) {
-                          setVmDiskGi(num)
-                        }
+                      min={50}
+                      max={5120}
+                      onChange={(_event, value) => {
+                        setVmDiskGi(value as number)
                       }}
-                      inputAriaLabel="Disk size in Gi"
-                      widthChars={14}
+                      showTicks
+                      customSteps={diskSizeOptions}
+                      areCustomStepsContinuous={false}
                     />
                   </div>
-                  <FormHelperText>
-                    <HelperText>
-                      <HelperTextItem>Size of the root disk (1-10240 Gi)</HelperTextItem>
-                    </HelperText>
-                  </FormHelperText>
                 </FormGroup>
-              </div>
               )}
-            </div>
-
-                  {/* Run Strategy */}
-                  {templateSupportsParam(['run_strategy', 'vm_run_strategy']) && (
-                  <FormGroup label="Run Strategy" isRequired fieldId="vm-run-strategy" style={{ marginTop: '1rem' }}>
-                    <Dropdown
-                      isOpen={runStrategyDropdownOpen}
-                      onSelect={() => setRunStrategyDropdownOpen(false)}
-                      toggle={(toggleRef) => (
-                        <MenuToggle
-                          ref={toggleRef}
-                          onClick={() => setRunStrategyDropdownOpen(!runStrategyDropdownOpen)}
-                          style={{ minWidth: '200px' }}
-                        >
-                          {vmRunStrategy}
-                        </MenuToggle>
-                      )}
-                    >
-                      <DropdownList>
-                        <DropdownItem value="Always" onClick={() => setVmRunStrategy('Always')}>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>Always</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>VM should always be running</div>
-                          </div>
-                        </DropdownItem>
-                        <DropdownItem value="Manual" onClick={() => setVmRunStrategy('Manual')}>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>Manual</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>User controls VM start/stop</div>
-                          </div>
-                        </DropdownItem>
-                        <DropdownItem value="RerunOnFailure" onClick={() => setVmRunStrategy('RerunOnFailure')}>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>RerunOnFailure</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>Restart VM if it fails</div>
-                          </div>
-                        </DropdownItem>
-                        <DropdownItem value="Halted" onClick={() => setVmRunStrategy('Halted')}>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>Halted</div>
-                            <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>VM should be stopped</div>
-                          </div>
-                        </DropdownItem>
-                      </DropdownList>
-                    </Dropdown>
-                    <FormHelperText>
-                      <HelperText>
-                        <HelperTextItem>Determines how the VM should be managed</HelperTextItem>
-                      </HelperText>
-                    </FormHelperText>
-                  </FormGroup>
-                  )}
-                </Form>
-              </CardBody>
-            </Card>
+            </Form>
           </div>
         )
-
       case 'cloudinit':
         return (
           <Form>
@@ -1913,23 +1922,30 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       aria-label="Create virtual machine wizard"
+      width="1140px"
     >
       <ModalHeader title="Create virtual machine" />
       <ModalBody>
-        <div style={{ marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-              Step {currentStepIndex + 1}: {currentStep?.name}
-            </span>
-            <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-              {Math.round(progressValue)}%
-            </span>
-          </div>
-          <Progress
-            value={progressValue}
-            measureLocation={ProgressMeasureLocation.none}
-            variant={currentStep?.id === 'review' ? ProgressVariant.success : undefined}
-          />
+        <div style={{ marginBottom: '1.5rem' }}>
+          <Flex alignItems={{ default: 'alignItemsCenter' }} justifyContent={{ default: 'justifyContentSpaceBetween' }}>
+            <FlexItem>
+              <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
+                Step {currentStepIndex + 1}: {currentStep?.name}
+              </span>
+            </FlexItem>
+            <FlexItem grow={{ default: 'grow' }} style={{ padding: '0 1rem' }}>
+              <Progress
+                value={progressValue}
+                measureLocation={ProgressMeasureLocation.none}
+                variant={currentStep?.id === 'review' ? ProgressVariant.success : undefined}
+              />
+            </FlexItem>
+            <FlexItem>
+              <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
+                {Math.round(progressValue)}%
+              </span>
+            </FlexItem>
+          </Flex>
         </div>
         <div style={{ minHeight: '500px', maxHeight: '500px', overflowY: 'auto', paddingRight: '1rem' }}>{renderStepContent()}</div>
       </ModalBody>
@@ -1950,6 +1966,22 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         <Button variant="link" onClick={handleClose} isDisabled={isCreating}>
           Cancel
         </Button>
+        {currentStep?.id === 'hardware-config' && (
+          <div style={{
+            marginLeft: 'auto',
+            display: 'none',
+            // display: 'flex', TODO add this in later versions
+            alignItems: 'center',
+            backgroundColor: '#0066cc',
+            color: '#ffffff',
+            padding: '0.5rem 1rem',
+            borderRadius: '4px',
+            fontWeight: 600,
+            fontSize: '0.95rem'
+          }}>
+            Estimated Monthly Cost: $XXX.XX
+          </div>
+        )}
       </ModalFooter>
     </Modal>
   )
