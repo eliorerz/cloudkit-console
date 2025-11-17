@@ -33,8 +33,9 @@ import {
 } from '@patternfly/react-table'
 import { CubeIcon, SearchIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
-import { getTemplates, deleteTemplate } from '../api/templates'
-import { Template } from '../api/types'
+import { getTemplates, deleteTemplate, createTemplate } from '../api/templates'
+import { Template, TemplateParameter } from '../api/types'
+import { CreateTemplateWizard } from '../components/wizards/CreateTemplateWizard'
 
 const AdminTemplates: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([])
@@ -47,6 +48,9 @@ const AdminTemplates: React.FC = () => {
   const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  // Create wizard state
+  const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false)
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -131,8 +135,26 @@ const AdminTemplates: React.FC = () => {
   }
 
   const handleCreateTemplate = () => {
-    // TODO: Open create template wizard
-    alert('Create template wizard coming soon!')
+    setIsCreateWizardOpen(true)
+  }
+
+  const handleCreateTemplateSubmit = async (
+    templateId: string,
+    title: string,
+    description: string,
+    parameters: TemplateParameter[]
+  ) => {
+    const newTemplate: Partial<Template> = {
+      id: templateId,
+      title,
+      description: description || undefined,
+      parameters: parameters.length > 0 ? parameters : undefined,
+    }
+
+    const createdTemplate = await createTemplate(newTemplate)
+
+    // Add to templates list
+    setTemplates([...templates, createdTemplate])
   }
 
   const handleEditTemplate = (template: Template) => {
@@ -414,6 +436,13 @@ const AdminTemplates: React.FC = () => {
           </Button>
         </ModalFooter>
       </Modal>
+
+      {/* Create template wizard */}
+      <CreateTemplateWizard
+        isOpen={isCreateWizardOpen}
+        onClose={() => setIsCreateWizardOpen(false)}
+        onCreate={handleCreateTemplateSubmit}
+      />
     </AppLayout>
   )
 }
