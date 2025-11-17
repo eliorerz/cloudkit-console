@@ -20,6 +20,11 @@ import {
   Button,
   Alert,
   AlertVariant,
+  FileUpload,
+  Dropdown,
+  DropdownItem,
+  DropdownList,
+  MenuToggle,
 } from '@patternfly/react-core'
 import {
   Table,
@@ -31,7 +36,7 @@ import {
   ExpandableRowContent,
   ActionsColumn,
 } from '@patternfly/react-table'
-import { CubeIcon, SearchIcon } from '@patternfly/react-icons'
+import { CubeIcon, SearchIcon, UploadIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { getTemplates, deleteTemplate, createTemplate } from '../api/templates'
 import { Template, TemplateParameter } from '../api/types'
@@ -51,6 +56,15 @@ const AdminTemplates: React.FC = () => {
 
   // Create wizard state
   const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false)
+
+  // JSON upload state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [jsonFile, setJsonFile] = useState<File | null>(null)
+  const [jsonFileContent, setJsonFileContent] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
+  const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false)
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -162,6 +176,109 @@ const AdminTemplates: React.FC = () => {
     alert(`Edit template: ${template.title}`)
   }
 
+  // JSON upload handlers
+  const openUploadModal = () => {
+    setIsUploadModalOpen(true)
+    setJsonFile(null)
+    setJsonFileContent('')
+    setUploadError(null)
+    setUploadSuccess(false)
+  }
+
+  const closeUploadModal = () => {
+    if (!isUploading) {
+      setIsUploadModalOpen(false)
+      setJsonFile(null)
+      setJsonFileContent('')
+      setUploadError(null)
+      setUploadSuccess(false)
+    }
+  }
+
+  const handleFileInputChange = (_event: any, file: File) => {
+    setJsonFile(file)
+    setUploadError(null)
+    setUploadSuccess(false)
+
+    // Read file content
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      setJsonFileContent(content)
+    }
+    reader.onerror = () => {
+      setUploadError('Failed to read file')
+    }
+    reader.readAsText(file)
+  }
+
+  const handleFileClear = () => {
+    setJsonFile(null)
+    setJsonFileContent('')
+    setUploadError(null)
+    setUploadSuccess(false)
+  }
+
+  const validateTemplateJson = (template: any): string | null => {
+    if (!template.id || typeof template.id !== 'string') {
+      return 'Template must have a valid "id" field'
+    }
+    if (!template.title || typeof template.title !== 'string') {
+      return 'Template must have a valid "title" field'
+    }
+    if (template.parameters && !Array.isArray(template.parameters)) {
+      return 'Template "parameters" must be an array'
+    }
+    return null
+  }
+
+  const handleUploadJson = async () => {
+    if (!jsonFileContent) {
+      setUploadError('Please select a JSON file')
+      return
+    }
+
+    setIsUploading(true)
+    setUploadError(null)
+    setUploadSuccess(false)
+
+    try {
+      // Parse JSON
+      const templateData = JSON.parse(jsonFileContent)
+
+      // Validate template structure
+      const validationError = validateTemplateJson(templateData)
+      if (validationError) {
+        setUploadError(validationError)
+        setIsUploading(false)
+        return
+      }
+
+      // Create template
+      const createdTemplate = await createTemplate(templateData)
+
+      // Add to templates list
+      setTemplates([...templates, createdTemplate])
+
+      // Success
+      setUploadSuccess(true)
+      setTimeout(() => {
+        closeUploadModal()
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to upload template:', error)
+      if (error instanceof SyntaxError) {
+        setUploadError('Invalid JSON format: ' + error.message)
+      } else if (error instanceof Error) {
+        setUploadError(error.message)
+      } else {
+        setUploadError('Failed to upload template')
+      }
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   // Sorting logic
   const getSortableValue = (template: Template, columnIndex: number): string => {
     switch (columnIndex) {
@@ -214,9 +331,30 @@ const AdminTemplates: React.FC = () => {
           <Title headingLevel="h1" size="2xl">
             Template Management
           </Title>
-          <Button variant="primary" onClick={handleCreateTemplate}>
-            Create Template
-          </Button>
+          <Dropdown
+            isOpen={isCreateDropdownOpen}
+            onSelect={() => setIsCreateDropdownOpen(false)}
+            onOpenChange={(isOpen: boolean) => setIsCreateDropdownOpen(isOpen)}
+            toggle={(toggleRef) => (
+              <MenuToggle
+                ref={toggleRef}
+                onClick={() => setIsCreateDropdownOpen(!isCreateDropdownOpen)}
+                isExpanded={isCreateDropdownOpen}
+                variant="primary"
+              >
+                Create Template
+              </MenuToggle>
+            )}
+          >
+            <DropdownList>
+              <DropdownItem onClick={handleCreateTemplate}>
+                Create Template
+              </DropdownItem>
+              <DropdownItem onClick={openUploadModal} icon={<UploadIcon />}>
+                Upload from JSON
+              </DropdownItem>
+            </DropdownList>
+          </Dropdown>
         </div>
 
         <Card>
@@ -443,6 +581,59 @@ const AdminTemplates: React.FC = () => {
         onClose={() => setIsCreateWizardOpen(false)}
         onCreate={handleCreateTemplateSubmit}
       />
+
+      {/* Upload JSON modal */}
+      <Modal
+        variant={ModalVariant.medium}
+        isOpen={isUploadModalOpen}
+        onClose={closeUploadModal}
+        aria-label="Upload template from JSON"
+      >
+        <ModalHeader title="Upload Template from JSON" />
+        <ModalBody>
+          {uploadError && (
+            <Alert variant={AlertVariant.danger} isInline title="Upload Error" style={{ marginBottom: '1rem' }}>
+              {uploadError}
+            </Alert>
+          )}
+          {uploadSuccess && (
+            <Alert variant={AlertVariant.success} isInline title="Success" style={{ marginBottom: '1rem' }}>
+              Template uploaded successfully!
+            </Alert>
+          )}
+          <p style={{ marginBottom: '1rem', color: '#6a6e73' }}>
+            Select a JSON file containing the template definition. The file should include <code>id</code>, <code>title</code>, and optionally <code>description</code> and <code>parameters</code> fields.
+          </p>
+          <FileUpload
+            id="json-file-upload"
+            value={jsonFileContent}
+            filename={jsonFile?.name}
+            filenamePlaceholder="Drag and drop a file or browse"
+            onFileInputChange={handleFileInputChange}
+            onClearClick={handleFileClear}
+            browseButtonText="Browse..."
+            clearButtonText="Clear"
+            isLoading={isUploading}
+            isDisabled={isUploading}
+            dropzoneProps={{
+              accept: { 'application/json': ['.json'] },
+            }}
+          />
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="primary"
+            onClick={handleUploadJson}
+            isDisabled={!jsonFile || isUploading || uploadSuccess}
+            isLoading={isUploading}
+          >
+            {isUploading ? 'Uploading...' : 'Upload'}
+          </Button>
+          <Button variant="link" onClick={closeUploadModal} isDisabled={isUploading}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </Modal>
     </AppLayout>
   )
 }
