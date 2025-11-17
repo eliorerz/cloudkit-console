@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import VirtualMachines from './pages/VirtualMachines'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
 import Templates from './pages/Templates'
+import AdminTemplates from './pages/AdminTemplates'
 import OSCatalog from './pages/OSCatalog'
 import Organizations from './pages/Organizations'
 import Hubs from './pages/Hubs'
@@ -71,6 +72,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Hubs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/templates"
+            element={
+              <ProtectedRoute>
+                <AdminTemplates />
               </ProtectedRoute>
             }
           />

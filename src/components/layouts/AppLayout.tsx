@@ -77,6 +77,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/organizations')
     } else if (selectedItem.itemId === 'hubs') {
       navigate('/hubs')
+    } else if (selectedItem.itemId === 'admin-templates') {
+      navigate('/admin/templates')
     }
   }
 
@@ -229,6 +231,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   isActive={location.pathname === '/organizations'}
                 >
                   Organizations
+                </NavItem>
+                <NavItem
+                  itemId="admin-templates"
+                  isActive={location.pathname === '/admin/templates'}
+                >
+                  Templates
                 </NavItem>
               </NavExpandable>
             )}
