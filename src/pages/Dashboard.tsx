@@ -18,7 +18,6 @@ import {
   GridItem,
 } from '@patternfly/react-core'
 import {
-  CubeIcon,
   LayerGroupIcon,
   NetworkIcon,
   VirtualMachineIcon,
@@ -34,7 +33,6 @@ import { useAuth } from '../contexts/AuthContext'
 const Dashboard: React.FC = () => {
   const { role } = useAuth()
   const [metrics, setMetrics] = useState<DashboardMetrics>({
-    clusters: { total: 0, active: 0 },
     templates: { total: 0 },
     hubs: { total: 0 },
     vms: { total: 0, running: 0, stopped: 0, error: 0, provisioning: 0 },
@@ -80,31 +78,6 @@ const Dashboard: React.FC = () => {
           <Grid hasGutter>
             <GridItem sm={12} md={12} lg={9} xl={9} rowSpan={1}>
               <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '190px', lg: '210px', xl: '225px' }}>
-          {role === 'fulfillment-admin' && (
-            <GalleryItem>
-              <Card isFullHeight>
-                <CardTitle>
-                  <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                    <FlexItem>
-                      <span style={{ color: '#06c', fontSize: '1.5rem' }}>
-                        <CubeIcon />
-                      </span>
-                    </FlexItem>
-                    <FlexItem>
-                      Clusters
-                    </FlexItem>
-                  </Flex>
-                </CardTitle>
-                <CardBody>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.clusters.total}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                    {metrics.clusters.active} active
-                  </div>
-                </CardBody>
-              </Card>
-            </GalleryItem>
-          )}
-
           <GalleryItem>
             <Card isFullHeight>
               <CardTitle>
@@ -283,13 +256,6 @@ const Dashboard: React.FC = () => {
           Quick Actions
         </Title>
         <Flex spaceItems={{ default: 'spaceItemsMd' }}>
-          {role === 'fulfillment-admin' && (
-            <FlexItem>
-              <Button variant="primary" isDisabled>
-                Create Cluster
-              </Button>
-            </FlexItem>
-          )}
           <FlexItem>
             <Button variant="secondary" isDisabled>
               View Templates

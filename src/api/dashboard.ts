@@ -1,15 +1,10 @@
 import { apiClient } from './client'
 import { getHubs } from './hubs'
-import { Cluster, Template, VirtualMachine, DashboardMetrics, ListResponse } from './types'
+import { Template, VirtualMachine, DashboardMetrics, ListResponse } from './types'
 
 export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   try {
-    const [clustersResp, templatesResp] = await Promise.all([
-      apiClient.get<ListResponse<Cluster>>('/clusters'),
-      apiClient.get<ListResponse<Template>>('/virtual_machine_templates'),
-    ])
-
-    const clusters = clustersResp.items || []
+    const templatesResp = await apiClient.get<ListResponse<Template>>('/virtual_machine_templates')
 
     // Hubs - use gRPC-Web client to fetch from private.v1.Hubs
     let hubsTotal = 0
@@ -29,9 +24,6 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       console.log('VMs endpoint not available')
     }
 
-    // Calculate cluster metrics
-    const activeClusters = clusters.filter(c => c.status === 'Ready' || c.status === 'ready').length
-
     // Calculate VM metrics using status.state
     const runningVMs = vms.filter(vm =>
       vm.status?.state?.toUpperCase() === 'READY'
@@ -47,10 +39,6 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
     const activeOperations = provisioningVMs
 
     return {
-      clusters: {
-        total: clustersResp.total,
-        active: activeClusters,
-      },
       templates: {
         total: templatesResp.total,
       },
@@ -82,7 +70,6 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   } catch (error) {
     console.error('Failed to fetch dashboard metrics:', error)
     return {
-      clusters: { total: 0, active: 0 },
       templates: { total: 0 },
       hubs: { total: 0 },
       vms: { total: 0, running: 0, stopped: 0, error: 0, provisioning: 0 },

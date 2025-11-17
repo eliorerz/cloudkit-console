@@ -111,10 +111,6 @@ export interface ListResponse<T> {
 }
 
 export interface DashboardMetrics {
-  clusters: {
-    total: number
-    active: number
-  }
   templates: {
     total: number
   }
