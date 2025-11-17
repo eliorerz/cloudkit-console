@@ -43,6 +43,7 @@ import {
 import { Template, TemplateParameter } from '../../api/types'
 import { fetchAllOSImages, getImagePath, OSImage } from '../../utils/imageRegistry'
 import { getGenericTemplateId } from '../../api/config'
+import { getTemplates } from '../../api/templates'
 
 interface CreateVMWizardProps {
   isOpen: boolean
@@ -80,6 +81,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [cloudInitFilename, setCloudInitFilename] = useState('')
   const [isCloudInitLoading, setIsCloudInitLoading] = useState(false)
 
+  // Internal templates state - fetch when wizard opens
+  const [internalTemplates, setInternalTemplates] = useState<Template[]>(templates)
+  const [_loadingTemplates, setLoadingTemplates] = useState(false)
+
   // Hardware configuration fields (not in template)
   const [vmCpuCores, setVmCpuCores] = useState(2)
   const [vmMemoryGi, setVmMemoryGi] = useState(4)  // Store as numeric Gi
@@ -105,10 +110,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   // Generic template configuration
   const [genericTemplateId, setGenericTemplateId] = useState<string>('')
 
-  const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
+  const selectedTemplate = internalTemplates.find(t => t.id === selectedTemplateId)
 
   // Filter out the generic template from user-visible templates
-  const userTemplates = templates.filter(t => t.id !== genericTemplateId)
+  const userTemplates = internalTemplates.filter(t => t.id !== genericTemplateId)
 
   // Fetch generic template ID when wizard opens
   useEffect(() => {
@@ -122,6 +127,26 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         })
     }
   }, [isOpen, genericTemplateId])
+
+  // Fetch templates when wizard opens - don't rely on props
+  useEffect(() => {
+    if (isOpen) {
+      // Always fetch templates when wizard opens to ensure we have the latest
+      setLoadingTemplates(true)
+      getTemplates()
+        .then((response) => {
+          setInternalTemplates(response.items || [])
+        })
+        .catch((error) => {
+          console.error('Failed to fetch templates:', error)
+          // Fallback to props if fetch fails
+          setInternalTemplates(templates)
+        })
+        .finally(() => {
+          setLoadingTemplates(false)
+        })
+    }
+  }, [isOpen, templates])
 
   // Fetch available OS images when wizard opens
   useEffect(() => {
@@ -348,7 +373,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     setSelectedTemplateId(templateId)
     setTemplateDropdownOpen(false)
 
-    const template = templates.find(t => t.id === templateId)
+    const template = internalTemplates.find(t => t.id === templateId)
     if (template?.parameters) {
       const defaults: Record<string, any> = {}
       template.parameters.forEach(param => {
@@ -519,7 +544,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         let hasValidImage = false
         if (selectedTemplateId && selectedTemplateId !== genericTemplateId) {
           // Template selected (not generic) - check if it has an image source parameter
-          const template = templates.find(t => t.id === selectedTemplateId)
+          const template = internalTemplates.find(t => t.id === selectedTemplateId)
           const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
           hasValidImage = !!imageParam?.default?.value || (!!selectedOS && !!selectedVersion)
         } else if (imageSelectionMode === 'custom') {
@@ -1159,7 +1184,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                   let imageValue = currentImagePath
                   if (selectedTemplateId && selectedTemplateId !== genericTemplateId) {
                     // Find vm_image_source parameter from selected template
-                    const template = templates.find(t => t.id === selectedTemplateId)
+                    const template = internalTemplates.find(t => t.id === selectedTemplateId)
                     const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
                     if (imageParam?.default) {
                       imageValue = imageParam.default.value || ''
@@ -1331,7 +1356,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                     style={{ width: '100%' }}
                   >
                     {selectedTemplateId
-                      ? templates.find(t => t.id === selectedTemplateId)?.title || selectedTemplateId
+                      ? internalTemplates.find(t => t.id === selectedTemplateId)?.title || selectedTemplateId
                       : 'Select a template'}
                   </MenuToggle>
                 )}
