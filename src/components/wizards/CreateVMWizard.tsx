@@ -296,9 +296,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       if (categorized.cloudInit.length > 0) {
         steps.push({ id: 'cloudinit', name: 'Cloud-init', category: 'cloudInit' })
       }
-      if (categorized.other.length > 0) {
-        steps.push({ id: 'other', name: 'Other', category: 'other' })
-      }
     }
 
     steps.push({ id: 'review', name: 'Review' })
@@ -529,7 +526,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       case 'general':
       case 'network':
       case 'storage':
-      case 'other':
         // Check that all required parameters in this category have values
         if (!selectedTemplate?.parameters) return true
         const categorized = categorizeParameters(selectedTemplate.parameters)
@@ -1568,7 +1564,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       case 'hardware':
       case 'network':
       case 'storage':
-      case 'other':
         if (!selectedTemplate?.parameters) return null
         const categorized = categorizeParameters(selectedTemplate.parameters)
         const categoryParams = categorized[currentStep.category!] || []
@@ -1581,7 +1576,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
           hardware: 'Define the hardware resources allocated to your VM including CPU, memory, and disk space.',
           network: 'Configure network settings including interfaces, IP addresses, and network types.',
           storage: 'Set up storage configuration including disk images, sizes, and storage classes.',
-          other: 'Additional configuration options for your virtual machine.',
         }
 
         return (
@@ -1793,7 +1787,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
             </Card>
 
             {renderCategorySection('hardware', 'Hardware Resources', categorizedForReview.hardware)}
-            {renderCategorySection('other', 'Additional Settings', categorizedForReview.other)}
 
             {cloudInitConfig && (
               <div style={{ marginBottom: '1.5rem' }}>
