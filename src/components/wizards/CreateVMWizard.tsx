@@ -38,9 +38,11 @@ import {
   Checkbox,
   Spinner,
   Switch,
+  FileUpload,
 } from '@patternfly/react-core'
 import { Template, TemplateParameter } from '../../api/types'
 import { fetchAllOSImages, getImagePath, OSImage } from '../../utils/imageRegistry'
+import { getGenericTemplateId } from '../../api/config'
 
 interface CreateVMWizardProps {
   isOpen: boolean
@@ -75,6 +77,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [cloudInitConfig, setCloudInitConfig] = useState('')
   const [customizeTemplate, setCustomizeTemplate] = useState(false)
   const [creationError, setCreationError] = useState<string | null>(null)
+  const [cloudInitFilename, setCloudInitFilename] = useState('')
+  const [isCloudInitLoading, setIsCloudInitLoading] = useState(false)
 
   // Hardware configuration fields (not in template)
   const [vmCpuCores, setVmCpuCores] = useState(2)
@@ -98,7 +102,26 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [osDropdownOpen, setOsDropdownOpen] = useState(false)
   const [versionDropdownOpen, setVersionDropdownOpen] = useState(false)
 
+  // Generic template configuration
+  const [genericTemplateId, setGenericTemplateId] = useState<string>('')
+
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
+
+  // Filter out the generic template from user-visible templates
+  const userTemplates = templates.filter(t => t.id !== genericTemplateId)
+
+  // Fetch generic template ID when wizard opens
+  useEffect(() => {
+    if (isOpen && !genericTemplateId) {
+      getGenericTemplateId()
+        .then((id) => {
+          setGenericTemplateId(id)
+        })
+        .catch((error) => {
+          console.error('Failed to fetch generic template ID:', error)
+        })
+    }
+  }, [isOpen, genericTemplateId])
 
   // Fetch available OS images when wizard opens
   useEffect(() => {
@@ -317,6 +340,9 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       setCustomImagePath('')
       setSelectedOS('')
       setSelectedVersion('')
+      // Reset cloud-init file upload
+      setCloudInitFilename('')
+      setIsCloudInitLoading(false)
       onClose()
     }
   }
@@ -378,6 +404,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
       // Generate a unique VM ID if not provided
       const generatedVmId = vmId || `vm-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+
+      // Determine which template to use
+      // If creating manually, use the generic template; otherwise use selected template
+      const templateToUse = useTemplate ? selectedTemplateId : genericTemplateId
 
       // Build parameter overrides - only include values that differ from defaults
       // The fulfillment service will merge these with template defaults
@@ -469,7 +499,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
       // Create VM with parameter overrides
       // The fulfillment service will merge these with template defaults
-      await onCreate(generatedVmId, selectedTemplateId, vmParameters)
+      await onCreate(generatedVmId, templateToUse, vmParameters)
 
       handleClose()
     } catch (error) {
@@ -518,18 +548,43 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const renderParameterFields = (params: TemplateParameter[]) => {
     // Filter out parameters already handled in hardware-config and vm-config steps
     const filteredParams = params.filter(param => {
-      const name = param.name
+      const name = param.name.toLowerCase()
+      const title = (param.title || '').toLowerCase()
+      console.log('Processing parameter:', param.name, 'title:', param.title)
+
       // Skip hardware parameters handled in hardware-config step
       if (['vm_cpu_cores', 'cpu_count', 'cpus', 'vm_memory_size', 'memory_gb', 'memory',
-           'vm_disk_size', 'disk_size_gb', 'disk_size', 'vm_run_strategy', 'run_strategy'].includes(name)) {
+           'vm_disk_size', 'disk_size_gb', 'disk_size', 'vm_run_strategy', 'run_strategy'].includes(param.name)) {
         return false
       }
       // Skip image source parameter handled in vm-config step
-      if (['vm_image_source', 'image_source'].includes(name)) {
+      if (['vm_image_source', 'image_source'].includes(param.name)) {
         return false
       }
       // Skip OS type - automatically filled based on selected image
-      if (name === 'vm_os_type') {
+      if (param.name === 'vm_os_type') {
+        return false
+      }
+      // Skip hidden parameters (namespace, service exposure, storage class, service type/ports)
+      // Check parameter name (lowercase) and title (lowercase) for matches
+      const shouldHide =
+        // Namespace
+        (name.includes('namespace')) ||
+        // Service exposure - check both name and title
+        (name.includes('expose') && name.includes('service')) ||
+        (title.includes('expose') && title.includes('service')) ||
+        name === 'exposeAsService'.toLowerCase() ||
+        name === 'ExposeAsService'.toLowerCase() ||
+        // Storage class
+        (name.includes('storage') && name.includes('class')) ||
+        // Service type
+        (name.includes('service') && name.includes('type')) ||
+        // Service ports
+        (name.includes('service') && name.includes('port')) ||
+        name === 'ports'
+
+      if (shouldHide) {
+        console.log('Hiding parameter:', param.name, 'title:', param.title)
         return false
       }
       return true
@@ -892,8 +947,12 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               <GridItem span={6}>
                 <Card
                   isSelectable
-                  isSelected={useTemplate}
-                  onClick={() => setUseTemplate(true)}
+                  isSelected={useTemplate && selectedTemplateId !== genericTemplateId}
+                  onClick={() => {
+                    setUseTemplate(true)
+                    setSelectedTemplateId('')
+                    setCustomizeTemplate(false)
+                  }}
                   style={{ cursor: 'pointer', height: '100%' }}
                 >
                   <CardBody>
@@ -901,8 +960,12 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                       <Radio
                         id="use-template"
                         name="creation-method"
-                        isChecked={useTemplate}
-                        onChange={() => setUseTemplate(true)}
+                        isChecked={useTemplate && selectedTemplateId !== genericTemplateId}
+                        onChange={() => {
+                          setUseTemplate(true)
+                          setSelectedTemplateId('')
+                          setCustomizeTemplate(false)
+                        }}
                       />
                       <Title headingLevel="h3" size="lg" style={{ margin: 0 }}>
                         Use a template
@@ -916,22 +979,42 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               </GridItem>
               <GridItem span={6}>
                 <Card
-                  isSelectable
-                  isSelected={!useTemplate}
-                  onClick={() => setUseTemplate(false)}
-                  style={{ cursor: 'pointer', height: '100%' }}
+                  isSelectable={!!genericTemplateId}
+                  isSelected={selectedTemplateId === genericTemplateId && !!genericTemplateId}
+                  onClick={() => {
+                    if (genericTemplateId) {
+                      setUseTemplate(true)
+                      setSelectedTemplateId(genericTemplateId)
+                      setCustomizeTemplate(true)
+                    }
+                  }}
+                  style={{
+                    cursor: genericTemplateId ? 'pointer' : 'not-allowed',
+                    height: '100%',
+                    opacity: genericTemplateId ? 1 : 0.6
+                  }}
                 >
                   <CardBody>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                       <Radio
                         id="create-manual"
                         name="creation-method"
-                        isChecked={!useTemplate}
-                        onChange={() => setUseTemplate(false)}
+                        isChecked={selectedTemplateId === genericTemplateId && !!genericTemplateId}
+                        isDisabled={!genericTemplateId}
+                        onChange={() => {
+                          if (genericTemplateId) {
+                            setUseTemplate(true)
+                            setSelectedTemplateId(genericTemplateId)
+                            setCustomizeTemplate(true)
+                          }
+                        }}
                       />
                       <Title headingLevel="h3" size="lg" style={{ margin: 0 }}>
                         Create manually
                       </Title>
+                      {!genericTemplateId && (
+                        <Spinner size="md" style={{ marginLeft: '0.5rem' }} />
+                      )}
                     </div>
                     <p style={{ color: '#6a6e73', marginLeft: '2rem' }}>
                       Configure all settings manually for advanced customization. For advanced users.
@@ -941,8 +1024,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               </GridItem>
             </Grid>
 
-            {/* Show template selection if "Use a template" is selected */}
-            {useTemplate && (
+            {/* Show template selection only if "Use a template" is selected (not "Create manually") */}
+            {useTemplate && selectedTemplateId !== genericTemplateId && (
               <Form style={{ marginTop: '2rem' }}>
                 <FormGroup label="Template" isRequired fieldId="template">
                   <Dropdown
@@ -957,13 +1040,13 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                         style={{ width: '100%' }}
                       >
                         {selectedTemplateId
-                          ? templates.find(t => t.id === selectedTemplateId)?.title || selectedTemplateId
+                          ? userTemplates.find(t => t.id === selectedTemplateId)?.title || selectedTemplateId
                           : 'Select a template'}
                       </MenuToggle>
                     )}
                   >
                     <DropdownList>
-                      {templates.map((template) => (
+                      {userTemplates.map((template) => (
                         <DropdownItem key={template.id} value={template.id}>
                           <div>
                             <strong>{template.title || template.id}</strong>
@@ -1411,21 +1494,73 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               Cloud-init Configuration
             </Title>
             <p style={{ color: '#6a6e73', marginBottom: '0.75rem' }}>
-              Configure cloud-init for VM initialization. You can include user data, network config, etc.
+              Upload a cloud-init YAML file or paste the configuration directly. Used for VM initialization with user data, network config, etc.
             </p>
-            <FormGroup label="Cloud-init configuration" fieldId="cloud-init-config">
-              <TextArea
-                id="cloud-init-config"
-                value={cloudInitConfig || templateParameters.cloud_init_config || ''}
-                onChange={(_event, value) => setCloudInitConfig(value)}
-                rows={15}
-                placeholder="#cloud-config&#10;users:&#10;  - name: admin&#10;    ssh-authorized-keys:&#10;      - ssh-rsa AAAA..."
-                style={{ fontFamily: 'monospace' }}
+
+            <FormGroup label="Upload cloud-init file" fieldId="cloud-init-upload">
+              <FileUpload
+                id="cloud-init-file"
+                value={cloudInitConfig}
+                filename={cloudInitFilename}
+                onFileInputChange={(_event: any, file: File) => {
+                  setCloudInitFilename(file.name)
+                }}
+                onDataChange={(_event: any, value: string) => setCloudInitConfig(value)}
+                onTextChange={(_event: any, value: string) => setCloudInitConfig(value)}
+                onClearClick={() => {
+                  setCloudInitConfig('')
+                  setCloudInitFilename('')
+                }}
+                isLoading={isCloudInitLoading}
+                allowEditingUploadedText
+                browseButtonText="Upload"
+                clearButtonText="Clear"
+                type="text"
+                dropzoneProps={{
+                  accept: {
+                    'text/yaml': ['.yaml', '.yml'],
+                    'text/plain': ['.txt'],
+                  }
+                }}
               />
-              <p style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                YAML format cloud-init configuration
-              </p>
+              <FormHelperText>
+                <HelperText>
+                  <HelperTextItem>
+                    Upload a YAML file or paste cloud-init configuration. Example: #cloud-config format
+                  </HelperTextItem>
+                </HelperText>
+              </FormHelperText>
             </FormGroup>
+
+            {cloudInitConfig && (
+              <FormGroup label="Configuration preview" fieldId="cloud-init-preview" style={{ marginTop: '1.5rem' }}>
+                <div style={{
+                  backgroundColor: '#f5f5f5',
+                  border: '1px solid #d2d2d2',
+                  borderRadius: '4px',
+                  padding: '1rem',
+                  maxHeight: '400px',
+                  overflowY: 'auto'
+                }}>
+                  <pre style={{
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
+                  }}>
+                    {cloudInitConfig}
+                  </pre>
+                </div>
+                <FormHelperText>
+                  <HelperText>
+                    <HelperTextItem>
+                      YAML preview of your cloud-init configuration
+                    </HelperTextItem>
+                  </HelperText>
+                </FormHelperText>
+              </FormGroup>
+            )}
           </Form>
         )
 

@@ -48,6 +48,7 @@ import { Template } from '../api/types'
 import { createVirtualMachine } from '../api/vms'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
 import { getOSImages, OSImage } from '../api/os-images'
+import { getGenericTemplateId } from '../api/config'
 
 const Templates: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([])
@@ -76,6 +77,9 @@ const Templates: React.FC = () => {
   // Pagination
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(12)
+
+  // Generic template ID
+  const [genericTemplateId, setGenericTemplateId] = useState<string>('')
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -107,6 +111,20 @@ const Templates: React.FC = () => {
     }
 
     fetchOSImages()
+  }, [])
+
+  // Fetch generic template ID
+  useEffect(() => {
+    const fetchGenericTemplateId = async () => {
+      try {
+        const id = await getGenericTemplateId()
+        setGenericTemplateId(id)
+      } catch (error) {
+        console.error('Error fetching generic template ID:', error)
+      }
+    }
+
+    fetchGenericTemplateId()
   }, [])
 
   // Helper to get OS icon from image source parameter
@@ -264,8 +282,11 @@ const Templates: React.FC = () => {
     })
   }
 
+  // Filter out generic template from user-visible templates
+  const userTemplates = templates.filter(t => t.id !== genericTemplateId)
+
   // Filter templates based on search
-  const filteredTemplates = templates.filter(template => {
+  const filteredTemplates = userTemplates.filter(template => {
     if (!searchValue.trim()) return true
     const searchLower = searchValue.toLowerCase()
     return (
@@ -345,13 +366,13 @@ const Templates: React.FC = () => {
             ) : filteredTemplates.length === 0 ? (
               <EmptyState>
                 <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                  {templates.length === 0 ? <CubeIcon /> : <SearchIcon />}
+                  {userTemplates.length === 0 ? <CubeIcon /> : <SearchIcon />}
                 </div>
                 <Title headingLevel="h4" size="lg">
-                  {templates.length === 0 ? "No templates" : "No results found"}
+                  {userTemplates.length === 0 ? "No templates" : "No results found"}
                 </Title>
                 <EmptyStateBody>
-                  {templates.length === 0
+                  {userTemplates.length === 0
                     ? "There are no templates to display."
                     : "No templates match your search criteria. Try adjusting your filters."}
                 </EmptyStateBody>
