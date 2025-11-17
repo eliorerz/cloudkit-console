@@ -47,16 +47,7 @@ import { getTemplates } from '../api/templates'
 import { Template } from '../api/types'
 import { createVirtualMachine } from '../api/vms'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
-import osImagesConfig from '../config/os-images.json'
-
-interface OSImage {
-  os: string
-  displayName: string
-  icon: string
-  repository: string
-  versions: string[]
-  osType: string
-}
+import { getOSImages, OSImage } from '../api/os-images'
 
 const Templates: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([])
@@ -79,6 +70,9 @@ const Templates: React.FC = () => {
   // Parameters expandable section state
   const [isParametersExpanded, setIsParametersExpanded] = useState(false)
 
+  // OS Images for icon matching
+  const [osImages, setOsImages] = useState<OSImage[]>([])
+
   // Pagination
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(12)
@@ -100,6 +94,21 @@ const Templates: React.FC = () => {
     fetchTemplates()
   }, [])
 
+  // Fetch OS images for icon matching
+  useEffect(() => {
+    const fetchOSImages = async () => {
+      try {
+        const response = await getOSImages()
+        setOsImages(response.images || [])
+      } catch (error) {
+        console.error('Error fetching OS images:', error)
+        setOsImages([])
+      }
+    }
+
+    fetchOSImages()
+  }, [])
+
   // Helper to get OS icon from image source parameter
   const getOSIcon = (template: Template): string | null => {
     const imageParam = template.parameters?.find(p => p.name === 'vm_image_source')
@@ -107,9 +116,9 @@ const Templates: React.FC = () => {
 
     if (!imageSource || typeof imageSource !== 'string') return null
 
-    // Try to match with OS images config
+    // Try to match with OS images from API
     const imageLower = imageSource.toLowerCase()
-    const matchedImage = osImagesConfig.images.find((img: OSImage) =>
+    const matchedImage = osImages.find((img: OSImage) =>
       imageLower.includes(img.os.toLowerCase())
     )
 
