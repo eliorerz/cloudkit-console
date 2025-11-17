@@ -42,17 +42,17 @@ import { getVirtualMachines, deleteVirtualMachine, createVirtualMachine } from '
 import { getTemplates } from '../api/templates'
 import { VirtualMachine, Template } from '../api/types'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
-import osImagesConfig from '../config/os-images.json'
+import { getOSImages, OSImage } from '../api/os-images'
 
 type ViewType = 'cards' | 'table'
 
 // Helper function to get OS icon from image source
-const getOSIcon = (vm: VirtualMachine): string | null => {
+const getOSIcon = (vm: VirtualMachine, osImages: OSImage[]): string | null => {
   const imageSource = vm.spec?.template_parameters?.vm_image_source?.value || vm.spec?.template_parameters?.vm_image_source
   if (!imageSource) return null
 
   // Try to match the image source with known OS images
-  for (const osImage of osImagesConfig.images) {
+  for (const osImage of osImages) {
     if (imageSource.includes(osImage.repository)) {
       return osImage.icon
     }
@@ -89,6 +89,9 @@ const VirtualMachines: React.FC = () => {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
 
+  // OS Images for icon matching
+  const [osImages, setOsImages] = useState<OSImage[]>([])
+
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
   const [activeSortDirection, setActiveSortDirection] = useState<'asc' | 'desc'>('asc')
@@ -122,6 +125,21 @@ const VirtualMachines: React.FC = () => {
     const interval = setInterval(fetchVMs, 30000)
     return () => clearInterval(interval)
   }, [isInitialLoad])
+
+  // Fetch OS images for icon matching
+  useEffect(() => {
+    const fetchOSImages = async () => {
+      try {
+        const response = await getOSImages()
+        setOsImages(response.images || [])
+      } catch (error) {
+        console.error('Error fetching OS images:', error)
+        setOsImages([])
+      }
+    }
+
+    fetchOSImages()
+  }, [])
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -276,7 +294,7 @@ const VirtualMachines: React.FC = () => {
       padding: '0'
     }}>
       {paginatedVMs.map((vm) => {
-        const osIcon = getOSIcon(vm)
+        const osIcon = getOSIcon(vm, osImages)
 
         return (
         <Card

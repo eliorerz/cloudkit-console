@@ -26,24 +26,14 @@ import {
 } from '@patternfly/react-core'
 import { ThIcon, ListIcon, RocketIcon, InfoCircleIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
-import osImagesConfig from '../config/os-images.json'
 import { getTemplates } from '../api/templates'
 import { createVirtualMachine } from '../api/vms'
 import { Template } from '../api/types'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
+import { getOSImages, OSImage as OSImageType } from '../api/os-images'
 
 type ViewType = 'cards' | 'list'
-
-interface OSImage {
-  os: string
-  displayName: string
-  icon: string
-  repository: string
-  versions: string[]
-  osType: string
-  available?: boolean
-  comingSoon?: boolean
-}
+type OSImage = OSImageType
 
 interface OSImageWithVersion extends OSImage {
   version: string
@@ -64,9 +54,12 @@ const OSCatalog: React.FC = () => {
     const loadImages = async () => {
       setLoading(true)
       try {
+        // Fetch OS images from API
+        const response = await getOSImages()
+
         // Flatten versions into separate entries
         const flattened: OSImageWithVersion[] = []
-        osImagesConfig.images.forEach((image: OSImage) => {
+        response.images.forEach((image: OSImage) => {
           image.versions.forEach((version: string) => {
             flattened.push({
               ...image,
