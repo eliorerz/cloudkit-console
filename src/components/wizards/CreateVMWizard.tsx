@@ -63,23 +63,23 @@ interface WizardStep {
   category?: string
 }
 
-// Machine size presets organized by tiers
+// Machine size presets organized by tiers with very subtle color coding
 const machineSizeTiers = {
   standard: {
     title: 'Standard Series',
     sizes: [
-      { id: 'small', name: 'Small', cpu: 2, memory: 16, description: '2 vCPU / 16 Gi RAM' },
-      { id: 'medium', name: 'Medium', cpu: 4, memory: 32, description: '4 vCPU / 32 Gi RAM' },
-      { id: 'large', name: 'Large', cpu: 8, memory: 64, description: '8 vCPU / 64 Gi RAM' },
+      { id: 'small', name: 'Small', cpu: 2, memory: 16, description: '2 vCPU / 16 Gi RAM', color: '#f8fbf8' },
+      { id: 'medium', name: 'Medium', cpu: 4, memory: 32, description: '4 vCPU / 32 Gi RAM', color: '#f6faf7' },
+      { id: 'large', name: 'Large', cpu: 8, memory: 64, description: '8 vCPU / 64 Gi RAM', color: '#f4f9f5' },
     ]
   },
   highPerformance: {
     title: 'High-Performance Series',
     sizes: [
-      { id: 'xlarge', name: 'XLarge', cpu: 16, memory: 128, description: '16 vCPU / 128 Gi RAM' },
-      { id: '2xlarge', name: '2XLarge', cpu: 32, memory: 256, description: '32 vCPU / 256 Gi RAM' },
-      { id: '4xlarge', name: '4XLarge', cpu: 48, memory: 384, description: '48 vCPU / 384 Gi RAM' },
-      { id: '8xlarge', name: '8XLarge', cpu: 64, memory: 512, description: '64 vCPU / 512 Gi RAM' },
+      { id: 'xlarge', name: 'XLarge', cpu: 16, memory: 128, description: '16 vCPU / 128 Gi RAM', color: '#fcfaff' },
+      { id: '2xlarge', name: '2XLarge', cpu: 32, memory: 256, description: '32 vCPU / 256 Gi RAM', color: '#fbf9ff' },
+      { id: '4xlarge', name: '4XLarge', cpu: 48, memory: 384, description: '48 vCPU / 384 Gi RAM', color: '#faf8ff' },
+      { id: '8xlarge', name: '8XLarge', cpu: 64, memory: 512, description: '64 vCPU / 512 Gi RAM', color: '#f8f6ff' },
     ]
   }
 }
@@ -1483,7 +1483,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                         style={{
                           cursor: 'pointer',
                           border: selectedSizePreset === size.id ? '3px solid #0066cc' : '1px solid #d2d2d2',
-                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : '#ffffff',
+                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : size.color,
                           transition: 'all 0.2s ease',
                           width: '200px',
                           height: '120px',
@@ -1527,7 +1527,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                         style={{
                           cursor: 'pointer',
                           border: selectedSizePreset === size.id ? '3px solid #0066cc' : '1px solid #d2d2d2',
-                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : '#ffffff',
+                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : size.color,
                           transition: 'all 0.2s ease',
                           width: '200px',
                           height: '120px',
