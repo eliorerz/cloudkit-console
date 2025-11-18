@@ -524,64 +524,61 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       // Generate a unique VM ID if not provided
       const generatedVmId = vmId || `vm-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
 
-      // Determine which template to use
-      // If creating manually, use the generic template; otherwise use selected template
-      const templateToUse = useTemplate ? selectedTemplateId : genericTemplateId
+      // Always use the generic template as the base
+      // Pre-configured templates are just parameter presets applied on top of the generic template
+      const templateToUse = genericTemplateId
 
-      // Build parameter overrides - only include values that differ from defaults
-      // The fulfillment service will merge these with template defaults
+      // Build parameter overrides
       // Each parameter must be wrapped in google.protobuf.Any format
       const vmParameters: Record<string, any> = {}
 
-      // Always include image source (required parameter)
-      if (currentImagePath && templateSupportsParam(['vm_image_source', 'image_source'])) {
-        const paramType = getParameterType('vm_image_source') || 'type.googleapis.com/google.protobuf.StringValue'
-        vmParameters.vm_image_source = wrapInProtobufAny(currentImagePath, paramType)
+      // If using a pre-configured template (not generic), apply all its default parameters first
+      if (selectedTemplateId && selectedTemplateId !== genericTemplateId && selectedTemplate?.parameters) {
+        selectedTemplate.parameters.forEach(param => {
+          if (param.default?.value !== undefined && param.default?.value !== null && param.default?.value !== '') {
+            const paramType = param.type || 'type.googleapis.com/google.protobuf.StringValue'
+            let value = param.default.value
+
+            // Convert Int64Value to string for protobuf JSON encoding
+            if (param.type === 'type.googleapis.com/google.protobuf.Int64Value' && typeof value === 'number') {
+              value = String(value)
+            }
+            // Convert BoolValue to boolean for protobuf JSON encoding
+            if (param.type === 'type.googleapis.com/google.protobuf.BoolValue' && typeof value === 'string') {
+              value = value === 'true'
+            }
+
+            vmParameters[param.name] = wrapInProtobufAny(value, paramType)
+          }
+        })
       }
 
-      // Automatically set OS type based on selected image
-      if (templateSupportsParam(['vm_os_type'])) {
-        const osType = imageSelectionMode === 'custom' ? 'linux' : (selectedOSImage?.osType || 'linux')
-        const paramType = getParameterType('vm_os_type') || 'type.googleapis.com/google.protobuf.StringValue'
-        vmParameters.vm_os_type = wrapInProtobufAny(osType, paramType)
-      }
-
-      // Only include customized parameters if user chose to customize
+      // Apply user customizations if they chose to customize the template
+      // These will override the template defaults set above
       if (customizeTemplate) {
-        // Map UI state to template parameter names and add only if customized
-
-        // Hardware configuration
-        if (templateSupportsParam(['vm_cpu_cores', 'cpu_count', 'cpus'])) {
-          const defaultCpu = 2
-          if (vmCpuCores !== defaultCpu) {
-            const paramType = getParameterType('vm_cpu_cores') || 'type.googleapis.com/google.protobuf.Int64Value'
-            vmParameters.vm_cpu_cores = wrapInProtobufAny(String(vmCpuCores), paramType)
-          }
+        // Image source - override template default if user selected a different image
+        if (currentImagePath) {
+          const paramType = getParameterType('vm_image_source') || 'type.googleapis.com/google.protobuf.StringValue'
+          vmParameters.vm_image_source = wrapInProtobufAny(currentImagePath, paramType)
         }
 
-        if (templateSupportsParam(['vm_memory_size', 'memory_gb', 'memory', 'vm_memory'])) {
-          const defaultMemory = 4
-          if (vmMemoryGi !== defaultMemory) {
-            const paramType = getParameterType('vm_memory_size') || 'type.googleapis.com/google.protobuf.StringValue'
-            vmParameters.vm_memory_size = wrapInProtobufAny(`${vmMemoryGi}Gi`, paramType)
-          }
-        }
+        // OS type - override template default based on selected image
+        const osType = imageSelectionMode === 'custom' ? 'linux' : (selectedOSImage?.osType || 'linux')
+        const osTypeParamType = getParameterType('vm_os_type') || 'type.googleapis.com/google.protobuf.StringValue'
+        vmParameters.vm_os_type = wrapInProtobufAny(osType, osTypeParamType)
 
-        if (templateSupportsParam(['vm_disk_size', 'disk_size_gb', 'disk_size'])) {
-          const defaultDisk = 200
-          if (vmDiskGi !== defaultDisk) {
-            const paramType = getParameterType('vm_disk_size') || 'type.googleapis.com/google.protobuf.StringValue'
-            vmParameters.vm_disk_size = wrapInProtobufAny(`${vmDiskGi}Gi`, paramType)
-          }
-        }
+        // Hardware configuration - override template defaults with user's selections
+        const cpuParamType = getParameterType('vm_cpu_cores') || 'type.googleapis.com/google.protobuf.Int64Value'
+        vmParameters.vm_cpu_cores = wrapInProtobufAny(String(vmCpuCores), cpuParamType)
 
-        if (templateSupportsParam(['vm_run_strategy', 'run_strategy'])) {
-          const defaultRunStrategy = 'Always'
-          if (vmRunStrategy !== defaultRunStrategy) {
-            const paramType = getParameterType('vm_run_strategy') || 'type.googleapis.com/google.protobuf.StringValue'
-            vmParameters.vm_run_strategy = wrapInProtobufAny(vmRunStrategy, paramType)
-          }
-        }
+        const memParamType = getParameterType('vm_memory_size') || 'type.googleapis.com/google.protobuf.StringValue'
+        vmParameters.vm_memory_size = wrapInProtobufAny(`${vmMemoryGi}Gi`, memParamType)
+
+        const diskParamType = getParameterType('vm_disk_size') || 'type.googleapis.com/google.protobuf.StringValue'
+        vmParameters.vm_disk_size = wrapInProtobufAny(`${vmDiskGi}Gi`, diskParamType)
+
+        const runStrategyParamType = getParameterType('vm_run_strategy') || 'type.googleapis.com/google.protobuf.StringValue'
+        vmParameters.vm_run_strategy = wrapInProtobufAny(vmRunStrategy, runStrategyParamType)
 
         // Cloud-init configuration
         if (cloudInitConfig && cloudInitConfig.trim() !== '') {
