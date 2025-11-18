@@ -68,18 +68,18 @@ const machineSizeTiers = {
   standard: {
     title: 'Standard Series',
     sizes: [
-      { id: 'small', name: 'Small', cpu: 2, memory: 16, description: '2 vCPU / 16 Gi RAM', color: '#f8fbf8' },
-      { id: 'medium', name: 'Medium', cpu: 4, memory: 32, description: '4 vCPU / 32 Gi RAM', color: '#f6faf7' },
-      { id: 'large', name: 'Large', cpu: 8, memory: 64, description: '8 vCPU / 64 Gi RAM', color: '#f4f9f5' },
+      { id: 'tiny', name: 'Tiny', cpu: 2, memory: 4, description: '2 vCPU / 4 Gi RAM', color: '#f8fbf8' },
+      { id: 'small', name: 'Small', cpu: 4, memory: 8, description: '4 vCPU / 8 Gi RAM', color: '#f6faf7' },
+      { id: 'medium', name: 'Medium', cpu: 8, memory: 16, description: '8 vCPU / 16 Gi RAM', color: '#f4f9f5' },
     ]
   },
   highPerformance: {
     title: 'High-Performance Series',
     sizes: [
-      { id: 'xlarge', name: 'XLarge', cpu: 16, memory: 128, description: '16 vCPU / 128 Gi RAM', color: '#fcfaff' },
-      { id: '2xlarge', name: '2XLarge', cpu: 32, memory: 256, description: '32 vCPU / 256 Gi RAM', color: '#fbf9ff' },
-      { id: '4xlarge', name: '4XLarge', cpu: 48, memory: 384, description: '48 vCPU / 384 Gi RAM', color: '#faf8ff' },
-      { id: '8xlarge', name: '8XLarge', cpu: 64, memory: 512, description: '64 vCPU / 512 Gi RAM', color: '#f8f6ff' },
+      { id: 'large', name: 'Large', cpu: 16, memory: 32, description: '16 vCPU / 32 Gi RAM', color: '#fcfaff' },
+      { id: 'xlarge', name: 'XLarge', cpu: 32, memory: 64, description: '32 vCPU / 64 Gi RAM', color: '#fbf9ff' },
+      { id: '2xlarge', name: '2XLarge', cpu: 48, memory: 128, description: '48 vCPU / 128 Gi RAM', color: '#faf8ff' },
+      { id: '4xlarge', name: '4XLarge', cpu: 64, memory: 256, description: '64 vCPU / 256 Gi RAM', color: '#f8f6ff' },
     ]
   }
 }
@@ -93,6 +93,8 @@ const diskSizeOptions = [
   { value: 500, label: '500Gi' },
   { value: 1024, label: '1Ti' },    // 1Ti = 1024 Gi
   { value: 2048, label: '2Ti' },    // 2Ti = 2048 Gi
+  { value: 3072, label: '3Ti' },    // 3Ti = 3072 Gi
+  { value: 4096, label: '4Ti' },    // 4Ti = 4096 Gi
   { value: 5120, label: '5Ti' },    // 5Ti = 5120 Gi
 ]
 
@@ -450,6 +452,33 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         }
       })
       setTemplateParameters(defaults)
+
+      // Sync hardware UI state with template defaults
+      template.parameters.forEach(param => {
+        if (param.default?.value !== undefined) {
+          // CPU cores
+          if (['vm_cpu_cores', 'cpu_count', 'cpus'].includes(param.name)) {
+            const cpuValue = typeof param.default.value === 'string' ? parseInt(param.default.value) : param.default.value
+            setVmCpuCores(cpuValue)
+          }
+          // Memory
+          if (['vm_memory_size', 'memory_gb', 'memory'].includes(param.name)) {
+            const memValue = param.default.value
+            const parsed = parseResourceString(memValue)
+            setVmMemoryGi(parsed.value)
+          }
+          // Disk
+          if (['vm_disk_size', 'disk_size_gb', 'disk_size'].includes(param.name)) {
+            const diskValue = param.default.value
+            const parsed = parseResourceString(diskValue)
+            setVmDiskGi(parsed.value)
+          }
+          // Run strategy
+          if (['vm_run_strategy', 'run_strategy'].includes(param.name)) {
+            setVmRunStrategy(param.default.value)
+          }
+        }
+      })
     } else {
       setTemplateParameters({})
     }
@@ -1796,19 +1825,33 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                         <DescriptionListGroup>
                           <DescriptionListTerm style={{ minWidth: '150px' }}>Image</DescriptionListTerm>
                           <DescriptionListDescription>
-                            {imageSelectionMode === 'custom' ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{customImagePath}</code>
-                              </div>
-                            ) : selectedOSImage ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <img src={selectedOSImage.icon} alt={selectedOSImage.displayName} style={{ width: '20px', height: '20px' }} />
-                                <span>{selectedOSImage.displayName} {selectedVersion}</span>
-                                <code style={{ fontSize: '0.85rem', color: '#6a6e73', marginLeft: '0.25rem' }}>({currentImagePath})</code>
-                              </div>
-                            ) : (
-                              <span style={{ color: '#6a6e73', fontStyle: 'italic' }}>(not set)</span>
-                            )}
+                            {(() => {
+                              // Get image from template default if not customizing
+                              const templateImageParam = selectedTemplate?.parameters?.find(p => p.name === 'vm_image_source')
+                              const templateDefaultImage = templateImageParam?.default?.value
+
+                              if (imageSelectionMode === 'custom') {
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{customImagePath}</code>
+                                  </div>
+                                )
+                              } else if (selectedOSImage) {
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <img src={selectedOSImage.icon} alt={selectedOSImage.displayName} style={{ width: '20px', height: '20px' }} />
+                                    <span>{selectedOSImage.displayName} {selectedVersion}</span>
+                                    <code style={{ fontSize: '0.85rem', color: '#6a6e73', marginLeft: '0.25rem' }}>({currentImagePath})</code>
+                                  </div>
+                                )
+                              } else if (templateDefaultImage) {
+                                return (
+                                  <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{templateDefaultImage}</code>
+                                )
+                              } else {
+                                return <span style={{ color: '#6a6e73', fontStyle: 'italic' }}>(not set)</span>
+                              }
+                            })()}
                           </DescriptionListDescription>
                         </DescriptionListGroup>
                       </DescriptionList>

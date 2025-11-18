@@ -249,7 +249,7 @@ const VirtualMachineDetail: React.FC = () => {
                 </GridItem>
 
                 <GridItem span={5}>
-                  <Flex direction={{ default: 'column' }} style={{ height: '100%' }}>
+                  <Flex direction={{ default: 'column' }} style={{ height: '100%', maxWidth: '460px' }}>
                     <FlexItem style={{ marginBottom: '1rem' }}>
                       <Card>
                         <CardBody>
