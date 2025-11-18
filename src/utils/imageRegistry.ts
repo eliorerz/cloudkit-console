@@ -5,6 +5,8 @@ export interface OSImage {
   versions: string[]
   repository: string
   osType: string
+  available?: boolean
+  comingSoon?: boolean
 }
 
 // Get full image path for a specific version

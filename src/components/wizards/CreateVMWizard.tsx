@@ -203,7 +203,9 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       setLoadingImages(true)
       fetchAllOSImages()
         .then((images) => {
-          setAvailableOSImages(images)
+          // Filter out "coming soon" / unavailable images
+          const availableImages = images.filter(img => img.available !== false)
+          setAvailableOSImages(availableImages)
           // Set initial OS and version if provided (from catalog)
           if (initialOS && initialVersion) {
             setSelectedOS(initialOS)

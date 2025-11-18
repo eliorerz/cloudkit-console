@@ -651,8 +651,9 @@ const OSCatalog: React.FC = () => {
                 setIsDetailsModalOpen(false)
                 handleDeploy(selectedImage)
               }}
+              isDisabled={selectedImage.available === false}
             >
-              Create VM
+              {selectedImage.available === false ? 'Not Available' : 'Create VM'}
             </Button>
             <Button variant="link" onClick={() => setIsDetailsModalOpen(false)}>
               Close
