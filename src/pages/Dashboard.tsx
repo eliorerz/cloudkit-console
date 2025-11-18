@@ -49,6 +49,14 @@ const Dashboard: React.FC = () => {
         setLoading(true)
       }
       const data = await getDashboardMetrics()
+
+      // Exclude generic template from count for non-admin users
+      // The backend counts all templates including the generic one
+      // For non-admin users, subtract 1 (the generic template) or set to 0 if only generic exists
+      if (role !== 'fulfillment-admin' && data.templates.total > 0) {
+        data.templates.total = Math.max(0, data.templates.total - 1)
+      }
+
       setMetrics(data)
       if (isInitialLoad) {
         setLoading(false)
@@ -61,7 +69,7 @@ const Dashboard: React.FC = () => {
     // Refresh metrics every 30 seconds
     const interval = setInterval(fetchMetrics, 30000)
     return () => clearInterval(interval)
-  }, [isInitialLoad])
+  }, [isInitialLoad, role])
 
   return (
     <AppLayout>
