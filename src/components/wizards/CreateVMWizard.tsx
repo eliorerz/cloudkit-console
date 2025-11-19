@@ -334,9 +334,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       if (categorized.network.length > 0) {
         steps.push({ id: 'network', name: 'Network', category: 'network' })
       }
-      if (categorized.storage.length > 0) {
-        steps.push({ id: 'storage', name: 'Storage', category: 'storage' })
-      }
+      // Skip storage step - disk configuration is in hardware-config
       if (categorized.cloudInit.length > 0) {
         steps.push({ id: 'cloudinit', name: 'Cloud-init', category: 'cloudInit' })
       }
@@ -1647,7 +1645,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                     {/* Category sections in left column */}
                     {renderCategorySection('general', 'General Settings', categorizedForReview.general)}
                     {renderCategorySection('network', 'Network Configuration', categorizedForReview.network)}
-                    {renderCategorySection('storage', 'Storage Configuration', categorizedForReview.storage)}
 
                     {/* Run Strategy Section */}
                     {templateSupportsParam(['run_strategy', 'vm_run_strategy']) && (
