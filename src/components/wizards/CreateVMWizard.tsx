@@ -37,14 +37,12 @@ import {
   InputGroupItem,
   Checkbox,
   Spinner,
-  Switch,
   FileUpload,
   Slider,
   Flex,
   FlexItem,
 } from '@patternfly/react-core'
 import { Template, TemplateParameter } from '../../api/types'
-import { fetchAllOSImages, getImagePath, OSImage } from '../../utils/imageRegistry'
 import { getGenericTemplateId } from '../../api/config'
 import { getTemplates } from '../../api/templates'
 
@@ -53,8 +51,6 @@ interface CreateVMWizardProps {
   onClose: () => void
   onCreate: (vmId: string, templateId: string, parameters: Record<string, any>) => Promise<void>
   templates: Template[]
-  initialOS?: string
-  initialVersion?: string
 }
 
 interface WizardStep {
@@ -112,8 +108,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   onClose,
   onCreate,
   templates,
-  initialOS,
-  initialVersion,
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [useTemplate, setUseTemplate] = useState(true)
@@ -149,22 +143,12 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const [selectedSizePreset, setSelectedSizePreset] = useState('medium')
 
   // Image selection state
-  const [availableOSImages, setAvailableOSImages] = useState<OSImage[]>([])
-  const [loadingImages, setLoadingImages] = useState(false)
-  const [imageSelectionMode, setImageSelectionMode] = useState<'preset' | 'custom'>('preset')
-  const [selectedOS, setSelectedOS] = useState<string>('')
-  const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [customImagePath, setCustomImagePath] = useState<string>('')
-  const [osDropdownOpen, setOsDropdownOpen] = useState(false)
-  const [versionDropdownOpen, setVersionDropdownOpen] = useState(false)
 
   // Generic template configuration
   const [genericTemplateId, setGenericTemplateId] = useState<string>('')
 
   const selectedTemplate = internalTemplates.find(t => t.id === selectedTemplateId)
-
-  // Filter out the generic template from user-visible templates
-  const userTemplates = internalTemplates.filter(t => t.id !== genericTemplateId)
 
   // Fetch generic template ID when wizard opens
   useEffect(() => {
@@ -199,29 +183,6 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     }
   }, [isOpen, templates])
 
-  // Fetch available OS images when wizard opens
-  useEffect(() => {
-    if (isOpen && availableOSImages.length === 0) {
-      setLoadingImages(true)
-      fetchAllOSImages()
-        .then((images) => {
-          // Filter out "coming soon" / unavailable images
-          const availableImages = images.filter(img => img.available !== false)
-          setAvailableOSImages(availableImages)
-          // Set initial OS and version if provided (from catalog)
-          if (initialOS && initialVersion) {
-            setSelectedOS(initialOS)
-            setSelectedVersion(initialVersion)
-          }
-        })
-        .catch((error) => {
-          console.error('Failed to fetch OS images:', error)
-        })
-        .finally(() => {
-          setLoadingImages(false)
-        })
-    }
-  }, [isOpen, availableOSImages.length, initialOS, initialVersion])
 
   // Sync preset selection with hardware values when not in advanced mode
   useEffect(() => {
@@ -238,15 +199,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
     }
   }, [advancedHardwareMode, selectedSizePreset])
 
-  // Get currently selected OS image
-  const selectedOSImage = availableOSImages.find(os => os.os === selectedOS)
-
-  // Get full image path for current selection
-  const currentImagePath = imageSelectionMode === 'custom'
-    ? customImagePath
-    : selectedOSImage && selectedVersion
-      ? getImagePath(selectedOSImage.repository, selectedVersion)
-      : ''
+  // Get full image path - now only uses manual entry
+  const currentImagePath = customImagePath
 
   // Helper to convert snake_case to user-friendly labels
   const formatLabel = (paramName: string): string => {
@@ -352,10 +306,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       { id: 'method', name: 'Creation method' },
     ]
 
-    if (!useTemplate) {
-      return steps
-    }
-
+    // If no template selected (even in manual mode), return just the method step
     if (!selectedTemplateId || !selectedTemplate) {
       return steps
     }
@@ -428,10 +379,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
       setAdvancedHardwareMode(false)
       setSelectedSizePreset('medium')
       // Reset image selection
-      setImageSelectionMode('preset')
       setCustomImagePath('')
-      setSelectedOS('')
-      setSelectedVersion('')
       // Reset cloud-init file upload
       setCloudInitFilename('')
       setIsCloudInitLoading(false)
@@ -562,10 +510,9 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
           vmParameters.vm_image_source = wrapInProtobufAny(currentImagePath, paramType)
         }
 
-        // OS type - override template default based on selected image
-        const osType = imageSelectionMode === 'custom' ? 'linux' : (selectedOSImage?.osType || 'linux')
+        // OS type - default to linux
         const osTypeParamType = getParameterType('vm_os_type') || 'type.googleapis.com/google.protobuf.StringValue'
-        vmParameters.vm_os_type = wrapInProtobufAny(osType, osTypeParamType)
+        vmParameters.vm_os_type = wrapInProtobufAny('linux', osTypeParamType)
 
         // Hardware configuration - override template defaults with user's selections
         const cpuParamType = getParameterType('vm_cpu_cores') || 'type.googleapis.com/google.protobuf.Int64Value'
@@ -629,22 +576,21 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
   const canProceed = () => {
     switch (currentStep?.id) {
       case 'method':
-        // If using template, require template selection; otherwise allow proceed
-        return useTemplate ? !!selectedTemplateId : true
+        // Always require template selection (includes manual mode with generic template)
+        return !!selectedTemplateId
       case 'vm-config':
         // Require VM name to be provided and non-empty
         const hasValidName = !!vmId && vmId.trim().length > 0
-        // Require image selection (either from catalog, custom, or template with image)
+        // Require image (either from template or manual entry)
         let hasValidImage = false
         if (selectedTemplateId && selectedTemplateId !== genericTemplateId) {
           // Template selected (not generic) - check if it has an image source parameter
           const template = internalTemplates.find(t => t.id === selectedTemplateId)
           const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
-          hasValidImage = !!imageParam?.default?.value || (!!selectedOS && !!selectedVersion)
-        } else if (imageSelectionMode === 'custom') {
-          hasValidImage = !!customImagePath && customImagePath.trim().length > 0
+          hasValidImage = !!imageParam?.default?.value
         } else {
-          hasValidImage = !!selectedOS && !!selectedVersion
+          // Generic template or manual - require manual image path
+          hasValidImage = !!customImagePath && customImagePath.trim().length > 0
         }
         return hasValidName && hasValidImage
       case 'template':
@@ -1070,7 +1016,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               <GridItem span={6}>
                 <Card
                   isSelectable
-                  isSelected={useTemplate && selectedTemplateId !== genericTemplateId}
+                  isSelected={useTemplate}
                   onClick={() => {
                     setUseTemplate(true)
                     setSelectedTemplateId('')
@@ -1083,7 +1029,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                       <Radio
                         id="use-template"
                         name="creation-method"
-                        isChecked={useTemplate && selectedTemplateId !== genericTemplateId}
+                        isChecked={useTemplate}
                         onChange={() => {
                           setUseTemplate(true)
                           setSelectedTemplateId('')
@@ -1102,19 +1048,19 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               </GridItem>
               <GridItem span={6}>
                 <Card
-                  isSelectable={!!genericTemplateId}
-                  isSelected={selectedTemplateId === genericTemplateId && !!genericTemplateId}
+                  isSelectable
+                  isSelected={!useTemplate}
                   onClick={() => {
+                    setUseTemplate(false)
+                    setSelectedTemplateId(genericTemplateId)
+                    setCustomizeTemplate(true)
                     if (genericTemplateId) {
-                      setUseTemplate(true)
-                      setSelectedTemplateId(genericTemplateId)
-                      setCustomizeTemplate(true)
+                      handleTemplateSelect(genericTemplateId)
                     }
                   }}
                   style={{
-                    cursor: genericTemplateId ? 'pointer' : 'not-allowed',
-                    height: '100%',
-                    opacity: genericTemplateId ? 1 : 0.6
+                    cursor: 'pointer',
+                    height: '100%'
                   }}
                 >
                   <CardBody>
@@ -1122,22 +1068,19 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                       <Radio
                         id="create-manual"
                         name="creation-method"
-                        isChecked={selectedTemplateId === genericTemplateId && !!genericTemplateId}
-                        isDisabled={!genericTemplateId}
+                        isChecked={!useTemplate}
                         onChange={() => {
+                          setUseTemplate(false)
+                          setSelectedTemplateId(genericTemplateId)
+                          setCustomizeTemplate(true)
                           if (genericTemplateId) {
-                            setUseTemplate(true)
-                            setSelectedTemplateId(genericTemplateId)
-                            setCustomizeTemplate(true)
+                            handleTemplateSelect(genericTemplateId)
                           }
                         }}
                       />
                       <Title headingLevel="h3" size="lg" style={{ margin: 0 }}>
                         Create manually
                       </Title>
-                      {!genericTemplateId && (
-                        <Spinner size="md" style={{ marginLeft: '0.5rem' }} />
-                      )}
                     </div>
                     <p style={{ color: '#6a6e73', marginLeft: '2rem' }}>
                       Configure all settings manually for advanced customization. For advanced users.
@@ -1147,8 +1090,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               </GridItem>
             </Grid>
 
-            {/* Show template selection only if "Use a template" is selected (not "Create manually") */}
-            {useTemplate && selectedTemplateId !== genericTemplateId && (
+            {/* Show template selection only if "Use a template" is selected */}
+            {useTemplate && (
               <Form style={{ marginTop: '2rem' }}>
                 <FormGroup label="Template" isRequired fieldId="template">
                   <Dropdown
@@ -1163,13 +1106,13 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                         style={{ width: '100%' }}
                       >
                         {selectedTemplateId
-                          ? userTemplates.find(t => t.id === selectedTemplateId)?.title || selectedTemplateId
+                          ? internalTemplates.find(t => t.id === selectedTemplateId)?.title || selectedTemplateId
                           : 'Select a template'}
                       </MenuToggle>
                     )}
                   >
                     <DropdownList>
-                      {userTemplates.map((template) => (
+                      {internalTemplates.map((template) => (
                         <DropdownItem key={template.id} value={template.id}>
                           <div>
                             <strong>{template.title || template.id}</strong>
@@ -1252,38 +1195,13 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               fieldId="image-source"
               style={{ marginTop: '1rem' }}
             >
-              {/* Only show the switch if creating manually (using generic template) and not from catalog */}
-              {!initialOS && !initialVersion && selectedTemplateId === genericTemplateId && (
-                <div style={{ marginBottom: '1rem' }}>
-                  <Switch
-                    id="image-mode-switch"
-                    label={imageSelectionMode === 'custom' ? 'Custom image path' : 'Select from catalog'}
-                    isChecked={imageSelectionMode === 'custom'}
-                    onChange={(_event, checked) => {
-                      setImageSelectionMode(checked ? 'custom' : 'preset')
-                    }}
-                  />
-                </div>
-              )}
-
-              {loadingImages ? (
-                <div style={{ padding: '1rem', textAlign: 'center' }}>
-                  <Spinner size="md" />
-                  <div style={{ marginTop: '0.5rem', color: '#6a6e73' }}>Loading available images...</div>
-                </div>
-              ) : ((initialOS && initialVersion) || (selectedTemplateId && selectedTemplateId !== genericTemplateId)) ? (
-                /* Read-only display when coming from catalog or using a template */
+              {(selectedTemplateId && selectedTemplateId !== genericTemplateId) ? (
+                /* Read-only display when using a pre-configured template */
                 (() => {
-                  // Get image source value from template or catalog
-                  let imageValue = currentImagePath
-                  if (selectedTemplateId && selectedTemplateId !== genericTemplateId) {
-                    // Find vm_image_source parameter from selected template
-                    const template = internalTemplates.find(t => t.id === selectedTemplateId)
-                    const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
-                    if (imageParam?.default) {
-                      imageValue = imageParam.default.value || ''
-                    }
-                  }
+                  // Find vm_image_source parameter from selected template
+                  const template = internalTemplates.find(t => t.id === selectedTemplateId)
+                  const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
+                  const imageValue = imageParam?.default?.value || ''
 
                   return (
                     <div style={{
@@ -1292,23 +1210,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                       border: '1px solid #d2d2d2',
                       borderRadius: '4px'
                     }}>
-                      {selectedOSImage ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <img
-                            src={selectedOSImage.icon}
-                            alt={selectedOSImage.displayName}
-                            style={{ width: '32px', height: '32px' }}
-                          />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: '600', fontSize: '0.95rem', color: '#151515' }}>
-                              {selectedOSImage.displayName} {selectedVersion}
-                            </div>
-                            <code style={{ fontSize: '0.85rem', color: '#6a6e73' }}>
-                              {imageValue}
-                            </code>
-                          </div>
-                        </div>
-                      ) : imageValue ? (
+                      {imageValue ? (
                         <code style={{ fontSize: '0.95rem', color: '#151515' }}>
                           {imageValue}
                         </code>
@@ -1320,7 +1222,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                     </div>
                   )
                 })()
-              ) : imageSelectionMode === 'custom' ? (
+              ) : (
+                /* Manual image entry for generic template or customization */
                 <TextInput
                   type="text"
                   id="custom-image-path"
@@ -1330,102 +1233,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                   }}
                   placeholder="quay.io/containerdisks/fedora:41"
                 />
-              ) : (
-                <>
-                  <Grid hasGutter>
-                    <GridItem span={6}>
-                      <FormGroup label="Operating System" fieldId="os-select">
-                        <Dropdown
-                          isOpen={osDropdownOpen}
-                          onSelect={(_, value) => {
-                            const newOS = value as string
-                            setSelectedOS(newOS)
-                            const newOSImage = availableOSImages.find(os => os.os === newOS)
-                            if (newOSImage && newOSImage.versions.length > 0) {
-                              setSelectedVersion(newOSImage.versions[0])
-                            }
-                            setOsDropdownOpen(false)
-                          }}
-                          onOpenChange={(isOpen) => setOsDropdownOpen(isOpen)}
-                          toggle={(toggleRef) => (
-                            <MenuToggle
-                              ref={toggleRef}
-                              onClick={() => setOsDropdownOpen(!osDropdownOpen)}
-                              isExpanded={osDropdownOpen}
-                              style={{ width: '100%' }}
-                            >
-                              {selectedOSImage ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <img src={selectedOSImage.icon} alt={selectedOSImage.displayName} style={{ width: '20px', height: '20px' }} />
-                                  {selectedOSImage.displayName}
-                                </div>
-                              ) : 'Select OS'}
-                            </MenuToggle>
-                          )}
-                        >
-                          <DropdownList>
-                            {availableOSImages.map((osImage) => (
-                              <DropdownItem key={osImage.os} value={osImage.os}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <img src={osImage.icon} alt={osImage.displayName} style={{ width: '20px', height: '20px' }} />
-                                  {osImage.displayName}
-                                </div>
-                              </DropdownItem>
-                            ))}
-                          </DropdownList>
-                        </Dropdown>
-                      </FormGroup>
-                    </GridItem>
-                    <GridItem span={6}>
-                      <FormGroup label="Version" fieldId="version-select">
-                        <Dropdown
-                          isOpen={versionDropdownOpen}
-                          onSelect={(_, value) => {
-                            setSelectedVersion(value as string)
-                            setVersionDropdownOpen(false)
-                          }}
-                          onOpenChange={(isOpen) => setVersionDropdownOpen(isOpen)}
-                          toggle={(toggleRef) => (
-                            <MenuToggle
-                              ref={toggleRef}
-                              onClick={() => setVersionDropdownOpen(!versionDropdownOpen)}
-                              isExpanded={versionDropdownOpen}
-                              style={{ width: '100%' }}
-                              isDisabled={!selectedOSImage || selectedOSImage.versions.length === 0}
-                            >
-                              {selectedVersion || 'Select version'}
-                            </MenuToggle>
-                          )}
-                        >
-                          <DropdownList>
-                            {selectedOSImage?.versions.map((version) => (
-                              <DropdownItem key={version} value={version}>
-                                {version}
-                              </DropdownItem>
-                            ))}
-                          </DropdownList>
-                        </Dropdown>
-                      </FormGroup>
-                    </GridItem>
-                  </Grid>
-                  {currentImagePath && (
-                    <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                      <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginBottom: '0.25rem' }}>
-                        Image path:
-                      </div>
-                      <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>
-                        {currentImagePath}
-                      </code>
-                    </div>
-                  )}
-                </>
               )}
               <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                {(initialOS && initialVersion)
-                  ? 'Image pre-selected from catalog'
-                  : (selectedTemplateId && selectedTemplateId !== genericTemplateId)
-                    ? 'Image defined by selected template'
-                    : 'Container disk image for the VM'}
+                {(selectedTemplateId && selectedTemplateId !== genericTemplateId)
+                  ? 'Image defined by selected template'
+                  : 'Container disk image for the VM (e.g., quay.io/containerdisks/fedora:41)'}
               </div>
             </FormGroup>
           </Form>
@@ -1827,19 +1639,9 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                               const templateImageParam = selectedTemplate?.parameters?.find(p => p.name === 'vm_image_source')
                               const templateDefaultImage = templateImageParam?.default?.value
 
-                              if (imageSelectionMode === 'custom') {
+                              if (customImagePath) {
                                 return (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{customImagePath}</code>
-                                  </div>
-                                )
-                              } else if (selectedOSImage) {
-                                return (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <img src={selectedOSImage.icon} alt={selectedOSImage.displayName} style={{ width: '20px', height: '20px' }} />
-                                    <span>{selectedOSImage.displayName} {selectedVersion}</span>
-                                    <code style={{ fontSize: '0.85rem', color: '#6a6e73', marginLeft: '0.25rem' }}>({currentImagePath})</code>
-                                  </div>
+                                  <code style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{customImagePath}</code>
                                 )
                               } else if (templateDefaultImage) {
                                 return (

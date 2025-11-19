@@ -7,7 +7,6 @@ import VirtualMachines from './pages/VirtualMachines'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
 import Templates from './pages/Templates'
 import AdminTemplates from './pages/AdminTemplates'
-import OSCatalog from './pages/OSCatalog'
 import Organizations from './pages/Organizations'
 import Hubs from './pages/Hubs'
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -48,14 +47,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <Templates />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/os-catalog"
-            element={
-              <ProtectedRoute>
-                <OSCatalog />
               </ProtectedRoute>
             }
           />
