@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   PageSection,
   Title,
@@ -11,27 +12,32 @@ import {
   Flex,
   FlexItem,
   Spinner,
-  List,
-  ListItem,
-  Label,
   Grid,
   GridItem,
+  EmptyState,
+  EmptyStateBody,
 } from '@patternfly/react-core'
 import {
   LayerGroupIcon,
   NetworkIcon,
   VirtualMachineIcon,
-  ProcessAutomationIcon,
-  ChartLineIcon,
-  ClockIcon
+  PlusCircleIcon,
+  CheckCircleIcon,
+  InProgressIcon,
+  ExclamationCircleIcon,
+  QuestionCircleIcon,
 } from '@patternfly/react-icons'
 import { getDashboardMetrics } from '../api/dashboard'
-import { DashboardMetrics } from '../api/types'
+import { getVirtualMachines, createVirtualMachine } from '../api/vms'
+import { getTemplates } from '../api/templates'
+import { DashboardMetrics, VirtualMachine, Template } from '../api/types'
 import AppLayout from '../components/layouts/AppLayout'
 import { useAuth } from '../contexts/AuthContext'
+import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
 
 const Dashboard: React.FC = () => {
-  const { role } = useAuth()
+  const { role, username } = useAuth()
+  const navigate = useNavigate()
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     templates: { total: 0 },
     hubs: { total: 0 },
@@ -40,8 +46,12 @@ const Dashboard: React.FC = () => {
     recentActivity: { vmsCreatedLast24h: 0, vmsCreatedLast7d: 0 },
     resources: { cpuUtilization: 0, memoryUtilization: 0, storageUtilization: 0 }
   })
+  const [vms, setVms] = useState<VirtualMachine[]>([])
   const [loading, setLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [loadingVMs, setLoadingVMs] = useState(true)
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [templates, setTemplates] = useState<Template[]>([])
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -71,6 +81,82 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(interval)
   }, [isInitialLoad, role])
 
+  // Fetch templates
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await getTemplates()
+        setTemplates(response.items || [])
+      } catch (error) {
+        console.error('Failed to fetch templates:', error)
+        setTemplates([])
+      }
+    }
+
+    fetchTemplates()
+  }, [])
+
+  // Fetch VMs for the logged-in user
+  useEffect(() => {
+    const fetchVMs = async () => {
+      setLoadingVMs(true)
+      try {
+        const response = await getVirtualMachines()
+        setVms(response.items || [])
+      } catch (error) {
+        console.error('Failed to fetch VMs:', error)
+        setVms([])
+      } finally {
+        setLoadingVMs(false)
+      }
+    }
+
+    fetchVMs()
+
+    // Refresh VMs every 30 seconds
+    const interval = setInterval(fetchVMs, 30000)
+    return () => clearInterval(interval)
+  }, [username])
+
+  // Helper to format VM state
+  const formatState = (state?: string): string => {
+    if (!state) return 'Unknown'
+    // Remove "VIRTUAL_MACHINE_STATE_" prefix and capitalize first letter only
+    const stateWithoutPrefix = state.replace('VIRTUAL_MACHINE_STATE_', '')
+    return stateWithoutPrefix.charAt(0).toUpperCase() + stateWithoutPrefix.slice(1).toLowerCase()
+  }
+
+  // Helper to get status icon
+  const getStatusIcon = (state?: string): JSX.Element => {
+    if (!state) {
+      return <QuestionCircleIcon style={{ color: '#6a6e73' }} />
+    }
+
+    if (state.includes('READY')) {
+      return <CheckCircleIcon style={{ color: '#3e8635' }} />
+    } else if (state.includes('PROGRESSING')) {
+      return <InProgressIcon style={{ color: '#0066cc' }} />
+    } else if (state.includes('FAILED')) {
+      return <ExclamationCircleIcon style={{ color: '#c9190b' }} />
+    } else {
+      return <QuestionCircleIcon style={{ color: '#6a6e73' }} />
+    }
+  }
+
+  // Handle VM creation from wizard
+  const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
+    await createVirtualMachine({
+      id: vmId,
+      spec: {
+        template: templateId,
+        template_parameters: parameters
+      }
+    })
+    // Refresh VMs list
+    const response = await getVirtualMachines()
+    setVms(response.items || [])
+  }
+
   return (
     <AppLayout>
       <PageSection>
@@ -84,7 +170,7 @@ const Dashboard: React.FC = () => {
           </div>
         ) : (
           <Grid hasGutter>
-            <GridItem sm={12} md={12} lg={9} xl={9} rowSpan={1}>
+            <GridItem sm={12} md={12} lg={8} xl={8} rowSpan={1}>
               <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '190px', lg: '210px', xl: '225px' }}>
           <GalleryItem>
             <Card isFullHeight>
@@ -156,102 +242,95 @@ const Dashboard: React.FC = () => {
               </CardBody>
             </Card>
           </GalleryItem>
-
-          <GalleryItem>
-            <Card isFullHeight>
-              <CardTitle>
-                <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                  <FlexItem>
-                    <span style={{ color: '#3e8635', fontSize: '1.5rem' }}>
-                      <ChartLineIcon />
-                    </span>
-                  </FlexItem>
-                  <FlexItem>
-                    Resource Utilization
-                  </FlexItem>
-                </Flex>
-              </CardTitle>
-              <CardBody>
-                <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  <strong>CPU:</strong> {metrics.resources.cpuUtilization}%
-                </div>
-                <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  <strong>Memory:</strong> {metrics.resources.memoryUtilization}%
-                </div>
-                <div style={{ fontSize: '0.875rem' }}>
-                  <strong>Storage:</strong> {metrics.resources.storageUtilization}%
-                </div>
-              </CardBody>
-            </Card>
-          </GalleryItem>
               </Gallery>
             </GridItem>
 
-            <GridItem sm={12} md={12} lg={3} xl={3} rowSpan={2}>
+            <GridItem sm={12} md={12} lg={4} xl={4} rowSpan={2}>
               <Card style={{ height: '100%' }}>
                 <CardTitle>
                   <Flex alignItems={{ default: 'alignItemsCenter' }}>
                     <FlexItem>
-                      <ProcessAutomationIcon style={{ marginRight: '0.5rem', color: '#009596' }} />
+                      <VirtualMachineIcon style={{ marginRight: '0.5rem', color: '#8476d1' }} />
                     </FlexItem>
                     <FlexItem>
-                      Active Operations
+                      My Virtual Machines
                     </FlexItem>
                   </Flex>
                 </CardTitle>
-                <CardBody>
-                  {metrics.operations.active === 0 ? (
-                    <div style={{ color: '#6a6e73', fontStyle: 'italic', padding: '1rem 0' }}>
-                      No active operations
+                <CardBody style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                  {loadingVMs ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                      <Spinner size="md" />
                     </div>
+                  ) : vms.length === 0 ? (
+                    <EmptyState>
+                      <EmptyStateBody>
+                        <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                          No virtual machines found
+                        </div>
+                      </EmptyStateBody>
+                    </EmptyState>
                   ) : (
-                    <List isPlain>
-                      {metrics.operations.provisioning > 0 && (
-                        <ListItem>
-                          <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                            <FlexItem>
-                              <Label color="blue">Provisioning</Label>
-                            </FlexItem>
-                            <FlexItem style={{ marginLeft: '0.5rem' }}>
-                              {metrics.operations.provisioning} VM{metrics.operations.provisioning > 1 ? 's' : ''}
-                            </FlexItem>
-                          </Flex>
-                        </ListItem>
+                    <div>
+                      {vms
+                        .filter((vm) => {
+                          // Filter by logged-in user's username
+                          if (!username) return false
+                          return vm.metadata?.creators?.includes(username)
+                        })
+                        .sort((a, b) => {
+                          const aTime = a.metadata?.creation_timestamp || ''
+                          const bTime = b.metadata?.creation_timestamp || ''
+                          return bTime.localeCompare(aTime) // Sort descending (newest first)
+                        })
+                        .slice(0, 3)
+                        .map((vm, index, array) => (
+                          <div
+                            key={vm.id}
+                            onClick={() => navigate(`/virtual-machines/${vm.id}`)}
+                            style={{
+                              padding: '0.75rem',
+                              cursor: 'pointer',
+                              borderBottom: index < array.length - 1 ? '1px solid #d2d2d2' : 'none',
+                              transition: 'background-color 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#f5f5f5'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                              {getStatusIcon(vm.status?.state)}
+                              <div>
+                                <div style={{ fontWeight: 600 }}>
+                                  {vm.metadata?.name || vm.id}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#6a6e73' }}>
+                                  {vm.id}
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginLeft: '1.5rem' }}>
+                              {formatState(vm.status?.state)}
+                            </div>
+                          </div>
+                        ))}
+                      {vms.filter((vm) => vm.metadata?.creators?.includes(username || '')).length > 3 && (
+                        <div style={{ padding: '0.75rem', borderTop: '1px solid #d2d2d2' }}>
+                          <Button
+                            variant="link"
+                            isInline
+                            onClick={() => navigate('/virtual-machines')}
+                            style={{ padding: 0, fontSize: '0.875rem' }}
+                          >
+                            View all {vms.filter((vm) => vm.metadata?.creators?.includes(username || '')).length} VMs →
+                          </Button>
+                        </div>
                       )}
-                      {metrics.operations.deprovisioning > 0 && (
-                        <ListItem>
-                          <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                            <FlexItem>
-                              <Label color="orange">Deprovisioning</Label>
-                            </FlexItem>
-                            <FlexItem style={{ marginLeft: '0.5rem' }}>
-                              {metrics.operations.deprovisioning} VM{metrics.operations.deprovisioning > 1 ? 's' : ''}
-                            </FlexItem>
-                          </Flex>
-                        </ListItem>
-                      )}
-                    </List>
+                    </div>
                   )}
-                </CardBody>
-              </Card>
-            </GridItem>
-
-            <GridItem sm={12} md={12} lg={9} xl={9} rowSpan={1}>
-              <Card>
-                <CardTitle>
-                  <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                    <FlexItem>
-                      <ClockIcon style={{ marginRight: '0.5rem', color: '#f0ab00' }} />
-                    </FlexItem>
-                    <FlexItem>
-                      Recent Activity
-                    </FlexItem>
-                  </Flex>
-                </CardTitle>
-                <CardBody>
-                  <div style={{ color: '#6a6e73', fontStyle: 'italic', padding: '1rem 0' }}>
-                    No recent activity data available
-                  </div>
                 </CardBody>
               </Card>
             </GridItem>
@@ -265,19 +344,41 @@ const Dashboard: React.FC = () => {
         </Title>
         <Flex spaceItems={{ default: 'spaceItemsMd' }}>
           <FlexItem>
-            <Button variant="secondary" isDisabled>
+            <Button
+              variant="primary"
+              icon={<PlusCircleIcon />}
+              onClick={() => setWizardOpen(true)}
+            >
+              Create Virtual Machine
+            </Button>
+          </FlexItem>
+          <FlexItem>
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/templates')}
+            >
               View Templates
             </Button>
           </FlexItem>
           {role === 'fulfillment-admin' && (
             <FlexItem>
-              <Button variant="secondary" isDisabled>
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/hubs')}
+              >
                 Manage Hubs
               </Button>
             </FlexItem>
           )}
         </Flex>
       </PageSection>
+
+      <CreateVMWizard
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        onCreate={handleCreateVM}
+        templates={templates}
+      />
     </AppLayout>
   )
 }
