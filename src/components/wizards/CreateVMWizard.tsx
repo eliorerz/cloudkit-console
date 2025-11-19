@@ -423,6 +423,10 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
           if (['vm_run_strategy', 'run_strategy'].includes(param.name)) {
             setVmRunStrategy(param.default.value)
           }
+          // Image source - pre-fill for customization
+          if (['vm_image_source', 'image_source'].includes(param.name)) {
+            setCustomImagePath(String(param.default.value))
+          }
         }
       })
     } else {
@@ -581,13 +585,13 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
         const hasValidName = !!vmId && vmId.trim().length > 0
         // Require image (either from template or manual entry)
         let hasValidImage = false
-        if (selectedTemplateId && selectedTemplateId !== genericTemplateId) {
-          // Template selected (not generic) - check if it has an image source parameter
+        if (selectedTemplateId && selectedTemplateId !== genericTemplateId && !customizeTemplate) {
+          // Template selected (not generic) and not customizing - check if it has an image source parameter
           const template = internalTemplates.find(t => t.id === selectedTemplateId)
           const imageParam = template?.parameters?.find(p => p.name === 'vm_image_source')
           hasValidImage = !!imageParam?.default?.value
         } else {
-          // Generic template or manual - require manual image path
+          // Generic template, customizing, or manual - require manual image path
           hasValidImage = !!customImagePath && customImagePath.trim().length > 0
         }
         return hasValidName && hasValidImage
@@ -1078,7 +1082,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
 
             {/* Show template selection only if "Use a template" is selected */}
             {useTemplate && (
-              <Form style={{ marginTop: '2rem' }}>
+              <Form>
                 <FormGroup label="Template" isRequired fieldId="template">
                   <Dropdown
                     isOpen={templateDropdownOpen}
@@ -1181,8 +1185,8 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               fieldId="image-source"
               style={{ marginTop: '1rem' }}
             >
-              {(selectedTemplateId && selectedTemplateId !== genericTemplateId) ? (
-                /* Read-only display when using a pre-configured template */
+              {(selectedTemplateId && selectedTemplateId !== genericTemplateId && !customizeTemplate) ? (
+                /* Read-only display when using a pre-configured template without customization */
                 (() => {
                   // Find vm_image_source parameter from selected template
                   const template = internalTemplates.find(t => t.id === selectedTemplateId)
@@ -1209,7 +1213,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                   )
                 })()
               ) : (
-                /* Manual image entry for generic template or customization */
+                /* Editable image entry for generic template or when customizing */
                 <TextInput
                   type="text"
                   id="custom-image-path"
@@ -1221,7 +1225,7 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                 />
               )}
               <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                {(selectedTemplateId && selectedTemplateId !== genericTemplateId)
+                {(selectedTemplateId && selectedTemplateId !== genericTemplateId && !customizeTemplate)
                   ? 'Image defined by selected template'
                   : 'Container disk image for the VM (e.g., quay.io/containerdisks/fedora:41)'}
               </div>
