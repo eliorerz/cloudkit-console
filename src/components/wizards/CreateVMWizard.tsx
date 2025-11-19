@@ -1048,19 +1048,11 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
               </GridItem>
               <GridItem span={6}>
                 <Card
-                  isSelectable
-                  isSelected={!useTemplate}
-                  onClick={() => {
-                    setUseTemplate(false)
-                    setSelectedTemplateId(genericTemplateId)
-                    setCustomizeTemplate(true)
-                    if (genericTemplateId) {
-                      handleTemplateSelect(genericTemplateId)
-                    }
-                  }}
                   style={{
-                    cursor: 'pointer',
-                    height: '100%'
+                    cursor: 'not-allowed',
+                    height: '100%',
+                    opacity: 0.5,
+                    backgroundColor: '#f5f5f5'
                   }}
                 >
                   <CardBody>
@@ -1068,22 +1060,18 @@ export const CreateVMWizard: React.FC<CreateVMWizardProps> = ({
                       <Radio
                         id="create-manual"
                         name="creation-method"
-                        isChecked={!useTemplate}
-                        onChange={() => {
-                          setUseTemplate(false)
-                          setSelectedTemplateId(genericTemplateId)
-                          setCustomizeTemplate(true)
-                          if (genericTemplateId) {
-                            handleTemplateSelect(genericTemplateId)
-                          }
-                        }}
+                        isChecked={false}
+                        isDisabled={true}
                       />
-                      <Title headingLevel="h3" size="lg" style={{ margin: 0 }}>
+                      <Title headingLevel="h3" size="lg" style={{ margin: 0, color: '#6a6e73' }}>
                         Create manually
                       </Title>
                     </div>
-                    <p style={{ color: '#6a6e73', marginLeft: '2rem' }}>
+                    <p style={{ color: '#6a6e73', marginLeft: '2rem', marginBottom: '0.5rem' }}>
                       Configure all settings manually for advanced customization. For advanced users.
+                    </p>
+                    <p style={{ color: '#0066cc', marginLeft: '2rem', fontWeight: 600, fontSize: '0.875rem', fontStyle: 'italic' }}>
+                      Coming soon
                     </p>
                   </CardBody>
                 </Card>
