@@ -47,7 +47,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
   const [isAdminExpanded, setIsAdminExpanded] = useState(true)
-  const [isCatalogExpanded, setIsCatalogExpanded] = useState(true)
   const { logout, username, displayName, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -66,20 +65,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }
 
   const onNavSelect = (selectedItem: { itemId: string | number }) => {
-    // Auto-collapse catalog when navigating to non-catalog items
-    const catalogItems = ['os-catalog', 'templates']
-    if (!catalogItems.includes(selectedItem.itemId as string)) {
-      setIsCatalogExpanded(false)
-    }
-
     if (selectedItem.itemId === 'dashboard') {
       navigate('/')
     } else if (selectedItem.itemId === 'virtual-machines') {
       navigate('/virtual-machines')
     } else if (selectedItem.itemId === 'templates') {
       navigate('/templates')
-    } else if (selectedItem.itemId === 'os-catalog') {
-      navigate('/os-catalog')
     } else if (selectedItem.itemId === 'organizations') {
       navigate('/organizations')
     } else if (selectedItem.itemId === 'hubs') {
@@ -259,24 +250,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             >
               Virtual Machines
             </NavItem>
-            <NavExpandable
-              title="Catalog"
-              isExpanded={isCatalogExpanded}
-              onExpand={() => setIsCatalogExpanded(!isCatalogExpanded)}
+            <NavItem
+              itemId="templates"
+              isActive={location.pathname === '/templates'}
             >
-              <NavItem
-                itemId="os-catalog"
-                isActive={location.pathname === '/os-catalog'}
-              >
-                OS Catalog
-              </NavItem>
-              <NavItem
-                itemId="templates"
-                isActive={location.pathname === '/templates'}
-              >
-                Templates
-              </NavItem>
-            </NavExpandable>
+              Templates
+            </NavItem>
           </NavList>
         </Nav>
       </PageSidebarBody>
