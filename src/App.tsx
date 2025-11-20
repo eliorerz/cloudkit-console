@@ -23,7 +23,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/callback" element={<OIDCCallback />} />
           <Route
-            path="/dashboard"
+            path="/overview"
             element={
               <ProtectedRoute>
                 <Dashboard />
@@ -110,7 +110,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/overview" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
