@@ -840,6 +840,7 @@ const Templates: React.FC = () => {
               variant="secondary"
               icon={<EditIcon />}
               onClick={handleEditTemplate}
+              isDisabled
             >
               Edit Template
             </Button>

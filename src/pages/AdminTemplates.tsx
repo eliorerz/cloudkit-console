@@ -341,6 +341,7 @@ const AdminTemplates: React.FC = () => {
                 onClick={() => setIsCreateDropdownOpen(!isCreateDropdownOpen)}
                 isExpanded={isCreateDropdownOpen}
                 variant="primary"
+                isDisabled
               >
                 Create Template
               </MenuToggle>
