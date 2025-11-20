@@ -32,6 +32,12 @@ export class ProtobufWriter {
     this.writeVarint(value)
   }
 
+  writeBool(fieldNumber: number, value: boolean): void {
+    if (value === undefined || value === null) return
+    this.writeTag(fieldNumber, 0) // Wire type 0 = varint
+    this.writeVarint(value ? 1 : 0)
+  }
+
   writeBytes(fieldNumber: number, value: Uint8Array): void {
     if (!value || value.length === 0) return
     this.writeTag(fieldNumber, 2) // Wire type 2 = length-delimited
@@ -93,6 +99,10 @@ export class ProtobufReader {
 
   readInt32(): number {
     return this.readVarint()
+  }
+
+  readBool(): boolean {
+    return this.readVarint() !== 0
   }
 
   skipField(wireType: number): void {

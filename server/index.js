@@ -85,6 +85,41 @@ app.get('/api/os-images', (req, res) => {
   }
 });
 
+// Host Classes catalog endpoint
+app.get('/api/host-classes', (req, res) => {
+  const hostClassesPath = path.join(__dirname, '../config/host-classes.json');
+
+  try {
+    // Check if file exists (mounted from ConfigMap in production)
+    if (fs.existsSync(hostClassesPath)) {
+      const hostClassesData = fs.readFileSync(hostClassesPath, 'utf8');
+      res.json(JSON.parse(hostClassesData));
+    } else {
+      // Fallback data for local development
+      res.json({
+        "fc430": {
+          "name": "FC430",
+          "description": "Cisco UCS C240 M4 - Dual Intel Xeon E5-2680 v4 (28 cores), 256GB RAM, 2x 480GB SSD",
+          "category": "Compute Optimized"
+        },
+        "fc640": {
+          "name": "FC640",
+          "description": "Dell PowerEdge R640 - Dual Intel Xeon Gold 6238R (56 cores), 384GB RAM, 4x 960GB NVMe SSD",
+          "category": "Balanced"
+        },
+        "fc740": {
+          "name": "FC740",
+          "description": "HPE ProLiant DL380 Gen10 - Dual Intel Xeon Gold 6248R (48 cores), 512GB RAM, 8x 1.6TB NVMe SSD",
+          "category": "Storage Optimized"
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error reading host classes config:', error);
+    res.status(500).json({ error: 'Failed to load host classes catalog' });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
