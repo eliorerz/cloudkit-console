@@ -9,6 +9,10 @@ import Templates from './pages/Templates'
 import AdminTemplates from './pages/AdminTemplates'
 import Organizations from './pages/Organizations'
 import Hubs from './pages/Hubs'
+import ClusterTemplates from './pages/ClusterTemplates'
+import Clusters from './pages/Clusters'
+import ClusterDetail from './pages/ClusterDetail'
+import ClusterCreate from './pages/ClusterCreate'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -71,6 +75,38 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminTemplates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/cluster-templates"
+            element={
+              <ProtectedRoute>
+                <ClusterTemplates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/clusters"
+            element={
+              <ProtectedRoute>
+                <Clusters />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/clusters/create"
+            element={
+              <ProtectedRoute>
+                <ClusterCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/clusters/:id"
+            element={
+              <ProtectedRoute>
+                <ClusterDetail />
               </ProtectedRoute>
             }
           />

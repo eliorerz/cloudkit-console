@@ -77,6 +77,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/hubs')
     } else if (selectedItem.itemId === 'admin-templates') {
       navigate('/admin/templates')
+    } else if (selectedItem.itemId === 'cluster-templates') {
+      navigate('/admin/cluster-templates')
+    } else if (selectedItem.itemId === 'clusters') {
+      navigate('/admin/clusters')
     }
   }
 
@@ -234,7 +238,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   itemId="admin-templates"
                   isActive={location.pathname === '/admin/templates'}
                 >
-                  Templates
+                  VM Templates
+                </NavItem>
+                <NavItem
+                  itemId="cluster-templates"
+                  isActive={location.pathname === '/admin/cluster-templates'}
+                >
+                  Cluster Templates
+                </NavItem>
+                <NavItem
+                  itemId="clusters"
+                  isActive={location.pathname.startsWith('/admin/clusters')}
+                >
+                  Managed Clusters
                 </NavItem>
               </NavExpandable>
             )}
@@ -254,7 +270,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               itemId="templates"
               isActive={location.pathname === '/templates'}
             >
-              Templates
+              Virtual Machine Templates
             </NavItem>
           </NavList>
         </Nav>
