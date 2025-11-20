@@ -64,7 +64,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const onNavSelect = (selectedItem: { itemId: string | number }) => {
     if (selectedItem.itemId === 'dashboard') {
-      navigate('/')
+      navigate('/overview')
     } else if (selectedItem.itemId === 'virtual-machines') {
       navigate('/virtual-machines')
     } else if (selectedItem.itemId === 'templates') {
@@ -210,16 +210,23 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const sidebar = (
     <PageSidebar isSidebarOpen={isSidebarOpen}>
       <PageSidebarBody>
-        <Nav onSelect={(_event, result) => onNavSelect(result)} aria-label="Nav">
-          <NavList>
+        <Nav onSelect={(_event, result) => onNavSelect(result)} aria-label="Nav" style={{ height: '100%' }}>
+          <NavList style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <NavItem
               itemId="dashboard"
-              isActive={location.pathname === '/' || location.pathname === '/dashboard'}
+              isActive={location.pathname === '/' || location.pathname === '/overview'}
             >
-              Dashboard
+              Overview
             </NavItem>
 
-            <Divider style={{ margin: '0.5rem 0' }} />
+            <div style={{
+              padding: '1rem 1rem 0rem 1rem',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--pf-v6-global--Color--200)'
+            }}>
+              Workloads
+            </div>
 
             <NavItem
               itemId="virtual-machines"
@@ -237,7 +244,30 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </NavItem>
             )}
 
-            <Divider style={{ margin: '0.5rem 0' }} />
+            <NavItem
+              itemId="volumes"
+              isActive={location.pathname === '/volumes'}
+              disabled
+            >
+              Volumes
+            </NavItem>
+
+            <NavItem
+              itemId="networks"
+              isActive={location.pathname === '/networks'}
+              disabled
+            >
+              Networks
+            </NavItem>
+
+            <div style={{
+              padding: '1rem 1rem 0rem 1rem',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--pf-v6-global--Color--200)'
+            }}>
+              Templates
+            </div>
 
             <NavItem
               itemId="templates"
@@ -255,9 +285,41 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </NavItem>
             )}
 
+            <div style={{
+              padding: '1rem 1rem 0rem 1rem',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--pf-v6-global--Color--200)'
+            }}>
+              Observability
+            </div>
+
+            <NavItem
+              itemId="monitoring"
+              isActive={location.pathname === '/monitoring'}
+              disabled
+            >
+              Monitoring
+            </NavItem>
+
+            <NavItem
+              itemId="events"
+              isActive={location.pathname === '/events'}
+              disabled
+            >
+              Events
+            </NavItem>
+
             {role === 'fulfillment-admin' && (
               <>
-                <Divider style={{ margin: '0.5rem 0' }} />
+                <div style={{
+                  padding: '1rem 1rem 0rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: 'var(--pf-v6-global--Color--200)'
+                }}>
+                  Platform
+                </div>
 
                 <NavItem
                   itemId="hubs"
@@ -273,6 +335,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 </NavItem>
               </>
             )}
+
+            <div style={{ flexGrow: 1 }} />
+
+            <NavItem
+              itemId="settings"
+              isActive={location.pathname === '/settings'}
+              disabled
+            >
+              Settings
+            </NavItem>
           </NavList>
         </Nav>
       </PageSidebarBody>
