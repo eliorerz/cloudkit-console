@@ -14,7 +14,6 @@ import {
   Nav,
   NavList,
   NavItem,
-  NavExpandable,
   Dropdown,
   DropdownList,
   DropdownItem,
@@ -46,7 +45,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
-  const [isAdminExpanded, setIsAdminExpanded] = useState(true)
   const { logout, username, displayName, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -75,8 +73,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/organizations')
     } else if (selectedItem.itemId === 'hubs') {
       navigate('/hubs')
-    } else if (selectedItem.itemId === 'admin-templates') {
-      navigate('/admin/templates')
     } else if (selectedItem.itemId === 'cluster-templates') {
       navigate('/admin/cluster-templates')
     } else if (selectedItem.itemId === 'clusters') {
@@ -216,12 +212,53 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <PageSidebarBody>
         <Nav onSelect={(_event, result) => onNavSelect(result)} aria-label="Nav">
           <NavList>
+            <NavItem
+              itemId="dashboard"
+              isActive={location.pathname === '/' || location.pathname === '/dashboard'}
+            >
+              Dashboard
+            </NavItem>
+
+            <Divider style={{ margin: '0.5rem 0' }} />
+
+            <NavItem
+              itemId="virtual-machines"
+              isActive={location.pathname === '/virtual-machines'}
+            >
+              Virtual Machines
+            </NavItem>
+
             {role === 'fulfillment-admin' && (
-              <NavExpandable
-                title="Administration"
-                isExpanded={isAdminExpanded}
-                onExpand={() => setIsAdminExpanded(!isAdminExpanded)}
+              <NavItem
+                itemId="clusters"
+                isActive={location.pathname.startsWith('/admin/clusters')}
               >
+                Managed Clusters
+              </NavItem>
+            )}
+
+            <Divider style={{ margin: '0.5rem 0' }} />
+
+            <NavItem
+              itemId="templates"
+              isActive={location.pathname === '/templates'}
+            >
+              VM Templates
+            </NavItem>
+
+            {role === 'fulfillment-admin' && (
+              <NavItem
+                itemId="cluster-templates"
+                isActive={location.pathname === '/admin/cluster-templates'}
+              >
+                Cluster Templates
+              </NavItem>
+            )}
+
+            {role === 'fulfillment-admin' && (
+              <>
+                <Divider style={{ margin: '0.5rem 0' }} />
+
                 <NavItem
                   itemId="hubs"
                   isActive={location.pathname === '/hubs'}
@@ -234,44 +271,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 >
                   Organizations
                 </NavItem>
-                <NavItem
-                  itemId="admin-templates"
-                  isActive={location.pathname === '/admin/templates'}
-                >
-                  VM Templates
-                </NavItem>
-                <NavItem
-                  itemId="cluster-templates"
-                  isActive={location.pathname === '/admin/cluster-templates'}
-                >
-                  Cluster Templates
-                </NavItem>
-                <NavItem
-                  itemId="clusters"
-                  isActive={location.pathname.startsWith('/admin/clusters')}
-                >
-                  Managed Clusters
-                </NavItem>
-              </NavExpandable>
+              </>
             )}
-            <NavItem
-              itemId="dashboard"
-              isActive={location.pathname === '/' || location.pathname === '/dashboard'}
-            >
-              Dashboard
-            </NavItem>
-            <NavItem
-              itemId="virtual-machines"
-              isActive={location.pathname === '/virtual-machines'}
-            >
-              Virtual Machines
-            </NavItem>
-            <NavItem
-              itemId="templates"
-              isActive={location.pathname === '/templates'}
-            >
-              Virtual Machine Templates
-            </NavItem>
           </NavList>
         </Nav>
       </PageSidebarBody>
