@@ -25,6 +25,21 @@ const Hubs = () => {
     fetchHubs()
   }, [])
 
+  const formatTimestamp = (timestamp?: string): string => {
+    if (!timestamp) return '-'
+
+    try {
+      const date = new Date(timestamp)
+      // Check if date is valid and not Unix epoch (1970-01-01)
+      if (isNaN(date.getTime()) || date.getFullYear() === 1970) {
+        return '-'
+      }
+      return date.toLocaleString()
+    } catch {
+      return '-'
+    }
+  }
+
   const fetchHubs = async () => {
     try {
       setIsLoading(true)
@@ -91,11 +106,7 @@ const Hubs = () => {
                   <Tr key={hub.id}>
                     <Td>{hub.id}</Td>
                     <Td>{hub.namespace || '-'}</Td>
-                    <Td>
-                      {hub.metadata?.creation_timestamp
-                        ? new Date(hub.metadata.creation_timestamp).toLocaleString()
-                        : '-'}
-                    </Td>
+                    <Td>{formatTimestamp(hub.metadata?.creation_timestamp)}</Td>
                   </Tr>
                 ))}
               </Tbody>
