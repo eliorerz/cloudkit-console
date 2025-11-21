@@ -165,30 +165,28 @@ const ClusterTemplates: React.FC = () => {
                 <CardTitle>
                   {template.title || template.id}
                 </CardTitle>
-                <CardBody style={{ display: 'flex', flexDirection: 'column', minHeight: '400px' }}>
-                  {/* Main content area - takes up available space */}
-                  <div style={{ flex: 1 }}>
-                    {/* Description with expand/collapse */}
-                    <div style={{ marginBottom: '1rem' }}>
-                      <ReactMarkdown>
-                        {isExpanded ? description : shortDescription}
-                      </ReactMarkdown>
-                      {description.length > 200 && (
-                        <Button
-                          variant="link"
-                          isInline
-                          onClick={() => toggleDescription(template.id)}
-                          style={{ padding: 0, marginTop: '0.5rem' }}
-                        >
-                          {isExpanded ? 'Show less' : 'Show more'}
-                        </Button>
-                      )}
-                    </div>
+                <CardBody style={{ display: 'flex', flexDirection: 'column' }}>
+                  {/* Description with expand/collapse - fixed height for alignment */}
+                  <div style={{ minHeight: '120px', marginBottom: '1rem' }}>
+                    <ReactMarkdown>
+                      {isExpanded ? description : shortDescription}
+                    </ReactMarkdown>
+                    {description.length > 200 && (
+                      <Button
+                        variant="link"
+                        isInline
+                        onClick={() => toggleDescription(template.id)}
+                        style={{ padding: 0, marginTop: '0.5rem' }}
+                      >
+                        {isExpanded ? 'Show less' : 'Show more'}
+                      </Button>
+                    )}
+                  </div>
 
-                    {/* Node Sets */}
-                    {template.node_sets && Object.keys(template.node_sets).length > 0 && (
-                      <div>
-                        <strong>Node Configuration:</strong>
+                  {/* Node Sets */}
+                  {template.node_sets && Object.keys(template.node_sets).length > 0 && (
+                    <div>
+                      <strong>Node Configuration:</strong>
                         <div style={{ marginTop: '0.5rem' }}>
                           {Object.entries(template.node_sets).map(([key, nodeSet]) => {
                             const hostClassId = nodeSet.host_class || ''
@@ -206,7 +204,8 @@ const ClusterTemplates: React.FC = () => {
                                     color: 'var(--pf-v6-global--Color--200)',
                                     lineHeight: '1.5',
                                     paddingLeft: '1rem',
-                                    borderLeft: '3px solid var(--pf-v6-global--BorderColor--100)'
+                                    borderLeft: '3px solid var(--pf-v6-global--BorderColor--100)',
+                                    minHeight: '95px'
                                   }}>
                                     <div style={{ marginBottom: '0.25rem' }}>
                                       <strong style={{ color: 'var(--pf-v6-global--Color--100)' }}>CPU:</strong> {hostClassInfo.cpu.type} ({hostClassInfo.cpu.cores} cores)
@@ -230,11 +229,10 @@ const ClusterTemplates: React.FC = () => {
                         </div>
                       </div>
                     )}
-                  </div>
 
-                  {/* Parameters summary - always at bottom */}
+                  {/* Parameters summary */}
                   {template.parameters && template.parameters.length > 0 && (
-                    <div style={{ marginTop: '1rem' }}>
+                    <div style={{ marginTop: '0.5rem' }}>
                       <ExpandableSection
                         toggleText={`Parameters (${template.parameters.length})`}
                         isIndented
