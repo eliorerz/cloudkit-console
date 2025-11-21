@@ -30,6 +30,26 @@ interface HostClassInfo {
   name: string
   description: string
   category: string
+  cpu: {
+    type: string
+    cores: number
+    sockets: number
+    threadsPerCore: number
+  }
+  ram: {
+    size: string
+    type: string
+  }
+  disk: {
+    type: string
+    size: string
+    interface: string
+  }
+  gpu: {
+    model?: string
+    count?: number
+    memory?: string
+  } | null
 }
 
 const ClusterCreate: React.FC = () => {
@@ -303,40 +323,39 @@ const ClusterCreate: React.FC = () => {
                       const displayName = hostClassInfo?.name || hostClassId.toUpperCase()
 
                       return (
-                        <div key={key} style={{ marginBottom: index < Object.keys(template.node_sets || {}).length - 1 ? '0.5rem' : 0 }}>
-                          <div style={{ fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div key={key} style={{ marginBottom: index < Object.keys(template.node_sets || {}).length - 1 ? '1rem' : 0 }}>
+                          <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
                             <span style={{ fontWeight: 500, color: 'var(--pf-v6-global--Color--100)' }}>
                               Workers: {nodeSet.size || 0}
                             </span>
                             <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                              ({displayName})
+                              {' '}({displayName})
                             </span>
-                            {hostClassInfo && (
-                              <Popover
-                                aria-label={`${displayName} details`}
-                                headerContent={<div>{hostClassInfo.name}</div>}
-                                bodyContent={
-                                  <div>
-                                    <div style={{ marginBottom: '0.5rem' }}>
-                                      <strong>Category:</strong> {hostClassInfo.category}
-                                    </div>
-                                    <div>
-                                      <strong>Specifications:</strong><br />
-                                      {hostClassInfo.description}
-                                    </div>
-                                  </div>
-                                }
-                              >
-                                <Button
-                                  variant="plain"
-                                  aria-label={`${displayName} details`}
-                                  style={{ padding: '0', minWidth: 'auto' }}
-                                >
-                                  <HelpIcon style={{ fontSize: '0.875rem', color: 'var(--pf-v6-global--Color--200)' }} />
-                                </Button>
-                              </Popover>
-                            )}
                           </div>
+                          {hostClassInfo && (
+                            <div style={{
+                              fontSize: '0.8125rem',
+                              color: 'var(--pf-v6-global--Color--200)',
+                              lineHeight: '1.5',
+                              paddingLeft: '1rem',
+                              borderLeft: '3px solid var(--pf-v6-global--BorderColor--100)'
+                            }}>
+                              <div style={{ marginBottom: '0.25rem' }}>
+                                <strong style={{ color: 'var(--pf-v6-global--Color--100)' }}>CPU:</strong> {hostClassInfo.cpu.type} ({hostClassInfo.cpu.cores} cores, {hostClassInfo.cpu.sockets} sockets)
+                              </div>
+                              <div style={{ marginBottom: '0.25rem' }}>
+                                <strong style={{ color: 'var(--pf-v6-global--Color--100)' }}>RAM:</strong> {hostClassInfo.ram.size} {hostClassInfo.ram.type}
+                              </div>
+                              <div style={{ marginBottom: hostClassInfo.gpu ? '0.25rem' : 0 }}>
+                                <strong style={{ color: 'var(--pf-v6-global--Color--100)' }}>Disk:</strong> {hostClassInfo.disk.size} {hostClassInfo.disk.type}
+                              </div>
+                              {hostClassInfo.gpu && (
+                                <div>
+                                  <strong style={{ color: 'var(--pf-v6-global--Color--100)' }}>GPU:</strong> {hostClassInfo.gpu.model || 'Available'} {hostClassInfo.gpu.count ? `(${hostClassInfo.gpu.count}x)` : ''}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )
                     })}
