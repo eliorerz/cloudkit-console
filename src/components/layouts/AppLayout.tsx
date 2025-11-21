@@ -45,6 +45,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
+  const [isPerspectiveDropdownOpen, setIsPerspectiveDropdownOpen] = useState(false)
+  const [selectedPerspective, setSelectedPerspective] = useState('Administrator')
   const { logout, username, displayName, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -212,6 +214,35 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <PageSidebarBody>
         <Nav onSelect={(_event, result) => onNavSelect(result)} aria-label="Nav" style={{ height: '100%' }}>
           <NavList style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {role === 'fulfillment-admin' && (
+              <div style={{ padding: '0rem 1rem 1rem 0.5rem' }}>
+                <Dropdown
+                  isOpen={isPerspectiveDropdownOpen}
+                  onSelect={() => setIsPerspectiveDropdownOpen(false)}
+                  onOpenChange={setIsPerspectiveDropdownOpen}
+                  toggle={(toggleRef) => (
+                    <MenuToggle
+                      ref={toggleRef}
+                      onClick={() => setIsPerspectiveDropdownOpen(!isPerspectiveDropdownOpen)}
+                      isExpanded={isPerspectiveDropdownOpen}
+                      style={{ fontSize: '0.875rem', width: '100%' }}
+                    >
+                      {selectedPerspective}
+                    </MenuToggle>
+                  )}
+                >
+                  <DropdownList>
+                    <DropdownItem
+                      key="administrator"
+                      onClick={() => setSelectedPerspective('Administrator')}
+                    >
+                      Administrator
+                    </DropdownItem>
+                  </DropdownList>
+                </Dropdown>
+              </div>
+            )}
+
             <NavItem
               itemId="dashboard"
               isActive={location.pathname === '/' || location.pathname === '/overview'}
