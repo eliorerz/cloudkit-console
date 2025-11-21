@@ -9,7 +9,7 @@ import Templates from './pages/Templates'
 import AdminTemplates from './pages/AdminTemplates'
 import Organizations from './pages/Organizations'
 import Hubs from './pages/Hubs'
-import ClusterTemplates from './pages/ClusterTemplates'
+import ClusterTemplateCatalog from './pages/ClusterTemplateCatalog'
 import Clusters from './pages/Clusters'
 import ClusterDetail from './pages/ClusterDetail'
 import ClusterCreate from './pages/ClusterCreate'
@@ -80,10 +80,10 @@ function App() {
             }
           />
           <Route
-            path="/admin/cluster-templates"
+            path="/admin/cluster-catalog"
             element={
               <ProtectedRoute>
-                <ClusterTemplates />
+                <ClusterTemplateCatalog />
               </ProtectedRoute>
             }
           />

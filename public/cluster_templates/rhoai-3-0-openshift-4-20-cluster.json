@@ -1,0 +1,32 @@
+{
+  "@type": "type.googleapis.com/fulfillment.v1.ClusterTemplate",
+  "description": "This template deploys OpenShift 4.20 with Red Hat OpenShift AI (RHOAI) 3.0 pre-configured for AI/ML workloads. Includes GPU support and optimized storage for model training and inference.\n",
+  "id": "cloudkit.templates.ocp_4_20_rhoai_3_0",
+  "metadata": {
+    "creation_timestamp": "2025-11-21T00:00:00.000000Z",
+    "creators": [
+      "system"
+    ],
+    "version": "4.20"
+  },
+  "node_sets": {
+    "gb200": {
+      "host_class": "gb200",
+      "size": 3
+    }
+  },
+  "parameters": [
+    {
+      "description": "The pull secret contains credentials for authenticating to image repositories.\n",
+      "name": "pull_secret",
+      "required": true,
+      "type": "type.googleapis.com/google.protobuf.StringValue"
+    },
+    {
+      "description": "A public ssh key that will be installed into the `authorized_keys` file of the `core` user on cluster worker nodes.\n",
+      "name": "ssh_public_key",
+      "type": "type.googleapis.com/google.protobuf.StringValue"
+    }
+  ],
+  "title": "OpenShift 4.20 + RHOAI 3.0"
+}
