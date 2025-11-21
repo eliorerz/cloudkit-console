@@ -13,8 +13,6 @@ import {
   encodeClustersListRequest,
   decodeClustersListResponse,
   decodeClustersGetResponse,
-  encodeClustersCreateRequest,
-  decodeClustersCreateResponse,
 } from './clustersProto'
 import { getUserManager } from '../auth/oidcConfig'
 
@@ -95,14 +93,29 @@ export const getCluster = async (id: string): Promise<Cluster> => {
 
 export const createCluster = async (cluster: Partial<Cluster>): Promise<Cluster> => {
   try {
-    const requestBytes = encodeClustersCreateRequest(cluster)
-    const response = await grpcClient.call(
-      'fulfillment.v1.Clusters',
-      'Create',
-      requestBytes,
-      decodeClustersCreateResponse
-    )
-    return response
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/fulfillment/v1/clusters`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(cluster),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create cluster: ${response.status} ${response.statusText}: ${errorText}`)
+    }
+
+    return await response.json()
   } catch (error) {
     console.error('Failed to create cluster:', error)
     throw error
