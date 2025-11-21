@@ -120,6 +120,7 @@ function App() {
             }
           />
           <Route path="/" element={<Navigate to="/overview" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

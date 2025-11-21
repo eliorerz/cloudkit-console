@@ -256,7 +256,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               itemId="monitoring-dashboard"
               isActive={location.pathname === '/monitoring'}
             >
-              Dashboard
+              Monitoring
             </NavItem>
 
             <div style={{
