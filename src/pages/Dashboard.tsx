@@ -551,13 +551,26 @@ const Dashboard: React.FC = () => {
           Quick Actions
         </Title>
         <Flex spaceItems={{ default: 'spaceItemsMd' }}>
+          {role === 'fulfillment-admin' && (
+            <FlexItem>
+              <Button
+                variant="primary"
+                icon={<PlusCircleIcon />}
+                onClick={() => navigate('/admin/cluster-templates')}
+                style={{ minWidth: '180px' }}
+              >
+                Create Cluster
+              </Button>
+            </FlexItem>
+          )}
           <FlexItem>
             <Button
               variant="primary"
               icon={<PlusCircleIcon />}
               onClick={() => setWizardOpen(true)}
+              style={{ minWidth: '180px' }}
             >
-              Create Virtual Machine
+              Create VM
             </Button>
           </FlexItem>
           <FlexItem>

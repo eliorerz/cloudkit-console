@@ -99,18 +99,66 @@ app.get('/api/host-classes', (req, res) => {
       res.json({
         "fc430": {
           "name": "FC430",
-          "description": "Cisco UCS C240 M4 - Dual Intel Xeon E5-2680 v4 (28 cores), 256GB RAM, 2x 480GB SSD",
-          "category": "Compute Optimized"
+          "description": "Cisco UCS C240 M4",
+          "category": "Compute Optimized",
+          "cpu": {
+            "type": "Intel Xeon E5-2680 v4",
+            "cores": 28,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "256GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "SSD",
+            "size": "2x 480GB",
+            "interface": "SATA"
+          },
+          "gpu": null
         },
         "fc640": {
           "name": "FC640",
-          "description": "Dell PowerEdge R640 - Dual Intel Xeon Gold 6238R (56 cores), 384GB RAM, 4x 960GB NVMe SSD",
-          "category": "Balanced"
+          "description": "Dell PowerEdge R640",
+          "category": "Balanced",
+          "cpu": {
+            "type": "Intel Xeon Gold 6238R",
+            "cores": 56,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "384GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "NVMe SSD",
+            "size": "4x 960GB",
+            "interface": "PCIe"
+          },
+          "gpu": null
         },
         "fc740": {
           "name": "FC740",
-          "description": "HPE ProLiant DL380 Gen10 - Dual Intel Xeon Gold 6248R (48 cores), 512GB RAM, 8x 1.6TB NVMe SSD",
-          "category": "Storage Optimized"
+          "description": "HPE ProLiant DL380 Gen10",
+          "category": "Storage Optimized",
+          "cpu": {
+            "type": "Intel Xeon Gold 6248R",
+            "cores": 48,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "512GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "NVMe SSD",
+            "size": "8x 1.6TB",
+            "interface": "PCIe"
+          },
+          "gpu": null
         }
       });
     }

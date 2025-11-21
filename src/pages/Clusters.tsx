@@ -9,9 +9,6 @@ import {
   Spinner,
   Label,
   Pagination,
-  Modal,
-  ModalVariant,
-  ClipboardCopy,
   Alert,
   EmptyState,
   EmptyStateBody,
@@ -21,7 +18,7 @@ import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table'
 import { CubesIcon } from '@patternfly/react-icons'
 import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/layouts/AppLayout'
-import { listClusters, getClusterKubeconfig, getClusterPassword } from '../api/clustersApi'
+import { listClusters } from '../api/clustersApi'
 import { Cluster, ClusterState } from '../api/types'
 
 const Clusters: React.FC = () => {
@@ -34,13 +31,6 @@ const Clusters: React.FC = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(20)
   const [total, setTotal] = useState(0)
-
-  // Password modal state
-  const [passwordModal, setPasswordModal] = useState<{
-    show: boolean
-    password: string
-    clusterId: string
-  }>({ show: false, password: '', clusterId: '' })
 
   useEffect(() => {
     loadClusters()
@@ -65,32 +55,6 @@ const Clusters: React.FC = () => {
     }
   }
 
-  const handleDownloadKubeconfig = async (id: string) => {
-    try {
-      const kubeconfig = await getClusterKubeconfig(id)
-
-      // Create blob and download
-      const blob = new Blob([kubeconfig], { type: 'application/yaml' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `cluster-${id}-kubeconfig.yaml`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (err: any) {
-      alert(`Failed to download kubeconfig: ${err.message}`)
-    }
-  }
-
-  const handleGetPassword = async (id: string) => {
-    try {
-      const password = await getClusterPassword(id)
-      setPasswordModal({ show: true, password, clusterId: id })
-    } catch (err: any) {
-      alert(`Failed to get password: ${err.message}`)
-    }
-  }
-
   const getStateBadgeColor = (state?: ClusterState) => {
     switch (state) {
       case ClusterState.READY:
@@ -102,6 +66,13 @@ const Clusters: React.FC = () => {
       default:
         return 'grey'
     }
+  }
+
+  const formatState = (state?: ClusterState) => {
+    if (!state) return 'Unknown'
+    // Remove CLUSTER_STATE_ prefix and capitalize first letter only
+    const cleaned = state.replace('CLUSTER_STATE_', '')
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase()
   }
 
   if (loading && clusters.length === 0) {
@@ -165,11 +136,8 @@ const Clusters: React.FC = () => {
         <Table variant="compact">
           <Thead>
             <Tr>
-              <Th>ID</Th>
               <Th>Name</Th>
-              <Th>Template</Th>
               <Th>State</Th>
-              <Th>Console URL</Th>
               <Th>Created At</Th>
               <Th>Actions</Th>
             </Tr>
@@ -177,22 +145,16 @@ const Clusters: React.FC = () => {
           <Tbody>
             {clusters.map((cluster) => (
               <Tr key={cluster.id}>
-                <Td>{cluster.id.substring(0, 8)}</Td>
-                <Td>{cluster.metadata?.name || '-'}</Td>
-                <Td>{cluster.spec?.template || '-'}</Td>
                 <Td>
-                  <Label color={getStateBadgeColor(cluster.status?.state)}>
-                    {cluster.status?.state?.replace('CLUSTER_STATE_', '') || 'UNKNOWN'}
-                  </Label>
+                  <div style={{ fontWeight: 500 }}>{cluster.metadata?.name || '-'}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
+                    ID: {cluster.id.substring(0, 8)}
+                  </div>
                 </Td>
                 <Td>
-                  {cluster.status?.console_url ? (
-                    <a href={cluster.status.console_url} target="_blank" rel="noopener noreferrer">
-                      Open Console
-                    </a>
-                  ) : (
-                    '-'
-                  )}
+                  <Label color={getStateBadgeColor(cluster.status?.state)}>
+                    {formatState(cluster.status?.state)}
+                  </Label>
                 </Td>
                 <Td>
                   {cluster.metadata?.creation_timestamp
@@ -208,24 +170,6 @@ const Clusters: React.FC = () => {
                   >
                     View Details
                   </Button>
-                  {cluster.status?.state === ClusterState.READY && (
-                    <>
-                      <Button
-                        variant="link"
-                        isInline
-                        onClick={() => handleDownloadKubeconfig(cluster.id)}
-                      >
-                        Download Kubeconfig
-                      </Button>
-                      <Button
-                        variant="link"
-                        isInline
-                        onClick={() => handleGetPassword(cluster.id)}
-                      >
-                        Get Password
-                      </Button>
-                    </>
-                  )}
                 </Td>
               </Tr>
             ))}
@@ -245,19 +189,6 @@ const Clusters: React.FC = () => {
           style={{ marginTop: '1rem' }}
         />
       </PageSection>
-
-      {/* Password Modal */}
-      <Modal
-        variant={ModalVariant.small}
-        title="Cluster Admin Password"
-        isOpen={passwordModal.show}
-        onClose={() => setPasswordModal({ show: false, password: '', clusterId: '' })}
-      >
-        <p>Admin password for cluster <strong>{passwordModal.clusterId.substring(0, 8)}</strong>:</p>
-        <ClipboardCopy isReadOnly hoverTip="Copy" clickTip="Copied">
-          {passwordModal.password}
-        </ClipboardCopy>
-      </Modal>
     </AppLayout>
   )
 }
