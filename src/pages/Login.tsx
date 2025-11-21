@@ -68,9 +68,6 @@ const Login: React.FC = () => {
         <p style={{ marginBottom: '0.5rem' }}>
           Use your Keycloak credentials to access the CloudKit Console.
         </p>
-        <p style={{ fontSize: '0.8125rem', color: '#999' }}>
-          Default users: <strong>admin</strong>, <strong>my_user</strong>, <strong>your_user</strong>
-        </p>
         <p style={{ fontSize: '0.8125rem', color: '#999', marginTop: '0.5rem' }}>
           (Password: <strong>admin</strong> for all users)
         </p>

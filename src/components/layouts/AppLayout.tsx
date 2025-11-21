@@ -125,8 +125,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               src="/logo.png"
               alt="CloudKit"
               style={{
-                height: '32px',
-                width: '32px'
+                height: '50px',
+                width: '50px'
               }}
             />
             <div style={{ fontSize: '1.125rem', fontWeight: '500' }}>
