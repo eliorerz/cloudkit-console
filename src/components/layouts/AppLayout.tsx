@@ -244,22 +244,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </NavItem>
             )}
 
-            <NavItem
-              itemId="volumes"
-              isActive={location.pathname === '/volumes'}
-              disabled
-            >
-              Volumes
-            </NavItem>
-
-            <NavItem
-              itemId="networks"
-              isActive={location.pathname === '/networks'}
-              disabled
-            >
-              Networks
-            </NavItem>
-
             <div style={{
               padding: '1rem 1rem 0rem 1rem',
               fontSize: '0.875rem',
