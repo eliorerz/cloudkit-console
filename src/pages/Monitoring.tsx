@@ -356,7 +356,7 @@ const Monitoring: React.FC = () => {
                           style={{
                             width: `${(metrics.resources.memory.used / metrics.resources.memory.total) * 100}%`,
                             height: '100%',
-                            backgroundColor: '#8476d1',
+                            backgroundColor: '#06c',
                             transition: 'width 0.3s ease',
                           }}
                         />
@@ -382,7 +382,7 @@ const Monitoring: React.FC = () => {
                           style={{
                             width: `${(metrics.resources.storage.used / metrics.resources.storage.total) * 100}%`,
                             height: '100%',
-                            backgroundColor: '#f0ab00',
+                            backgroundColor: '#06c',
                             transition: 'width 0.3s ease',
                           }}
                         />
