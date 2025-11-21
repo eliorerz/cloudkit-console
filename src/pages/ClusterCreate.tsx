@@ -111,6 +111,33 @@ const ClusterCreate: React.FC = () => {
     }))
   }
 
+  // Helper function to wrap parameter values in google.protobuf.Any format
+  const wrapParameterValue = (type: string, value: any) => {
+    // If type already contains the full type URL, use it directly
+    if (type.startsWith('type.googleapis.com/')) {
+      return {
+        '@type': type,
+        value: value
+      }
+    }
+
+    // Otherwise map from short names to full type URLs
+    const typeMap: Record<string, string> = {
+      'string': 'type.googleapis.com/google.protobuf.StringValue',
+      'int32': 'type.googleapis.com/google.protobuf.Int32Value',
+      'bool': 'type.googleapis.com/google.protobuf.BoolValue',
+      'int64': 'type.googleapis.com/google.protobuf.Int64Value',
+      'float': 'type.googleapis.com/google.protobuf.FloatValue',
+      'double': 'type.googleapis.com/google.protobuf.DoubleValue',
+    }
+
+    const typeUrl = typeMap[type] || 'type.googleapis.com/google.protobuf.StringValue'
+    return {
+      '@type': typeUrl,
+      value: value
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -131,6 +158,9 @@ const ClusterCreate: React.FC = () => {
     const missingParams: string[] = []
     if (template.parameters) {
       template.parameters.forEach(param => {
+        // Skip pull_secret as it's validated separately above
+        if (param.name === 'pull_secret') return
+
         if (param.required && (parameters[param.name] === undefined || parameters[param.name] === '')) {
           missingParams.push(param.title || param.name)
         }
@@ -146,6 +176,21 @@ const ClusterCreate: React.FC = () => {
       setCreating(true)
       setError(null)
 
+      // Wrap all parameters in google.protobuf.Any format
+      const wrappedParameters: Record<string, any> = {}
+      if (template.parameters) {
+        template.parameters.forEach(param => {
+          const value = param.name === 'pull_secret' ? pullSecret : parameters[param.name]
+          if (value !== undefined && value !== '') {
+            const wrapped = wrapParameterValue(param.type || 'string', value)
+            console.log(`Wrapping parameter ${param.name} (type: ${param.type}):`, { value, wrapped })
+            wrappedParameters[param.name] = wrapped
+          }
+        })
+      }
+
+      console.log('Wrapped parameters:', wrappedParameters)
+
       // Build cluster spec
       const clusterSpec = {
         metadata: {
@@ -153,10 +198,11 @@ const ClusterCreate: React.FC = () => {
         },
         spec: {
           template: template.id,
-          pull_secret: pullSecret,
-          parameters: parameters,
+          template_parameters: wrappedParameters,
         },
       }
+
+      console.log('Cluster spec:', JSON.stringify(clusterSpec, null, 2))
 
       const newCluster = await createCluster(clusterSpec)
 
