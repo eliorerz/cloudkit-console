@@ -9,11 +9,6 @@ import {
   encodeClusterTemplatesListRequest,
   decodeClusterTemplatesListResponse,
 } from './clusterTemplatesProto'
-import {
-  encodeClustersListRequest,
-  decodeClustersListResponse,
-  decodeClustersGetResponse,
-} from './clustersProto'
 import { getUserManager } from '../auth/oidcConfig'
 
 // ============================================
@@ -56,17 +51,37 @@ export const listClusters = async (options?: {
   order?: string
 }): Promise<ListResponse<Cluster>> => {
   try {
-    const requestBytes = encodeClustersListRequest(options || {})
-    const response = await grpcClient.call(
-      'fulfillment.v1.Clusters',
-      'List',
-      requestBytes,
-      decodeClustersListResponse
-    )
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    // Build query parameters
+    const params = new URLSearchParams()
+    if (options?.offset !== undefined) params.append('offset', options.offset.toString())
+    if (options?.limit !== undefined) params.append('limit', options.limit.toString())
+    if (options?.filter) params.append('filter', options.filter)
+    if (options?.order) params.append('order', options.order)
+
+    const url = `${baseUrl}/api/fulfillment/v1/clusters${params.toString() ? '?' + params.toString() : ''}`
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to list clusters: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
     return {
-      items: response.items || [],
-      total: response.total || 0,
-      size: response.size || 0,
+      items: data.items || [],
+      total: data.total || 0,
+      size: data.size || 0,
     }
   } catch (error) {
     console.error('Failed to list clusters:', error)
@@ -76,15 +91,25 @@ export const listClusters = async (options?: {
 
 export const getCluster = async (id: string): Promise<Cluster> => {
   try {
-    // Encode ClustersGetRequest with id field (field 1)
-    const requestBytes = new Uint8Array([0x0a, id.length, ...new TextEncoder().encode(id)])
-    const response = await grpcClient.call(
-      'fulfillment.v1.Clusters',
-      'Get',
-      requestBytes,
-      decodeClustersGetResponse
-    )
-    return response
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/fulfillment/v1/clusters/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to get cluster ${id}: ${response.status} ${response.statusText}`)
+    }
+
+    return await response.json()
   } catch (error) {
     console.error(`Failed to get cluster ${id}:`, error)
     throw error
