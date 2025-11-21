@@ -1,0 +1,32 @@
+{
+  "@type": "type.googleapis.com/fulfillment.v1.ClusterTemplate",
+  "description": "Lightweight OpenShift cluster designed for edge locations with minimal resource footprint. Optimized for IoT workloads, real-time data processing at the edge, and disconnected operations with local storage.\n",
+  "id": "cloudkit.templates.ocp_4_19_edge",
+  "metadata": {
+    "creation_timestamp": "2025-11-21T00:00:00.000000Z",
+    "creators": [
+      "system"
+    ],
+    "version": "4.19"
+  },
+  "node_sets": {
+    "fc430": {
+      "host_class": "fc430",
+      "size": 2
+    }
+  },
+  "parameters": [
+    {
+      "description": "The pull secret contains credentials for authenticating to image repositories.\n",
+      "name": "pull_secret",
+      "required": true,
+      "type": "type.googleapis.com/google.protobuf.StringValue"
+    },
+    {
+      "description": "A public ssh key that will be installed into the `authorized_keys` file of the `core` user on cluster worker nodes.\n",
+      "name": "ssh_public_key",
+      "type": "type.googleapis.com/google.protobuf.StringValue"
+    }
+  ],
+  "title": "Edge Computing Cluster"
+}

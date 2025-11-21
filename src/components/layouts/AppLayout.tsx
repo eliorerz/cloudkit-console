@@ -77,8 +77,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/organizations')
     } else if (selectedItem.itemId === 'hubs') {
       navigate('/hubs')
-    } else if (selectedItem.itemId === 'cluster-templates') {
-      navigate('/admin/cluster-templates')
+    } else if (selectedItem.itemId === 'cluster-catalog') {
+      navigate('/admin/cluster-catalog')
     } else if (selectedItem.itemId === 'clusters') {
       navigate('/admin/clusters')
     }
@@ -302,10 +302,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
             {role === 'fulfillment-admin' && (
               <NavItem
-                itemId="cluster-templates"
-                isActive={location.pathname === '/admin/cluster-templates'}
+                itemId="cluster-catalog"
+                isActive={location.pathname === '/admin/cluster-catalog'}
               >
-                Cluster Templates
+                Cluster Catalog
               </NavItem>
             )}
 

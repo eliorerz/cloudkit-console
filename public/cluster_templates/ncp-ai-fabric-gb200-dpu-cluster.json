@@ -1,0 +1,32 @@
+{
+  "@type": "type.googleapis.com/fulfillment.v1.ClusterTemplate",
+  "description": "This template deploys a production-ready OpenShift cluster on high-performance bare-metal infrastructure. It features DPU-enforced Zero Trust security, Host Multitenancy (HBN), and is fully segmented behind the organizational EVPN/VNI tenant network.\n",
+  "id": "cloudkit.templates.ncp_ai_fabric_gb200_dpu",
+  "metadata": {
+    "creation_timestamp": "2025-11-21T00:00:00.000000Z",
+    "creators": [
+      "system"
+    ],
+    "version": "4.20"
+  },
+  "node_sets": {
+    "gb200": {
+      "host_class": "gb200",
+      "size": 3
+    }
+  },
+  "parameters": [
+    {
+      "description": "The pull secret contains credentials for authenticating to image repositories.\n",
+      "name": "pull_secret",
+      "required": true,
+      "type": "type.googleapis.com/google.protobuf.StringValue"
+    },
+    {
+      "description": "A public ssh key that will be installed into the `authorized_keys` file of the `core` user on cluster worker nodes.\n",
+      "name": "ssh_public_key",
+      "type": "type.googleapis.com/google.protobuf.StringValue"
+    }
+  ],
+  "title": "NCP AI Fabric Cluster (GB200/DPU)"
+}

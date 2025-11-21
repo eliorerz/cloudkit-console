@@ -253,8 +253,8 @@ const ClusterCreate: React.FC = () => {
           <Alert variant="danger" title="Error">
             {error}
           </Alert>
-          <Button variant="primary" onClick={() => navigate('/admin/cluster-templates')} style={{ marginTop: '1rem' }}>
-            Back to Templates
+          <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog')} style={{ marginTop: '1rem' }}>
+            Back to Catalog
           </Button>
         </PageSection>
       </AppLayout>
@@ -268,8 +268,8 @@ const ClusterCreate: React.FC = () => {
           <Alert variant="warning" title="Template not found">
             The requested template could not be found.
           </Alert>
-          <Button variant="primary" onClick={() => navigate('/admin/cluster-templates')} style={{ marginTop: '1rem' }}>
-            Back to Templates
+          <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog')} style={{ marginTop: '1rem' }}>
+            Back to Catalog
           </Button>
         </PageSection>
       </AppLayout>
@@ -280,8 +280,8 @@ const ClusterCreate: React.FC = () => {
     <AppLayout>
       <PageSection variant="default">
         <Breadcrumb>
-          <BreadcrumbItem to="/admin/cluster-templates" onClick={(e) => { e.preventDefault(); navigate('/admin/cluster-templates'); }}>
-            Cluster Templates
+          <BreadcrumbItem to="/admin/cluster-catalog" onClick={(e) => { e.preventDefault(); navigate('/admin/cluster-catalog'); }}>
+            Cluster Catalog
           </BreadcrumbItem>
           <BreadcrumbItem isActive>Create Cluster</BreadcrumbItem>
         </Breadcrumb>
@@ -555,7 +555,7 @@ const ClusterCreate: React.FC = () => {
                 </Button>
                 <Button
                   variant="link"
-                  onClick={() => navigate('/admin/cluster-templates')}
+                  onClick={() => navigate('/admin/cluster-catalog')}
                   isDisabled={creating}
                 >
                   Cancel

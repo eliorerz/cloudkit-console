@@ -556,7 +556,7 @@ const Dashboard: React.FC = () => {
               <Button
                 variant="primary"
                 icon={<PlusCircleIcon />}
-                onClick={() => navigate('/admin/cluster-templates')}
+                onClick={() => navigate('/admin/cluster-catalog')}
                 style={{ minWidth: '180px' }}
               >
                 Create Cluster

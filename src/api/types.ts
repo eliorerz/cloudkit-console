@@ -12,6 +12,14 @@ export interface ClusterTemplate {
   }
   parameters?: ClusterTemplateParameterDefinition[]
   node_sets?: Record<string, ClusterTemplateNodeSet>
+  // UI-specific fields
+  version?: string
+  architecture?: 'x86' | 'ARM'
+  hasGPU?: boolean
+  isAdvanced?: boolean
+  tags?: string[]
+  icon?: 'server' | 'openshift' | 'cube'
+  nodeCount?: number
 }
 
 export interface ClusterTemplateParameterDefinition {
