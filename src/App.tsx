@@ -13,6 +13,7 @@ import ClusterTemplates from './pages/ClusterTemplates'
 import Clusters from './pages/Clusters'
 import ClusterDetail from './pages/ClusterDetail'
 import ClusterCreate from './pages/ClusterCreate'
+import Monitoring from './pages/Monitoring'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
@@ -107,6 +108,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ClusterDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/monitoring"
+            element={
+              <ProtectedRoute>
+                <Monitoring />
               </ProtectedRoute>
             }
           />

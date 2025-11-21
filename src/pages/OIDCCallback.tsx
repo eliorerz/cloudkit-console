@@ -41,8 +41,8 @@ export const OIDCCallback: React.FC = () => {
           return
         }
 
-        // Get the return URL from state or default to dashboard
-        const url = (user.state as { returnUrl?: string })?.returnUrl || '/dashboard'
+        // Get the return URL from state or default to overview
+        const url = (user.state as { returnUrl?: string })?.returnUrl || '/overview'
 
         console.log('OIDCCallback: Target URL:', url)
         console.log('OIDCCallback: User is expired?', user.expired)

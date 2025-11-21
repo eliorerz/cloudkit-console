@@ -67,6 +67,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const onNavSelect = (selectedItem: { itemId: string | number }) => {
     if (selectedItem.itemId === 'dashboard') {
       navigate('/overview')
+    } else if (selectedItem.itemId === 'monitoring-dashboard') {
+      navigate('/monitoring')
     } else if (selectedItem.itemId === 'virtual-machines') {
       navigate('/virtual-machines')
     } else if (selectedItem.itemId === 'templates') {
@@ -250,6 +252,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               Overview
             </NavItem>
 
+            <NavItem
+              itemId="monitoring-dashboard"
+              isActive={location.pathname === '/monitoring'}
+            >
+              Dashboard
+            </NavItem>
+
             <div style={{
               padding: '1rem 1rem 0rem 1rem',
               fontSize: '0.875rem',
@@ -299,31 +308,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 Cluster Templates
               </NavItem>
             )}
-
-            <div style={{
-              padding: '1rem 1rem 0rem 1rem',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--pf-v6-global--Color--200)'
-            }}>
-              Observability
-            </div>
-
-            <NavItem
-              itemId="monitoring"
-              isActive={location.pathname === '/monitoring'}
-              disabled
-            >
-              Monitoring
-            </NavItem>
-
-            <NavItem
-              itemId="events"
-              isActive={location.pathname === '/events'}
-              disabled
-            >
-              Events
-            </NavItem>
 
             {role === 'fulfillment-admin' && (
               <>

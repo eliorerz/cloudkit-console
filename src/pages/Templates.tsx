@@ -48,6 +48,7 @@ import { Template } from '../api/types'
 import { createVirtualMachine } from '../api/vms'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
 import { getOSImages, OSImage } from '../api/os-images'
+import { getHostClasses, HostClass } from '../api/host-classes'
 
 const Templates: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([])
@@ -72,6 +73,9 @@ const Templates: React.FC = () => {
 
   // OS Images for icon matching
   const [osImages, setOsImages] = useState<OSImage[]>([])
+
+  // Host classes for machine specifications
+  const [hostClasses, setHostClasses] = useState<Record<string, HostClass>>({})
 
   // Pagination
   const [page, setPage] = useState(1)
@@ -109,6 +113,21 @@ const Templates: React.FC = () => {
     fetchOSImages()
   }, [])
 
+  // Fetch host classes for machine specifications
+  useEffect(() => {
+    const fetchHostClasses = async () => {
+      try {
+        const classes = await getHostClasses()
+        setHostClasses(classes || {})
+      } catch (error) {
+        console.error('Error fetching host classes:', error)
+        setHostClasses({})
+      }
+    }
+
+    fetchHostClasses()
+  }, [])
+
   // Helper to get OS icon from image source parameter
   const getOSIcon = (template: Template): string | null => {
     const imageParam = template.parameters?.find(p => p.name === 'vm_image_source')
@@ -132,6 +151,48 @@ const Templates: React.FC = () => {
       return String(param.default.value)
     }
     return 'N/A'
+  }
+
+  // Extract machine type from template ID and get host class info
+  const getMachineInfo = (templateId: string): { type: string; hostClass: HostClass | null } => {
+    // Extract machine type (e.g., "fc430" from "fc430-rhel9.5")
+    const match = templateId.match(/^([a-z0-9]+)-/)
+    if (match) {
+      const machineType = match[1].toLowerCase()
+      const hostClass = hostClasses[machineType] || null
+      const displayType = hostClass?.name || machineType.toUpperCase()
+      return { type: displayType, hostClass }
+    }
+    return { type: templateId, hostClass: null }
+  }
+
+  // Format hardware specification string from host class
+  const formatHostClassSpec = (hostClass: HostClass | null): string | null => {
+    if (!hostClass) return null
+
+    const parts: string[] = []
+
+    // Add description
+    if (hostClass.description) {
+      parts.push(hostClass.description)
+    }
+
+    // Add CPU info
+    if (hostClass.cpu) {
+      parts.push(`${hostClass.cpu.type} (${hostClass.cpu.cores} cores)`)
+    }
+
+    // Add RAM info
+    if (hostClass.ram) {
+      parts.push(`${hostClass.ram.size} RAM`)
+    }
+
+    // Add Disk info
+    if (hostClass.disk) {
+      parts.push(`${hostClass.disk.size} ${hostClass.disk.type}`)
+    }
+
+    return parts.join(' - ')
   }
 
   // Toggle expanded rows in table view
@@ -369,12 +430,14 @@ const Templates: React.FC = () => {
                   const cpuCores = getParamValue(template, 'vm_cpu_cores')
                   const memory = getParamValue(template, 'vm_memory_size')
                   const diskSize = getParamValue(template, 'vm_disk_size')
+                  const machineInfo = getMachineInfo(template.id)
+                  const hostClassSpec = formatHostClassSpec(machineInfo.hostClass)
 
                   return (
                     <Card
                       key={template.id}
                       style={{
-                        height: '325px',
+                        height: hostClassSpec ? '360px' : '325px',
                         maxWidth: '450px',
                         border: '1px solid #d2d2d2',
                         borderRadius: '8px',
@@ -401,7 +464,7 @@ const Templates: React.FC = () => {
                         borderBottom: '1px solid #f0f0f0',
                         backgroundColor: '#fafafa',
                         flexShrink: 0,
-                        minHeight: '80px'
+                        minHeight: hostClassSpec ? '115px' : '80px'
                       }}>
                         <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
                           <FlexItem>
@@ -470,15 +533,31 @@ const Templates: React.FC = () => {
                             </div>
                             <div style={{
                               fontSize: '14px',
-                              color: '#6a6e73',
-                              fontWeight: '400',
+                              color: '#06c',
+                              fontWeight: '600',
                               lineHeight: '1.2',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap'
                             }}>
-                              {template.id}
+                              {machineInfo.type}
                             </div>
+                            {hostClassSpec && (
+                              <div style={{
+                                fontSize: '11px',
+                                color: '#6a6e73',
+                                fontWeight: '400',
+                                lineHeight: '1.3',
+                                marginTop: '4px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical'
+                              }}>
+                                {hostClassSpec}
+                              </div>
+                            )}
                           </FlexItem>
                         </Flex>
                       </div>

@@ -18,7 +18,7 @@ const Login: React.FC = () => {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    navigate('/dashboard')
+    navigate('/overview')
     return null
   }
 
