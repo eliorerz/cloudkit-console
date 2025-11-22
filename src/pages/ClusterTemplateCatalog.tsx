@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -28,6 +28,32 @@ import AppLayout from '../components/layouts/AppLayout'
 import { getClusterTemplates } from '../api/clusterTemplates'
 import { ClusterTemplate } from '../api/types'
 
+interface HostClassInfo {
+  name: string
+  description: string
+  category: string
+  cpu: {
+    type: string
+    cores: number
+    sockets: number
+    threadsPerCore: number
+  }
+  ram: {
+    size: string
+    type: string
+  }
+  disk: {
+    type: string
+    size: string
+    interface: string
+  }
+  gpu: {
+    model?: string
+    count?: number
+    memory?: string
+  } | null
+}
+
 const getIcon = (iconType?: string) => {
   switch (iconType) {
     case 'openshift':
@@ -45,6 +71,7 @@ const ClusterTemplateCatalog: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<ClusterTemplate | null>(null)
   const [templates, setTemplates] = useState<ClusterTemplate[]>([])
   const [loading, setLoading] = useState(true)
+  const [hostClasses, setHostClasses] = useState<Record<string, HostClassInfo>>({})
 
   // Filter states
   const [gpuRequired, setGpuRequired] = useState(false)
@@ -68,6 +95,21 @@ const ClusterTemplateCatalog: React.FC = () => {
     }
 
     fetchTemplates()
+  }, [])
+
+  // Fetch host classes
+  useEffect(() => {
+    const fetchHostClasses = async () => {
+      try {
+        const response = await fetch('/api/host-classes')
+        const data = await response.json()
+        setHostClasses(data)
+      } catch (error) {
+        console.error('Error fetching host classes:', error)
+      }
+    }
+
+    fetchHostClasses()
   }, [])
 
   // Filtered templates based on filter criteria
@@ -127,8 +169,7 @@ const ClusterTemplateCatalog: React.FC = () => {
   const drawerContent = selectedTemplate && (
     <div
       style={{
-        width: '550px',
-        borderTopLeftRadius: '18px',
+        width: '650px',
         height: '100vh',
         position: 'fixed',
         right: 0,
@@ -166,50 +207,18 @@ const ClusterTemplateCatalog: React.FC = () => {
 
         <Divider style={{ margin: '1.5rem 0' }} />
 
-        <Title headingLevel="h3" size="md" style={{ marginBottom: '1rem' }}>
+        <Title headingLevel="h3" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem' }}>
           Cluster Configuration
         </Title>
 
-        <DescriptionList isHorizontal isCompact>
+        <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
           <DescriptionListGroup>
-            <DescriptionListTerm>Total Nodes</DescriptionListTerm>
+            <DescriptionListTerm>Total Workers</DescriptionListTerm>
             <DescriptionListDescription>
-              {selectedTemplate.nodeCount} nodes
+              {selectedTemplate.nodeCount}
             </DescriptionListDescription>
           </DescriptionListGroup>
 
-          <DescriptionListGroup>
-            <DescriptionListTerm>Architecture</DescriptionListTerm>
-            <DescriptionListDescription>
-              {selectedTemplate.architecture}
-            </DescriptionListDescription>
-          </DescriptionListGroup>
-
-          {selectedTemplate.hasGPU && (
-            <DescriptionListGroup>
-              <DescriptionListTerm>GPU Enabled</DescriptionListTerm>
-              <DescriptionListDescription>
-                Yes
-              </DescriptionListDescription>
-            </DescriptionListGroup>
-          )}
-
-          {selectedTemplate.node_sets && Object.entries(selectedTemplate.node_sets).map(([name, nodeSet]) => (
-            <DescriptionListGroup key={name}>
-              <DescriptionListTerm>Host Class</DescriptionListTerm>
-              <DescriptionListDescription>
-                {nodeSet.host_class?.toUpperCase() || 'N/A'}
-              </DescriptionListDescription>
-            </DescriptionListGroup>
-          ))}
-        </DescriptionList>
-
-        <Divider style={{ margin: '1.5rem 0' }} />
-
-        <Title headingLevel="h3" size="md" style={{ marginBottom: '1rem' }}>
-          Version Compatibility
-        </Title>
-        <DescriptionList isHorizontal isCompact>
           <DescriptionListGroup>
             <DescriptionListTerm>OpenShift Version</DescriptionListTerm>
             <DescriptionListDescription>
@@ -217,6 +226,110 @@ const ClusterTemplateCatalog: React.FC = () => {
             </DescriptionListDescription>
           </DescriptionListGroup>
         </DescriptionList>
+
+        {selectedTemplate.node_sets && Object.entries(selectedTemplate.node_sets).map(([name, nodeSet]) => {
+          const hostClassId = nodeSet.host_class || ''
+          const hostClassInfo = hostClasses[hostClassId]
+          if (!hostClassInfo) return null
+
+          return (
+            <div key={name}>
+              <Divider style={{ margin: '1.5rem 0' }} />
+              <Title headingLevel="h3" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem' }}>
+                Worker Nodes ({nodeSet.size || 0})
+              </Title>
+
+              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Host Class</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {hostClassInfo.name} ({hostClassInfo.description})
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Category</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {hostClassInfo.category}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </DescriptionList>
+
+              <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                CPU
+              </Title>
+              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Type</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {hostClassInfo.cpu.type}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Cores</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {hostClassInfo.cpu.cores} ({hostClassInfo.cpu.sockets} sockets × {hostClassInfo.cpu.threadsPerCore} threads/core)
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </DescriptionList>
+
+              <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                Memory
+              </Title>
+              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Total RAM</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {hostClassInfo.ram.size} {hostClassInfo.ram.type}
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </DescriptionList>
+
+              <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                Storage
+              </Title>
+              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Disk</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    {hostClassInfo.disk.size} {hostClassInfo.disk.type} ({hostClassInfo.disk.interface})
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+              </DescriptionList>
+
+              {hostClassInfo.gpu && (
+                <>
+                  <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                    GPU
+                  </Title>
+                  <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Model</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.gpu.model}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Count</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.gpu.count}x GPUs
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Memory per GPU</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.gpu.memory}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
+                </>
+              )}
+            </div>
+          )
+        })}
 
         <Divider style={{ margin: '1.5rem 0' }} />
 
@@ -385,20 +498,34 @@ const ClusterTemplateCatalog: React.FC = () => {
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6a6e73', marginBottom: '0.5rem' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#000000', marginBottom: '0.5rem' }}>
                         Configuration
                       </div>
                       <ul style={{
                         margin: 0,
-                        paddingLeft: '1.25rem',
-                        fontSize: '0.875rem',
+                        paddingLeft: 0,
+                        listStyle: 'none',
+                        fontSize: '0.75rem',
                         color: 'var(--pf-v6-global--Color--200)',
                         lineHeight: '1.6',
                       }}>
-                        <li>{template.nodeCount} nodes</li>
-                        <li>{template.architecture} architecture</li>
-                        <li>OpenShift {template.version}</li>
-                        {template.hasGPU && <li>GPU enabled</li>}
+                        <li><strong>Nodes:</strong> {template.nodeCount}</li>
+                        {template.node_sets && Object.values(template.node_sets).map((nodeSet, idx) => {
+                          const hostClassId = nodeSet.host_class || ''
+                          const hostClassInfo = hostClasses[hostClassId]
+                          if (!hostClassInfo) return null
+                          return (
+                            <React.Fragment key={idx}>
+                              <li><strong>CPU:</strong> {hostClassInfo.cpu.type}</li>
+                              <li><strong>Memory:</strong> {hostClassInfo.ram.size}{hostClassInfo.ram.type ? ` - ${hostClassInfo.ram.type}` : ''}</li>
+                              <li><strong>Disk:</strong> {hostClassInfo.disk.size} - {hostClassInfo.disk.type}</li>
+                              {hostClassInfo.gpu && (
+                                <li><strong>GPU:</strong> {hostClassInfo.gpu.model} {hostClassInfo.gpu.memory} x {hostClassInfo.gpu.count}</li>
+                              )}
+                            </React.Fragment>
+                          )
+                        }).filter(Boolean)[0]}
+                        <li><strong>OpenShift:</strong> {template.version}</li>
                       </ul>
                     </div>
                   </CardBody>
