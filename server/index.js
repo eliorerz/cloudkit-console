@@ -173,11 +173,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, '../dist')));
+// Serve static files from the dist directory with caching for assets
+app.use(express.static(path.join(__dirname, '../dist'), {
+  setHeaders: (res, path) => {
+    // Cache assets (JS, CSS, images) for 1 year since they have content hashes
+    if (path.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
-// SPA fallback - serve index.html for all other routes
+// SPA fallback - serve index.html for all other routes with no-cache
 app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 

@@ -170,16 +170,17 @@ const ClusterTemplateCatalog: React.FC = () => {
     <div
       style={{
         width: '650px',
-        height: '100vh',
+        height: 'calc(100vh - 72px)',
         position: 'fixed',
         right: 0,
-        top: 0,
+        top: '72px',
         bottom: 0,
         zIndex: 9999,
         boxShadow: '-2px 0 8px rgba(0, 0, 0, 0.15)',
         backgroundColor: '#ffffff',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        borderTopLeftRadius: '18px'
       }}
     >
       <div style={{ padding: '1.5rem', borderBottom: '1px solid #d2d2d2' }}>
