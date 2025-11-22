@@ -5,6 +5,7 @@ import { OIDCCallback } from './pages/OIDCCallback'
 import Dashboard from './pages/Dashboard'
 import VirtualMachines from './pages/VirtualMachines'
 import VirtualMachineCreate from './pages/VirtualMachineCreate'
+import VirtualMachineCreateNew from './pages/VirtualMachineCreateNew'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
 import BareMetalHosts from './pages/BareMetalHosts'
 import Templates from './pages/Templates'
@@ -46,6 +47,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <VirtualMachineCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/virtual-machines/create-new"
+            element={
+              <ProtectedRoute>
+                <VirtualMachineCreateNew />
               </ProtectedRoute>
             }
           />

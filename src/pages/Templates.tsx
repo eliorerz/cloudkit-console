@@ -221,7 +221,7 @@ const Templates: React.FC = () => {
 
   const handleCreateVMClick = () => {
     if (selectedTemplate) {
-      navigate(`/virtual-machines/create?template=${selectedTemplate.id}&from=templates`)
+      navigate(`/virtual-machines/create-new?template=${selectedTemplate.id}&from=templates`)
     }
   }
 
