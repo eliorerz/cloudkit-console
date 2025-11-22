@@ -69,6 +69,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/overview')
     } else if (selectedItem.itemId === 'monitoring-dashboard') {
       navigate('/monitoring')
+    } else if (selectedItem.itemId === 'bare-metal-hosts') {
+      navigate('/bare-metal-hosts')
     } else if (selectedItem.itemId === 'virtual-machines') {
       navigate('/virtual-machines')
     } else if (selectedItem.itemId === 'templates') {
@@ -269,6 +271,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </div>
 
             <NavItem
+              itemId="bare-metal-hosts"
+              isActive={location.pathname === '/bare-metal-hosts'}
+            >
+              Bare Metal Hosts
+            </NavItem>
+
+            <NavItem
               itemId="virtual-machines"
               isActive={location.pathname === '/virtual-machines'}
             >
@@ -283,15 +292,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 Managed Clusters
               </NavItem>
             )}
-
-            <div style={{
-              padding: '1rem 1rem 0rem 1rem',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--pf-v6-global--Color--200)'
-            }}>
-              Templates
-            </div>
 
             <NavItem
               itemId="templates"

@@ -5,6 +5,7 @@ import { OIDCCallback } from './pages/OIDCCallback'
 import Dashboard from './pages/Dashboard'
 import VirtualMachines from './pages/VirtualMachines'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
+import BareMetalHosts from './pages/BareMetalHosts'
 import Templates from './pages/Templates'
 import AdminTemplates from './pages/AdminTemplates'
 import Organizations from './pages/Organizations'
@@ -44,6 +45,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <VirtualMachineDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bare-metal-hosts"
+            element={
+              <ProtectedRoute>
+                <BareMetalHosts />
               </ProtectedRoute>
             }
           />
