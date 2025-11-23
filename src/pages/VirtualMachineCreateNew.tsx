@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   PageSection,
@@ -103,12 +103,15 @@ const VirtualMachineCreateNew: React.FC = () => {
   const [cloudInitFilename, setCloudInitFilename] = useState('')
   const [runStrategyOpen, setRunStrategyOpen] = useState(false)
 
-  // Steps
-  const steps: WizardStep[] = [
-    { id: 'vm-details', name: 'VM details', completed: currentStepIndex > 0 },
-    { id: 'hardware', name: 'Hardware Configuration', completed: currentStepIndex > 1 },
-    { id: 'review', name: 'Review and create', completed: currentStepIndex > 2 },
-  ]
+  // Steps - dynamically build based on customization
+  const steps: WizardStep[] = useMemo(() => {
+    const allSteps = [
+      { id: 'vm-details', name: 'VM details', completed: currentStepIndex > 0 },
+      ...(customizeTemplate ? [{ id: 'hardware', name: 'Hardware Configuration', completed: currentStepIndex > 1 }] : []),
+      { id: 'review', name: 'Review and create', completed: currentStepIndex > (customizeTemplate ? 2 : 1) },
+    ]
+    return allSteps
+  }, [currentStepIndex, customizeTemplate])
 
   useEffect(() => {
     loadTemplate()
@@ -169,33 +172,69 @@ const VirtualMachineCreateNew: React.FC = () => {
 
       if (!template) return
 
-      // Build parameters
+      // Helper to wrap value in protobuf type
+      const wrapProtobufValue = (paramType: string, value: any) => {
+        return {
+          '@type': paramType,
+          value: value
+        }
+      }
+
+      // Build request payload
+      const payload: any = {
+        metadata: {
+          name: vmName
+        },
+        spec: {
+          template: template.id
+        }
+      }
+
+      // Build template_parameters
       const parameters: Record<string, any> = {}
+      let hasParameters = false
+
       template.parameters?.forEach(param => {
-        if (param.default?.value !== undefined && param.default?.value !== null) {
-          // Override hardware parameters
-          if (param.name === 'vm_cpu_cores') {
-            parameters[param.name] = vmCpuCores
-          } else if (param.name === 'vm_memory_size') {
-            parameters[param.name] = `${vmMemoryGi}Gi`
-          } else if (param.name === 'vm_disk_size') {
-            parameters[param.name] = `${vmDiskGi}Gi`
-          } else if (param.name === 'vm_image_source' && customizeTemplate) {
-            // Use custom image source if template customization is enabled
-            parameters[param.name] = vmImageSource
-          } else {
-            parameters[param.name] = param.default.value
+        if (param.type && (param.default?.value !== undefined && param.default?.value !== null)) {
+          let value: any
+          let shouldInclude = false
+
+          // When customizing, include all parameters (override specific ones with user values)
+          if (customizeTemplate) {
+            if (param.name === 'vm_cpu_cores') {
+              // Int64Value expects string representation
+              value = String(vmCpuCores)
+            } else if (param.name === 'vm_memory_size') {
+              value = `${vmMemoryGi}Gi`
+            } else if (param.name === 'vm_disk_size') {
+              value = `${vmDiskGi}Gi`
+            } else if (param.name === 'vm_image_source') {
+              value = vmImageSource
+            } else {
+              // Use template default for other parameters
+              value = param.default.value
+            }
+            shouldInclude = true
+          } else if (param.name === 'ssh_public_key' && sshPublicKey) {
+            // Always include SSH key if provided
+            value = sshPublicKey
+            shouldInclude = true
+          }
+
+          if (shouldInclude) {
+            // Wrap in protobuf type
+            parameters[param.name] = wrapProtobufValue(param.type, value)
+            hasParameters = true
           }
         }
       })
 
-      await createVirtualMachine({
-        id: vmName,
-        spec: {
-          template: template.id,
-          template_parameters: parameters
-        }
-      })
+      // Only add template_parameters if there are any
+      if (hasParameters) {
+        payload.spec.template_parameters = parameters
+      }
+
+      await createVirtualMachine(payload)
 
       navigate('/virtual-machines')
     } catch (err: any) {
@@ -497,13 +536,13 @@ const VirtualMachineCreateNew: React.FC = () => {
                 </Title>
                 <div style={{ padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>CPU Cores:</strong> {vmCpuCores}
+                    <strong>CPU Cores:</strong> {customizeTemplate ? vmCpuCores : (template?.parameters?.find(p => p.name === 'vm_cpu_cores')?.default?.value || vmCpuCores)}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>Memory:</strong> {vmMemoryGi} Gi
+                    <strong>Memory:</strong> {customizeTemplate ? `${vmMemoryGi} Gi` : (template?.parameters?.find(p => p.name === 'vm_memory_size')?.default?.value || `${vmMemoryGi} Gi`)}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>Disk Size:</strong> {formatDiskSize(vmDiskGi)}
+                    <strong>Disk Size:</strong> {customizeTemplate ? formatDiskSize(vmDiskGi) : (template?.parameters?.find(p => p.name === 'vm_disk_size')?.default?.value || formatDiskSize(vmDiskGi))}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73' }}>
                     <strong>Run Strategy:</strong> {vmRunStrategy}
