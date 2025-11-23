@@ -39,23 +39,26 @@ const machineSizeTiers = {
       { id: 'tiny', name: 'Tiny', cpu: 2, memory: 4, description: '2 vCPU / 4 Gi RAM' },
       { id: 'small', name: 'Small', cpu: 4, memory: 8, description: '4 vCPU / 8 Gi RAM' },
       { id: 'medium', name: 'Medium', cpu: 8, memory: 16, description: '8 vCPU / 16 Gi RAM' },
+      { id: 'large', name: 'Large', cpu: 16, memory: 32, description: '16 vCPU / 32 Gi RAM' },
     ]
   },
   highPerformance: {
     title: 'High-Performance Series',
     sizes: [
-      { id: 'large', name: 'Large', cpu: 16, memory: 32, description: '16 vCPU / 32 Gi RAM' },
       { id: 'xlarge', name: 'XLarge', cpu: 32, memory: 64, description: '32 vCPU / 64 Gi RAM' },
       { id: '2xlarge', name: '2XLarge', cpu: 48, memory: 128, description: '48 vCPU / 128 Gi RAM' },
-      { id: '4xlarge', name: '4XLarge', cpu: 64, memory: 256, description: '64 vCPU / 256 Gi RAM' },
+      { id: '3xlarge', name: '3XLarge', cpu: 64, memory: 256, description: '64 vCPU / 256 Gi RAM' },
+      { id: '4xlarge', name: '4XLarge', cpu: 64, memory: 512, description: '64 vCPU / 512 Gi RAM' },
     ]
   }
 }
 
 // Disk size options for slider
 const diskSizeOptions = [
+  { value: 50, label: '' },
+  { value: 100, label: '' },
   { value: 200, label: '200Gi' },
-  { value: 500, label: '500Gi' },
+  { value: 500, label: '' },
   { value: 1024, label: '1Ti' },
   { value: 2048, label: '2Ti' },
   { value: 3072, label: '3Ti' },
@@ -361,7 +364,8 @@ const VirtualMachineCreateNew: React.FC = () => {
                 <div style={{ display: 'flex', gap: '2rem' }}>
                   {/* Left Sidebar - Series Selection */}
                   <div style={{
-                    minWidth: '180px',
+                    width: '230px',
+                    flexShrink: 0,
                     backgroundColor: '#f5f5f5',
                     padding: '1rem',
                     borderRadius: '4px'
@@ -468,7 +472,7 @@ const VirtualMachineCreateNew: React.FC = () => {
                   <div style={{ padding: '0 0.5rem' }}>
                     <Slider
                       value={vmDiskGi}
-                      min={200}
+                      min={50}
                       max={5120}
                       onChange={(_event, value) => {
                         setVmDiskGi(value as number)
