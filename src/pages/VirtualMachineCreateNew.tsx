@@ -668,6 +668,7 @@ const VirtualMachineCreateNew: React.FC = () => {
                     onClick={handleNext}
                     isLoading={creating}
                     isDisabled={!canProceed() || creating}
+                    style={{ marginRight: '0.5rem' }}
                   >
                     {currentStepIndex === steps.length - 1 ? (creating ? 'Creating...' : 'Create Virtual Machine') : 'Next'}
                   </Button>
@@ -676,6 +677,7 @@ const VirtualMachineCreateNew: React.FC = () => {
                       variant="secondary"
                       onClick={handleBack}
                       isDisabled={creating}
+                      style={{ marginRight: '0.5rem' }}
                     >
                       Back
                     </Button>

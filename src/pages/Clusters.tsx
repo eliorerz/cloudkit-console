@@ -97,7 +97,7 @@ const Clusters: React.FC = () => {
             <EmptyStateBody>
               You haven't created any clusters yet. Get started by creating a cluster from a template.
             </EmptyStateBody>
-            <EmptyStateActions>
+            <EmptyStateActions style={{ marginTop: '1.5rem' }}>
               <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog')}>
                 Browse Templates
               </Button>
