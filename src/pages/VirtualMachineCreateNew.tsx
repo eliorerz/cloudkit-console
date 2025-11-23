@@ -102,6 +102,7 @@ const VirtualMachineCreateNew: React.FC = () => {
   const [sshPublicKey, setSshPublicKey] = useState('')
   const [cloudInitFilename, setCloudInitFilename] = useState('')
   const [runStrategyOpen, setRunStrategyOpen] = useState(false)
+  const [selectedSeries, setSelectedSeries] = useState<'standard' | 'highPerformance'>('standard')
 
   // Steps - dynamically build based on customization
   const steps: WizardStep[] = useMemo(() => {
@@ -355,115 +356,128 @@ const VirtualMachineCreateNew: React.FC = () => {
             </Title>
             <Form>
 
-              {/* Machine Size - Tiered Selection */}
+              {/* Machine Size Selection with Sidebar */}
               <FormGroup fieldId="machine-size" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '2rem' }}>
-                  <div style={{ minWidth: '180px', paddingTop: '0.5rem' }}>
-                    <Title headingLevel="h4" size="md" style={{ color: '#6a6e73', fontWeight: 400 }}>
-                      Standard Series
+                <div style={{ display: 'flex', gap: '2rem' }}>
+                  {/* Left Sidebar - Series Selection */}
+                  <div style={{
+                    minWidth: '180px',
+                    backgroundColor: '#f5f5f5',
+                    padding: '1rem',
+                    borderRadius: '4px'
+                  }}>
+                    <Title headingLevel="h4" size="md" style={{ marginBottom: '1rem', fontWeight: 600 }}>
+                      Series
                     </Title>
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    {machineSizeTiers.standard.sizes.map((size) => (
-                      <Card
-                        key={size.id}
-                        isSelectable
-                        isSelected={selectedSizePreset === size.id}
-                        onClick={() => setSelectedSizePreset(size.id)}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div
+                        onClick={() => setSelectedSeries('standard')}
                         style={{
+                          padding: '0.75rem',
+                          backgroundColor: selectedSeries === 'standard' ? '#ffffff' : 'transparent',
+                          border: selectedSeries === 'standard' ? '2px solid #0066cc' : '2px solid transparent',
+                          borderRadius: '4px',
                           cursor: 'pointer',
-                          border: selectedSizePreset === size.id ? '3px solid #0066cc' : '1px solid #d2d2d2',
-                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : '#ffffff',
-                          transition: 'all 0.2s ease',
-                          width: '200px',
-                          height: '120px',
-                          flex: '0 0 200px'
+                          fontWeight: selectedSeries === 'standard' ? 600 : 400,
+                          color: selectedSeries === 'standard' ? '#0066cc' : '#151515',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        <CardBody>
-                          <Title headingLevel="h5" size="lg" style={{
-                            marginBottom: '0.5rem',
-                            color: selectedSizePreset === size.id ? '#0066cc' : '#151515',
-                            fontWeight: selectedSizePreset === size.id ? 700 : 600
-                          }}>
-                            {size.name}
-                          </Title>
-                          <div style={{
-                            fontSize: '0.875rem',
-                            color: '#6a6e73'
-                          }}>
-                            {size.description}
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
+                        Standard Series
+                      </div>
+                      <div
+                        onClick={() => setSelectedSeries('highPerformance')}
+                        style={{
+                          padding: '0.75rem',
+                          backgroundColor: selectedSeries === 'highPerformance' ? '#ffffff' : 'transparent',
+                          border: selectedSeries === 'highPerformance' ? '2px solid #0066cc' : '2px solid transparent',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontWeight: selectedSeries === 'highPerformance' ? 600 : 400,
+                          color: selectedSeries === 'highPerformance' ? '#0066cc' : '#151515',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        High-Performance Series
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* High-Performance Series */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem' }}>
-                  <div style={{ minWidth: '180px', paddingTop: '0.5rem' }}>
-                    <Title headingLevel="h4" size="md" style={{ color: '#6a6e73', fontWeight: 400, lineHeight: '1.3' }}>
-                      High-Performance<br />Series
-                    </Title>
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    {machineSizeTiers.highPerformance.sizes.map((size) => (
-                      <Card
-                        key={size.id}
-                        isSelectable
-                        isSelected={selectedSizePreset === size.id}
-                        onClick={() => setSelectedSizePreset(size.id)}
-                        style={{
-                          cursor: 'pointer',
-                          border: selectedSizePreset === size.id ? '3px solid #0066cc' : '1px solid #d2d2d2',
-                          backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : '#ffffff',
-                          transition: 'all 0.2s ease',
-                          width: '200px',
-                          height: '120px',
-                          flex: '0 0 200px'
-                        }}
-                      >
-                        <CardBody>
-                          <Title headingLevel="h5" size="lg" style={{
-                            marginBottom: '0.5rem',
-                            color: selectedSizePreset === size.id ? '#0066cc' : '#151515',
-                            fontWeight: selectedSizePreset === size.id ? 700 : 600
-                          }}>
-                            {size.name}
-                          </Title>
-                          <div style={{
-                            fontSize: '0.875rem',
-                            color: '#6a6e73'
-                          }}>
-                            {size.description}
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
+                  {/* Right Side - Size Options */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      {machineSizeTiers[selectedSeries].sizes.map((size) => (
+                        <Card
+                          key={size.id}
+                          isSelectable
+                          isSelected={selectedSizePreset === size.id}
+                          onClick={() => setSelectedSizePreset(size.id)}
+                          style={{
+                            cursor: 'pointer',
+                            border: selectedSizePreset === size.id ? '2px solid #0066cc' : '1px solid #d2d2d2',
+                            backgroundColor: selectedSizePreset === size.id ? '#e7f1fa' : '#ffffff',
+                            transition: 'all 0.2s ease',
+                            minWidth: 'fit-content',
+                            padding: '0.75rem 1rem'
+                          }}
+                        >
+                          <CardBody style={{ padding: 0 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <Title headingLevel="h5" size="md" style={{
+                                margin: 0,
+                                color: selectedSizePreset === size.id ? '#0066cc' : '#151515',
+                                fontWeight: selectedSizePreset === size.id ? 700 : 600
+                              }}>
+                                {size.name}
+                              </Title>
+                              <div style={{
+                                fontSize: '0.8125rem',
+                                color: '#6a6e73'
+                              }}>
+                                {size.description}
+                              </div>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </FormGroup>
 
-              {/* Disk Size Slider */}
+              {/* Storage Configuration */}
               <FormGroup
-                label={`Disk Size: ${formatDiskSize(vmDiskGi)}`}
+                label="Storage"
                 isRequired
-                fieldId="disk-size"
+                fieldId="storage"
                 style={{ marginBottom: '2rem' }}
               >
-                <div style={{ paddingLeft: '0.5rem', paddingRight: '0.5rem' }}>
-                  <Slider
-                    value={vmDiskGi}
-                    min={200}
-                    max={5120}
-                    onChange={(_event, value) => {
-                      setVmDiskGi(value as number)
-                    }}
-                    showTicks
-                    customSteps={diskSizeOptions}
-                    areCustomStepsContinuous={false}
-                  />
+                <div style={{
+                  padding: '1.5rem',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '4px'
+                }}>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <Title headingLevel="h4" size="md" style={{ marginBottom: '0.5rem' }}>
+                      Disk Size: {formatDiskSize(vmDiskGi)}
+                    </Title>
+                    <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginBottom: '1rem' }}>
+                      Select the storage capacity for your virtual machine
+                    </div>
+                  </div>
+                  <div style={{ padding: '0 0.5rem' }}>
+                    <Slider
+                      value={vmDiskGi}
+                      min={200}
+                      max={5120}
+                      onChange={(_event, value) => {
+                        setVmDiskGi(value as number)
+                      }}
+                      showTicks
+                      customSteps={diskSizeOptions}
+                      areCustomStepsContinuous={false}
+                    />
+                  </div>
                 </div>
               </FormGroup>
 
