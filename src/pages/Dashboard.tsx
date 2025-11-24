@@ -37,7 +37,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
 
 const Dashboard: React.FC = () => {
-  const { role, username } = useAuth()
+  const { role, username, token, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     templates: { total: 0 },
@@ -55,7 +55,7 @@ const Dashboard: React.FC = () => {
   const [clustersError, setClustersError] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [loadingVMs, setLoadingVMs] = useState(true)
+  const [vmsFetched, setVmsFetched] = useState(false)
   const [loadingClusters, setLoadingClusters] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
@@ -98,25 +98,67 @@ const Dashboard: React.FC = () => {
 
   // Fetch VMs for the logged-in user
   useEffect(() => {
+    // Don't fetch VMs until auth is complete AND we have username AND token
+    if (authLoading || !username || !token) {
+      setVmsFetched(false)
+      return
+    }
+
+    let retryCount = 0
+    const maxRetries = 10
+
     const fetchVMs = async () => {
-      setLoadingVMs(true)
       try {
+        const lsToken = localStorage.getItem('cloudkit_token')
+        console.log(`Fetching VMs (attempt ${retryCount + 1}/${maxRetries}) for username:`, username)
+        console.log('Token from useAuth:', !!token)
+        console.log('Token exists in localStorage:', !!lsToken)
+        console.log('Auth loading:', authLoading)
+
         const response = await getVirtualMachines()
-        setVms(response.items || [])
+        console.log('VM API Response type:', typeof response)
+
+        // Validate response is a proper list response, not HTML
+        if (response && typeof response === 'object' && 'items' in response) {
+          console.log('✓ Valid VM response received')
+          console.log('VM items:', response.items)
+          console.log('VM items length:', response.items?.length || 0)
+          setVms(response.items || [])
+          setVmsFetched(true)
+        } else {
+          console.error('✗ Invalid VM response (possibly HTML)')
+          retryCount++
+          // Don't set vmsFetched - keep showing spinner
+        }
       } catch (error) {
         console.error('Failed to fetch VMs:', error)
-        setVms([])
-      } finally {
-        setLoadingVMs(false)
+        retryCount++
+        // Don't set vmsFetched - keep showing spinner to retry
       }
     }
 
+    // Initial fetch
     fetchVMs()
 
-    // Refresh VMs every 30 seconds
-    const interval = setInterval(fetchVMs, 30000)
-    return () => clearInterval(interval)
-  }, [username])
+    // Fast retry every 2 seconds until we get valid data (max 10 attempts = 20 seconds)
+    // Then slow polling every 30 seconds
+    const fastRetryInterval = setInterval(() => {
+      if (!vmsFetched && retryCount < maxRetries) {
+        fetchVMs()
+      }
+    }, 2000)
+
+    const slowPollInterval = setInterval(() => {
+      if (vmsFetched) {
+        fetchVMs()
+      }
+    }, 30000)
+
+    return () => {
+      clearInterval(fastRetryInterval)
+      clearInterval(slowPollInterval)
+    }
+  }, [authLoading, username, token, vmsFetched])
 
   // Fetch clusters for admin users
   useEffect(() => {
@@ -370,7 +412,7 @@ const Dashboard: React.FC = () => {
                     </Flex>
                   </CardTitle>
                   <CardBody style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                    {loadingClusters ? (
+                    {loadingClusters || authLoading ? (
                       <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                         <Spinner size="md" />
                       </div>
@@ -465,33 +507,49 @@ const Dashboard: React.FC = () => {
                     </Flex>
                   </CardTitle>
                   <CardBody style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                    {loadingVMs ? (
+                    {!vmsFetched ? (
                       <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                         <Spinner size="md" />
                       </div>
-                    ) : vms.length === 0 ? (
-                      <EmptyState>
-                        <EmptyStateBody>
-                          <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                            No virtual machines found
-                          </div>
-                        </EmptyStateBody>
-                      </EmptyState>
-                    ) : (
-                      <div>
-                        {vms
-                          .filter((vm) => {
-                            // Filter by logged-in user's username
-                            if (!username) return false
-                            return vm.metadata?.creators?.includes(username)
+                    ) : (() => {
+                      // TEMPORARY: Show all VMs for debugging
+                      console.log('Dashboard - Total VMs:', vms.length)
+                      console.log('Dashboard - Username:', username)
+                      vms.forEach((vm) => {
+                        console.log('VM:', vm.id, 'name:', vm.metadata?.name, 'creators:', vm.metadata?.creators)
+                      })
+
+                      // Filter VMs by logged-in user
+                      const userVMs = username
+                        ? vms.filter((vm) => {
+                            const creators = vm.metadata?.creators || []
+                            return creators.includes(username)
                           })
-                          .sort((a, b) => {
-                            const aTime = a.metadata?.creation_timestamp || ''
-                            const bTime = b.metadata?.creation_timestamp || ''
-                            return bTime.localeCompare(aTime) // Sort descending (newest first)
-                          })
-                          .slice(0, 3)
-                          .map((vm, index, array) => (
+                        : []
+
+                      console.log('Filtered userVMs:', userVMs.length)
+
+                      // TEMPORARY: Show all VMs instead of filtered
+                      const displayVMs = vms
+
+                      return displayVMs.length === 0 ? (
+                        <EmptyState>
+                          <EmptyStateBody>
+                            <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                              No virtual machines found
+                            </div>
+                          </EmptyStateBody>
+                        </EmptyState>
+                      ) : (
+                        <div>
+                          {displayVMs
+                            .sort((a, b) => {
+                              const aTime = a.metadata?.creation_timestamp || ''
+                              const bTime = b.metadata?.creation_timestamp || ''
+                              return bTime.localeCompare(aTime) // Sort descending (newest first)
+                            })
+                            .slice(0, 3)
+                            .map((vm, index, array) => (
                             <div
                               key={vm.id}
                               onClick={() => navigate(`/virtual-machines/${vm.id}`)}
@@ -524,20 +582,21 @@ const Dashboard: React.FC = () => {
                               </div>
                             </div>
                           ))}
-                        {vms.filter((vm) => vm.metadata?.creators?.includes(username || '')).length > 3 && (
-                          <div style={{ padding: '0.75rem', borderTop: '1px solid #d2d2d2' }}>
-                            <Button
-                              variant="link"
-                              isInline
-                              onClick={() => navigate('/virtual-machines')}
-                              style={{ padding: 0, fontSize: '0.875rem' }}
-                            >
-                              View all {vms.filter((vm) => vm.metadata?.creators?.includes(username || '')).length} VMs →
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          {displayVMs.length > 3 && (
+                            <div style={{ padding: '0.75rem', borderTop: '1px solid #d2d2d2' }}>
+                              <Button
+                                variant="link"
+                                isInline
+                                onClick={() => navigate('/virtual-machines')}
+                                style={{ padding: 0, fontSize: '0.875rem' }}
+                              >
+                                View all {displayVMs.length} VMs →
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </CardBody>
                 </Card>
               )}
