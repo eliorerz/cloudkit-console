@@ -162,7 +162,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     isExpanded={isUserDropdownOpen}
                     style={{ fontSize: '0.875rem', color: '#151515' }}
                   >
-                    {displayName} ({role})
+                    {displayName} ({role?.replace('fulfillment-', '') || 'client'})
                   </MenuToggle>
                 )}
               >
