@@ -311,11 +311,11 @@ const VirtualMachines: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ color: '#0066cc', fontSize: '1.25rem' }}>●</span>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '1rem', color: '#151515' }}>
+                  <div style={{ fontWeight: 500, fontSize: '1.15rem', color: '#151515' }}>
                     {vm.metadata?.name || vm.id}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#6a6e73' }}>
-                    ID: {vm.id.substring(0, 8)}
+                    {vm.id}
                   </div>
                 </div>
               </div>
@@ -338,7 +338,7 @@ const VirtualMachines: React.FC = () => {
                 <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                   CPU
                 </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#151515' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
                   {vm.spec?.template_parameters?.vm_cpu_cores?.value || vm.spec?.template_parameters?.vm_cpu_cores || 'N/A'} vCPU
                 </div>
               </div>
@@ -346,7 +346,7 @@ const VirtualMachines: React.FC = () => {
                 <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                   Memory
                 </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#151515' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
                   {vm.spec?.template_parameters?.vm_memory_size?.value || vm.spec?.template_parameters?.vm_memory_size || 'N/A'}
                 </div>
               </div>
@@ -354,7 +354,7 @@ const VirtualMachines: React.FC = () => {
                 <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                   Storage
                 </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#151515' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
                   {vm.spec?.template_parameters?.vm_disk_size?.value || vm.spec?.template_parameters?.vm_disk_size || 'N/A'}
                 </div>
               </div>
@@ -362,7 +362,7 @@ const VirtualMachines: React.FC = () => {
                 <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                   Image
                 </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#151515' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
                   {getImageName(vm)}
                 </div>
               </div>

@@ -654,6 +654,7 @@ const Templates: React.FC = () => {
                           style={{
                             cursor: 'pointer',
                             height: '100%',
+                            minWidth: '365px',
                             backgroundColor: '#ffffff',
                             border: selectedTemplate?.id === template.id
                               ? '2px solid var(--pf-v6-global--primary-color--100)'
