@@ -299,7 +299,8 @@ const Dashboard: React.FC = () => {
         ) : (
           <Grid hasGutter>
             <GridItem sm={12} md={12} lg={8} xl={8}>
-              <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '190px', lg: '210px', xl: '225px' }}>
+              <div style={{ height: '100%' }}>
+                <Gallery hasGutter minWidths={{ default: '100%', sm: '100%', md: '190px', lg: '210px', xl: '225px' }}>
           <GalleryItem>
             <Card isFullHeight>
               <CardTitle>
@@ -396,6 +397,7 @@ const Dashboard: React.FC = () => {
             </Card>
           </GalleryItem>
               </Gallery>
+              </div>
             </GridItem>
 
             <GridItem sm={12} md={12} lg={4} xl={4}>
