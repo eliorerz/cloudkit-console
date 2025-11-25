@@ -41,15 +41,16 @@ const Monitoring: React.FC = () => {
       cpu: { used: 67, total: 100 },
       memory: { used: 142, total: 256 },
       storage: { used: 1.8, total: 5.0 },
+      gpu: { used: 12, total: 16 },
     },
     utilization: [
-      { time: '00:00', cpu: 45, memory: 52, storage: 36 },
-      { time: '04:00', cpu: 38, memory: 48, storage: 36 },
-      { time: '08:00', cpu: 62, memory: 58, storage: 37 },
-      { time: '12:00', cpu: 78, memory: 68, storage: 38 },
-      { time: '16:00', cpu: 85, memory: 72, storage: 39 },
-      { time: '20:00', cpu: 67, memory: 62, storage: 38 },
-      { time: 'Now', cpu: 67, memory: 55, storage: 36 },
+      { time: '00:00', cpu: 45, memory: 52, storage: 36, gpu: 42 },
+      { time: '04:00', cpu: 38, memory: 48, storage: 36, gpu: 35 },
+      { time: '08:00', cpu: 62, memory: 58, storage: 37, gpu: 58 },
+      { time: '12:00', cpu: 78, memory: 68, storage: 38, gpu: 72 },
+      { time: '16:00', cpu: 85, memory: 72, storage: 39, gpu: 85 },
+      { time: '20:00', cpu: 67, memory: 62, storage: 38, gpu: 68 },
+      { time: 'Now', cpu: 67, memory: 55, storage: 36, gpu: 75 },
     ],
     events: [
       { time: '2 minutes ago', type: 'success', message: 'Cluster ocp-prod-01 scaled successfully', cluster: 'ocp-prod-01' },
@@ -63,14 +64,14 @@ const Monitoring: React.FC = () => {
 
   // Simple line chart component
   const LineChart: React.FC<{
-    data: Array<{ time: string; cpu: number; memory: number; storage: number }>
-    metric: 'cpu' | 'memory' | 'storage'
+    data: Array<{ time: string; cpu: number; memory: number; storage: number; gpu: number }>
+    metric: 'cpu' | 'memory' | 'storage' | 'gpu'
     color: string
     label: string
   }> = ({ data, metric, color, label }) => {
     const maxValue = 100
     const height = 120
-    const width = 600
+    const width = 300
     const padding = 20
 
     const points = data.map((d, i) => {
@@ -244,10 +245,10 @@ const Monitoring: React.FC = () => {
             <Grid hasGutter>
               <GridItem span={12}>
                 <Card>
-                  <CardTitle>Resource Utilization Trends (Last 24 Hours)</CardTitle>
+                  <CardTitle>Resource Utilization Trends (Last 12 Hours)</CardTitle>
                   <CardBody>
                     <Grid hasGutter>
-                      <GridItem sm={12} md={4}>
+                      <GridItem sm={12} md={6} lg={3}>
                         <LineChart
                           data={metrics.utilization}
                           metric="cpu"
@@ -255,7 +256,7 @@ const Monitoring: React.FC = () => {
                           label="CPU Usage (%)"
                         />
                       </GridItem>
-                      <GridItem sm={12} md={4}>
+                      <GridItem sm={12} md={6} lg={3}>
                         <LineChart
                           data={metrics.utilization}
                           metric="memory"
@@ -263,7 +264,15 @@ const Monitoring: React.FC = () => {
                           label="Memory Usage (%)"
                         />
                       </GridItem>
-                      <GridItem sm={12} md={4}>
+                      <GridItem sm={12} md={6} lg={3}>
+                        <LineChart
+                          data={metrics.utilization}
+                          metric="gpu"
+                          color="#3e8635"
+                          label="GPU Usage (%)"
+                        />
+                      </GridItem>
+                      <GridItem sm={12} md={6} lg={3}>
                         <LineChart
                           data={metrics.utilization}
                           metric="storage"
@@ -366,6 +375,32 @@ const Monitoring: React.FC = () => {
                       </div>
                     </div>
 
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} style={{ marginBottom: '0.5rem' }}>
+                        <FlexItem>
+                          <span style={{ fontWeight: 600 }}>GPU</span>
+                        </FlexItem>
+                        <FlexItem>
+                          <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
+                            {metrics.resources.gpu.used} / {metrics.resources.gpu.total} GPUs
+                          </span>
+                        </FlexItem>
+                      </Flex>
+                      <div style={{ width: '100%', height: '12px', backgroundColor: '#f0f0f0', borderRadius: '6px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${(metrics.resources.gpu.used / metrics.resources.gpu.total) * 100}%`,
+                            height: '100%',
+                            backgroundColor: '#3e8635',
+                            transition: 'width 0.3s ease',
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#6a6e73', marginTop: '0.25rem' }}>
+                        {Math.round((metrics.resources.gpu.used / metrics.resources.gpu.total) * 100)}% utilized
+                      </div>
+                    </div>
+
                     <div>
                       <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} style={{ marginBottom: '0.5rem' }}>
                         <FlexItem>
@@ -382,7 +417,7 @@ const Monitoring: React.FC = () => {
                           style={{
                             width: `${(metrics.resources.storage.used / metrics.resources.storage.total) * 100}%`,
                             height: '100%',
-                            backgroundColor: '#06c',
+                            backgroundColor: '#f0ab00',
                             transition: 'width 0.3s ease',
                           }}
                         />
