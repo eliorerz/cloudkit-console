@@ -261,11 +261,39 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               Monitoring
             </NavItem>
 
+            {role === 'fulfillment-admin' && (
+              <>
+                <div style={{
+                  padding: '1rem 1rem 0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  color: 'var(--pf-v6-global--Color--200)',
+                  borderBottom: '1px solid rgb(210, 210, 210)'
+                }}>
+                  Platform
+                </div>
+
+                <NavItem
+                  itemId="hubs"
+                  isActive={location.pathname === '/hubs'}
+                >
+                  Hubs
+                </NavItem>
+                <NavItem
+                  itemId="organizations"
+                  isActive={location.pathname === '/organizations'}
+                >
+                  Organizations
+                </NavItem>
+              </>
+            )}
+
             <div style={{
-              padding: '1rem 1rem 0rem 1rem',
+              padding: '1rem 1rem 0.5rem',
               fontSize: '0.875rem',
-              fontWeight: 600,
-              color: 'var(--pf-v6-global--Color--200)'
+              fontWeight: 500,
+              color: 'var(--pf-v6-global--Color--200)',
+              borderBottom: '1px solid rgb(210, 210, 210)'
             }}>
               Workloads
             </div>
@@ -307,32 +335,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               >
                 Cluster Catalog
               </NavItem>
-            )}
-
-            {role === 'fulfillment-admin' && (
-              <>
-                <div style={{
-                  padding: '1rem 1rem 0rem 1rem',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: 'var(--pf-v6-global--Color--200)'
-                }}>
-                  Platform
-                </div>
-
-                <NavItem
-                  itemId="hubs"
-                  isActive={location.pathname === '/hubs'}
-                >
-                  Hubs
-                </NavItem>
-                <NavItem
-                  itemId="organizations"
-                  isActive={location.pathname === '/organizations'}
-                >
-                  Organizations
-                </NavItem>
-              </>
             )}
 
             <div style={{ flexGrow: 1 }} />
