@@ -10,13 +10,47 @@ CloudKit Console provides a user-friendly interface for managing virtual machine
 
 ## Features
 
-- **Virtual Machine Management**: Create, view, update, and delete virtual machines with full lifecycle control
-- **Template Library**: Browse and manage virtual machine templates
-- **Dashboard**: Real-time metrics and resource utilization monitoring
-- **Organization Management**: Multi-tenant support with Keycloak group-based organizations
+### Virtual Machine Management
+- Create, view, update, and delete virtual machines with full lifecycle control
+- Card and table view modes with sorting and filtering
+- Filter by owner, status, and hardware specifications (CPU cores)
+- Real-time status updates with auto-refresh
+- VM console access and detailed resource information
+- Template-based VM creation with customizable parameters
+
+### Cluster Management
+- Browse and deploy OpenShift clusters from templates
+- Cluster lifecycle management (create, view, monitor)
+- Multi-node cluster provisioning with configurable node sets
+- Real-time cluster status tracking (Draft, Installed, Progressing, Ready, Failed)
+- Cluster details including API URL, console URL, and infrastructure info
+
+### Template Library
+- Browse VM and cluster templates with filtering by OS and hardware
+- Template catalog with detailed configuration previews
+- Quick-create VMs from templates with default parameters
+- Custom template parameters for advanced configurations
+
+### Dashboard & Monitoring
+- Real-time metrics for VMs, clusters, hubs, and templates
+- Resource utilization tracking (CPU, memory, storage)
+- Recent activity monitoring
+- Quick access to recent VMs and clusters
+- Admin and client role-specific views
+
+### Authentication & Security
 - **Secure Authentication**: OpenID Connect (OIDC) integration with Keycloak
-- **Role-Based Access Control**: Admin and client role differentiation
-- **Responsive Design**: Built with PatternFly 6 for a modern, accessible UI
+- **Role-Based Access Control**: `fulfillment-admin` and `fulfillment-client` roles
+- **Organization Support**: Multi-tenant with Keycloak group-based organizations
+- **Token Management**: Automatic token refresh and secure storage
+- **PKCE Flow**: Authorization Code + PKCE for enhanced security
+
+### User Experience
+- **Modern UI**: Built with PatternFly 6 design system
+- **Responsive Design**: Mobile-friendly and accessible (WCAG 2.1)
+- **Consistent UX**: Inspired by OpenShift Console patterns
+- **Real-time Updates**: Auto-refresh with configurable intervals
+- **Sidebar Filters**: Advanced filtering on VMs and templates
 
 ## Quick Start
 
@@ -65,56 +99,88 @@ CloudKit Console provides a user-friendly interface for managing virtual machine
    npm run dev
    ```
 
-   The application will be available at `http://localhost:5173`
+   The application will be available at `http://localhost:3000`
 
 ### Production Deployment
 
 #### Using Docker/Podman
 
-1. **Build the container image**
+1. **Build and push the container image**
    ```bash
-   make build-push
+   TAG=$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)
+   make build-push TAG=$TAG
    ```
 
 2. **Deploy to Kubernetes/OpenShift**
    ```bash
+   # Apply all deployment manifests
    kubectl apply -f deploy/ -n <your-namespace>
+
+   # Update deployment with new image
+   kubectl set image deployment/cloudkit-console \
+     console=quay.io/eerez/cloudkit-console:$TAG \
+     -n <your-namespace>
    ```
+
+3. **Build and deploy in one step**
+   ```bash
+   TAG=$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)
+   KUBECONFIG=/path/to/kubeconfig make build-and-deploy-image TAG=$TAG
+   ```
+
+#### Environment Configuration
+
+The deployment uses ConfigMaps for runtime configuration:
+- `FULFILLMENT_API_URL`: Backend API endpoint
+- `KEYCLOAK_URL`: Keycloak SSO server
+- `KEYCLOAK_REALM`: Keycloak realm (default: `innabox`)
+- `OIDC_CLIENT_ID`: OAuth client ID (default: `cloudkit-console`)
+- `NAMESPACE`: Kubernetes namespace
 
 See [Deployment Guide](./docs/DEPLOYMENT.md) for detailed deployment instructions.
 
 ## Documentation
 
-- [Architecture Overview](./docs/ARCHITECTURE.md)
-- [Quick Start Guide](./docs/QUICKSTART.md)
-- [Deployment Guide](./docs/DEPLOYMENT.md)
-- [Authentication & Authorization](./docs/AUTHENTICATION.md)
-- [API Integration](./docs/API_INTEGRATION.md)
-- [Development Guide](./docs/DEVELOPMENT.md)
-- [Contributing](./docs/CONTRIBUTING.md)
+- [Quick Start Guide](./docs/QUICKSTART.md) - Getting started with CloudKit Console
+- [Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment instructions
+- [Authentication & Authorization](./docs/AUTHENTICATION.md) - OIDC and Keycloak integration
+- [Development Notes](./CLAUDE.md) - Project-specific development guidelines
 
 ## Technology Stack
 
 ### Frontend
-- **React 18**: Modern UI library with hooks
-- **TypeScript**: Type-safe development
-- **PatternFly 6**: Enterprise-grade component library
-- **React Router 6**: Client-side routing
-- **Vite**: Fast build tool and dev server
+- **React 18.2.0** - Modern UI library with hooks and functional components
+- **TypeScript 5.2.2** - Type-safe development (~10,183 lines of code)
+- **PatternFly 6.0.0** - Red Hat's enterprise-grade component library
+  - `@patternfly/react-core` - Core UI components
+  - `@patternfly/react-icons` - Icon library
+  - `@patternfly/react-table` - Advanced table components
+- **React Router 6.20.1** - Client-side routing and navigation
+- **Vite 5.0.8** - Lightning-fast build tool and dev server with HMR
 
-### Authentication
-- **oidc-client-ts**: OpenID Connect client library
-- **Keycloak**: Identity and access management
+### Authentication & Authorization
+- **oidc-client-ts 3.3.0** - OpenID Connect client library
+- **Keycloak** - Identity and access management server
+- **PKCE Flow** - Authorization Code + Proof Key for Code Exchange
+- **JWT** - Token-based authentication with automatic refresh
 
 ### API Communication
-- **Axios**: HTTP client with interceptors
-- **REST API**: Direct browser calls to Fulfillment API with CORS
-- **Certificate Management**: System CA trust for self-signed certificates
+- **Axios 1.6.2** - HTTP client with request/response interceptors
+- **gRPC-Web 2.0.2** - Protocol buffers over HTTP
+- **google-protobuf 4.0.0** - Protobuf serialization for efficient data transfer
+- **REST API** - Direct browser calls to Fulfillment API
+- **Real-time Updates** - Auto-refresh with configurable polling intervals
 
 ### Build & Deployment
-- **Docker/Podman**: Containerization
-- **Kubernetes/OpenShift**: Orchestration
-- **Node.js Express**: Production server
+- **Docker/Podman** - Multi-stage containerization (Alpine Linux)
+- **Kubernetes/OpenShift** - Container orchestration and deployment
+- **Node.js 20 (Express 4.18.2)** - Production server for serving static assets
+- **kubectl** - Kubernetes CLI tools (embedded in container)
+
+### Development Tools
+- **ESLint 8.55.0** - Code linting with TypeScript support
+- **TypeScript ESLint** - TypeScript-specific linting rules
+- **React Hooks ESLint** - React hooks best practices enforcement
 
 ## Project Structure
 
@@ -148,14 +214,28 @@ cloudkit-console/
 
 ## Environment Variables
 
+### Runtime Configuration (Server-side)
+These are configured via Kubernetes ConfigMap and read by the Express server:
+
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_API_BASE_URL` | Fulfillment API base URL | `/api` |
-| `VITE_OIDC_AUTHORITY` | Keycloak realm URL | Required |
-| `VITE_OIDC_CLIENT_ID` | OAuth client ID | `cloudkit-console` |
-| `VITE_OIDC_REDIRECT_URI` | OAuth callback URL | Required |
-| `VITE_OIDC_SILENT_REDIRECT_URI` | Silent token renewal URL | `/silent-renew.html` |
-| `VITE_OIDC_SCOPE` | OAuth scopes | `openid profile email groups` |
+| `PORT` | Server port | `8080` |
+| `FULFILLMENT_API_URL` | Fulfillment API base URL | `https://fulfillment-api-innabox-devel.apps.ostest.test.metalkube.org` |
+| `KEYCLOAK_URL` | Keycloak server URL | `https://keycloak-innabox-devel.apps.ostest.test.metalkube.org` |
+| `KEYCLOAK_REALM` | Keycloak realm name | `innabox` |
+| `OIDC_CLIENT_ID` | OAuth client ID | `cloudkit-console` |
+| `NAMESPACE` | Kubernetes namespace | `innabox-devel` |
+| `GENERIC_TEMPLATE_ID` | Generic VM template ID | `cloudkit.templates.ocp_virt_vm` |
+
+### Client Configuration
+The frontend retrieves runtime configuration from `/api/config` endpoint which serves the above environment variables to the browser.
+
+### Development Environment (optional)
+For local development, you can create a `.env` file:
+```env
+VITE_API_BASE_URL=https://fulfillment-api-innabox-devel.apps.ostest.test.metalkube.org
+VITE_KEYCLOAK_URL=https://keycloak-innabox-devel.apps.ostest.test.metalkube.org
+```
 
 ## Contributing
 
