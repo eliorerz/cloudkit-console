@@ -13,6 +13,7 @@ import AdminTemplates from './pages/AdminTemplates'
 import Organizations from './pages/Organizations'
 import Hubs from './pages/Hubs'
 import ClusterTemplateCatalog from './pages/ClusterTemplateCatalog'
+import CreateClusterTemplate from './pages/CreateClusterTemplate'
 import Clusters from './pages/Clusters'
 import ClusterDetail from './pages/ClusterDetail'
 import ClusterCreate from './pages/ClusterCreate'
@@ -111,6 +112,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ClusterTemplateCatalog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/cluster-catalog/create"
+            element={
+              <ProtectedRoute>
+                <CreateClusterTemplate />
               </ProtectedRoute>
             }
           />

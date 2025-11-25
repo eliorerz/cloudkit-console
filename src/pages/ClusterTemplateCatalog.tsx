@@ -80,6 +80,7 @@ const ClusterTemplateCatalog: React.FC = () => {
   const [includeAdvanced, setIncludeAdvanced] = useState(false)
   const [selectedVersions, setSelectedVersions] = useState<string[]>([])
 
+
   // Fetch templates on mount
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -439,13 +440,18 @@ const ClusterTemplateCatalog: React.FC = () => {
         <Sidebar hasGutter>
           {filterPanel}
           <SidebarContent style={{ padding: '1.5rem' }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <Title headingLevel="h1" size="2xl" style={{ marginBottom: '0.5rem' }}>
-                Cluster Templates
-              </Title>
-              <p style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                Select a pre-configured cluster template to deploy
-              </p>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <Title headingLevel="h1" size="2xl" style={{ marginBottom: '0.5rem' }}>
+                  Cluster Templates
+                </Title>
+                <p style={{ color: 'var(--pf-v6-global--Color--200)' }}>
+                  Select a pre-configured cluster template to deploy
+                </p>
+              </div>
+              <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog/create')}>
+                Create Template
+              </Button>
             </div>
 
             {loading ? (
@@ -567,6 +573,7 @@ const ClusterTemplateCatalog: React.FC = () => {
           </SidebarContent>
         </Sidebar>
       </PageSection>
+
     </AppLayout>
   )
 }

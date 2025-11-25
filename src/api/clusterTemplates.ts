@@ -147,3 +147,26 @@ export async function getClusterTemplate(id: string): Promise<ClusterTemplate | 
   const templates = await getClusterTemplates()
   return templates.find(t => t.id === id) || null
 }
+
+/**
+ * Create a new cluster template in the fulfillment service
+ */
+export async function createClusterTemplate(template: Partial<ClusterTemplate>): Promise<ClusterTemplate> {
+  const config = await fetch('/api/config').then(res => res.json())
+  const apiBaseUrl = config.FULFILLMENT_API_URL || 'https://fulfillment-api-innabox-devel.apps.ostest.test.metalkube.org'
+
+  const response = await fetch(`${apiBaseUrl}/api/fulfillment/v1/cluster_templates`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(template),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Failed to create cluster template: ${response.statusText} - ${errorText}`)
+  }
+
+  return response.json()
+}
