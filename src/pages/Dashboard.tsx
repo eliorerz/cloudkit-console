@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -37,6 +38,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation(['dashboard', 'common'])
   const { role, username, token, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const [metrics, setMetrics] = useState<DashboardMetrics>({
@@ -289,12 +291,12 @@ const Dashboard: React.FC = () => {
     <AppLayout>
       <PageSection>
         <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-          Overview
+          {t('dashboard:title')}
         </Title>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '2rem' }}>
             <Spinner size="xl" />
-            <p style={{ marginTop: '1rem', color: '#6a6e73' }}>Loading metrics...</p>
+            <p style={{ marginTop: '1rem', color: '#6a6e73' }}>{t('dashboard:loading')}</p>
           </div>
         ) : (
           <Grid hasGutter>
@@ -311,14 +313,14 @@ const Dashboard: React.FC = () => {
                     </span>
                   </FlexItem>
                   <FlexItem>
-                    Templates
+                    {t('dashboard:metrics.templates.title')}
                   </FlexItem>
                 </Flex>
               </CardTitle>
               <CardBody>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.templates.total}</div>
                 <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  available
+                  {t('dashboard:metrics.templates.available')}
                 </div>
               </CardBody>
             </Card>
@@ -335,14 +337,14 @@ const Dashboard: React.FC = () => {
                       </span>
                     </FlexItem>
                     <FlexItem>
-                      Hubs
+                      {t('dashboard:metrics.hubs.title')}
                     </FlexItem>
                   </Flex>
                 </CardTitle>
                 <CardBody>
                   <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.hubs.total}</div>
                   <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                    management hubs
+                    {t('dashboard:metrics.hubs.description')}
                   </div>
                 </CardBody>
               </Card>
@@ -360,14 +362,14 @@ const Dashboard: React.FC = () => {
                       </span>
                     </FlexItem>
                     <FlexItem>
-                      Managed Clusters
+                      {t('dashboard:metrics.clusters.title')}
                     </FlexItem>
                   </Flex>
                 </CardTitle>
                 <CardBody>
                   <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{clustersTotal}</div>
                   <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                    {clustersReady} ready · {clustersProgressing} progressing · {clustersError} error
+                    {clustersReady} {t('dashboard:metrics.clusters.ready')} · {clustersProgressing} {t('dashboard:metrics.clusters.progressing')} · {clustersError} {t('dashboard:metrics.clusters.error')}
                   </div>
                 </CardBody>
               </Card>
@@ -384,14 +386,14 @@ const Dashboard: React.FC = () => {
                     </span>
                   </FlexItem>
                   <FlexItem>
-                    Virtual Machines
+                    {t('dashboard:metrics.vms.title')}
                   </FlexItem>
                 </Flex>
               </CardTitle>
               <CardBody>
                 <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.vms.total}</div>
                 <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  {metrics.vms.running} running · {metrics.vms.stopped} stopped · {metrics.vms.error} error
+                  {metrics.vms.running} {t('dashboard:metrics.vms.running')} · {metrics.vms.stopped} {t('dashboard:metrics.vms.stopped')} · {metrics.vms.error} {t('dashboard:metrics.vms.error')}
                 </div>
               </CardBody>
             </Card>
@@ -409,7 +411,7 @@ const Dashboard: React.FC = () => {
                         <LayerGroupIcon style={{ marginRight: '0.5rem', color: '#06c' }} />
                       </FlexItem>
                       <FlexItem>
-                        My Managed Clusters
+                        {t('dashboard:sections.myManagedClusters')}
                       </FlexItem>
                     </Flex>
                   </CardTitle>
@@ -422,7 +424,7 @@ const Dashboard: React.FC = () => {
                       <EmptyState>
                         <EmptyStateBody>
                           <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                            No managed clusters found
+                            {t('dashboard:empty.noClusters')}
                           </div>
                         </EmptyStateBody>
                       </EmptyState>
@@ -488,7 +490,7 @@ const Dashboard: React.FC = () => {
                               onClick={() => navigate('/admin/clusters')}
                               style={{ padding: 0, fontSize: '0.875rem' }}
                             >
-                              View all {clusters.length} clusters →
+                              {t('dashboard:actions.viewAllClusters', { count: clusters.length })}
                             </Button>
                           </div>
                         )}
@@ -504,7 +506,7 @@ const Dashboard: React.FC = () => {
                         <VirtualMachineIcon style={{ marginRight: '0.5rem', color: '#8476d1' }} />
                       </FlexItem>
                       <FlexItem>
-                        My Virtual Machines
+                        {t('dashboard:sections.myVirtualMachines')}
                       </FlexItem>
                     </Flex>
                   </CardTitle>
@@ -538,7 +540,7 @@ const Dashboard: React.FC = () => {
                         <EmptyState>
                           <EmptyStateBody>
                             <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                              No virtual machines found
+                              {t('dashboard:empty.noVMs')}
                             </div>
                           </EmptyStateBody>
                         </EmptyState>
@@ -592,7 +594,7 @@ const Dashboard: React.FC = () => {
                                 onClick={() => navigate('/virtual-machines')}
                                 style={{ padding: 0, fontSize: '0.875rem' }}
                               >
-                                View all {displayVMs.length} VMs →
+                                {t('dashboard:actions.viewAllVMs', { count: displayVMs.length })}
                               </Button>
                             </div>
                           )}
@@ -609,7 +611,7 @@ const Dashboard: React.FC = () => {
 
       <PageSection>
         <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-          Quick Actions
+          {t('dashboard:sections.quickActions')}
         </Title>
         <Flex spaceItems={{ default: 'spaceItemsMd' }}>
           {role === 'fulfillment-admin' && (
@@ -620,7 +622,7 @@ const Dashboard: React.FC = () => {
                 onClick={() => navigate('/admin/cluster-catalog')}
                 style={{ minWidth: '180px' }}
               >
-                Create Cluster
+                {t('dashboard:actions.createCluster')}
               </Button>
             </FlexItem>
           )}
@@ -631,7 +633,7 @@ const Dashboard: React.FC = () => {
               onClick={() => setWizardOpen(true)}
               style={{ minWidth: '180px' }}
             >
-              Create VM
+              {t('dashboard:actions.createVM')}
             </Button>
           </FlexItem>
           <FlexItem>
@@ -639,7 +641,7 @@ const Dashboard: React.FC = () => {
               variant="secondary"
               onClick={() => navigate('/templates')}
             >
-              View Templates
+              {t('dashboard:actions.viewTemplates')}
             </Button>
           </FlexItem>
           {role === 'fulfillment-admin' && (
@@ -648,7 +650,7 @@ const Dashboard: React.FC = () => {
                 variant="secondary"
                 onClick={() => navigate('/hubs')}
               >
-                Manage Hubs
+                {t('dashboard:actions.manageHubs')}
               </Button>
             </FlexItem>
           )}

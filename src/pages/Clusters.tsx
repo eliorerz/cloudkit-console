@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -31,6 +32,7 @@ import { listClusters } from '../api/clustersApi'
 import { Cluster, ClusterState } from '../api/types'
 
 const Clusters: React.FC = () => {
+  const { t } = useTranslation(['clusters', 'common'])
   const navigate = useNavigate()
   const [clusters, setClusters] = useState<Cluster[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,8 +89,16 @@ const Clusters: React.FC = () => {
   }
 
   const formatState = (state?: ClusterState) => {
-    if (!state) return 'Unknown'
-    // Remove CLUSTER_STATE_ prefix and capitalize first letter only
+    if (!state) return t('common:status.unknown')
+    const normalizedState = state.toUpperCase()
+    if (normalizedState.includes('READY')) {
+      return t('common:status.ready')
+    } else if (normalizedState.includes('PROGRESSING')) {
+      return t('common:status.pending')
+    } else if (normalizedState.includes('FAILED')) {
+      return t('common:status.failed')
+    }
+    // Fallback: Remove CLUSTER_STATE_ prefix and capitalize first letter only
     const cleaned = state.replace('CLUSTER_STATE_', '')
     return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase()
   }
@@ -232,14 +242,14 @@ const Clusters: React.FC = () => {
           <EmptyState>
             <CubesIcon style={{ fontSize: '48px', marginBottom: '1rem' }} />
             <Title headingLevel="h1" size="lg">
-              No clusters
+              {t('clusters:list.empty')}
             </Title>
             <EmptyStateBody>
-              You haven't created any clusters yet. Get started by creating a cluster from a template.
+              {t('clusters:list.emptyDescription')}
             </EmptyStateBody>
             <EmptyStateActions style={{ marginTop: '1.5rem' }}>
               <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog')}>
-                Browse Templates
+                {t('clusters:list.browseTemplates')}
               </Button>
             </EmptyStateActions>
           </EmptyState>
@@ -252,7 +262,7 @@ const Clusters: React.FC = () => {
     <AppLayout>
       <PageSection>
         <Title headingLevel="h1" size="2xl">
-          Clusters
+          {t('clusters:title')}
         </Title>
       </PageSection>
 
@@ -262,7 +272,7 @@ const Clusters: React.FC = () => {
             <ToolbarContent>
               <ToolbarItem style={{ flex: 1 }}>
                 <SearchInput
-                  placeholder="Filter by Name, ID or ..."
+                  placeholder={t('clusters:list.searchPlaceholder')}
                   value={searchValue}
                   onChange={(_event, value) => setSearchValue(value)}
                   onClear={() => setSearchValue('')}
@@ -282,7 +292,7 @@ const Clusters: React.FC = () => {
                       icon={<FilterIcon />}
                       style={{ minWidth: '180px' }}
                     >
-                      Status
+                      {t('clusters:list.filterStatus')}
                       {selectedStates.length > 0 && (
                         <Badge isRead style={{ marginLeft: '0.5rem' }}>
                           {selectedStates.length}
@@ -325,7 +335,7 @@ const Clusters: React.FC = () => {
                       icon={<FilterIcon />}
                       style={{ minWidth: '180px' }}
                     >
-                      Version
+                      {t('clusters:list.filterVersion')}
                       {selectedVersions.length > 0 && (
                         <Badge isRead style={{ marginLeft: '0.5rem' }}>
                           {selectedVersions.length}
@@ -357,7 +367,7 @@ const Clusters: React.FC = () => {
               </ToolbarItem>
               <ToolbarItem align={{ default: 'alignEnd' }}>
                 <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog')}>
-                  Create Cluster
+                  {t('clusters:create')}
                 </Button>
               </ToolbarItem>
             </ToolbarContent>
@@ -365,7 +375,7 @@ const Clusters: React.FC = () => {
 
           <CardBody>
             {error && (
-              <Alert variant="danger" title="Error" isInline style={{ marginBottom: '1rem' }}>
+              <Alert variant="danger" title={t('clusters:list.error')} isInline style={{ marginBottom: '1rem' }}>
                 {error}
               </Alert>
             )}
@@ -374,19 +384,19 @@ const Clusters: React.FC = () => {
               <Thead>
                 <Tr>
                   <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 0 }}>
-                    Name
+                    {t('clusters:list.columns.name')}
                   </Th>
                   <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 1 }}>
-                    Version
+                    {t('clusters:list.columns.version')}
                   </Th>
                   <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 2 }}>
-                    Status
+                    {t('clusters:list.columns.status')}
                   </Th>
                   <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
-                    Hosts
+                    {t('clusters:list.columns.hosts')}
                   </Th>
                   <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
-                    Created at
+                    {t('clusters:list.columns.createdAt')}
                   </Th>
                   <Th></Th>
                 </Tr>
@@ -435,10 +445,10 @@ const Clusters: React.FC = () => {
                       >
                         <DropdownList>
                           <DropdownItem onClick={() => navigate(`/admin/clusters/${cluster.id}`)}>
-                            View Details
+                            {t('clusters:list.actions.viewDetails')}
                           </DropdownItem>
                           <DropdownItem>
-                            Delete
+                            {t('clusters:list.actions.delete')}
                           </DropdownItem>
                         </DropdownList>
                       </Dropdown>

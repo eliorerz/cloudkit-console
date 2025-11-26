@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import './i18n'
 import Login from './pages/Login'
 import { OIDCCallback } from './pages/OIDCCallback'
 import Dashboard from './pages/Dashboard'

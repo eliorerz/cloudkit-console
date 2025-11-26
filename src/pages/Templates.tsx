@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -37,6 +38,7 @@ import { getOSImages, OSImage } from '../api/os-images'
 import { getHostClasses, HostClass } from '../api/host-classes'
 
 const Templates: React.FC = () => {
+  const { t } = useTranslation(['templates', 'common'])
   const navigate = useNavigate()
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
@@ -229,13 +231,13 @@ const Templates: React.FC = () => {
   const validateVmName = (name: string): boolean => {
     if (!name || name.trim().length === 0) {
       setVmNameValidated(ValidatedOptions.error)
-      setCreateError('VM name is required')
+      setCreateError(t('templates:quickCreate.errorNameRequired'))
       return false
     }
     const k8sNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/
     if (!k8sNameRegex.test(name) || name.length > 63) {
       setVmNameValidated(ValidatedOptions.error)
-      setCreateError('VM name must be lowercase alphanumeric with hyphens, max 63 characters')
+      setCreateError(t('templates:quickCreate.errorNameInvalid'))
       return false
     }
     setVmNameValidated(ValidatedOptions.success)
@@ -365,29 +367,29 @@ const Templates: React.FC = () => {
           <>
             <div style={{ marginBottom: '1.5rem' }}>
               <Title headingLevel="h3" size="md" style={{ marginBottom: '0.75rem' }}>
-                Overview
+                {t('templates:detail.overview')}
               </Title>
               <p style={{ color: 'var(--pf-v6-global--Color--200)', lineHeight: '1.5' }}>
-                {selectedTemplate.description || 'No description provided'}
+                {selectedTemplate.description || t('templates:detail.noDescription')}
               </p>
             </div>
 
             <Divider style={{ margin: '1.5rem 0' }} />
 
             <Title headingLevel="h3" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem' }}>
-              Template Configuration
+              {t('templates:detail.templateConfiguration')}
             </Title>
 
             <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
               <DescriptionListGroup>
-                <DescriptionListTerm>Machine Type</DescriptionListTerm>
+                <DescriptionListTerm>{t('templates:detail.machineType')}</DescriptionListTerm>
                 <DescriptionListDescription>
                   {getMachineInfo(selectedTemplate.id).type}
                 </DescriptionListDescription>
               </DescriptionListGroup>
 
               <DescriptionListGroup>
-                <DescriptionListTerm>OS Type</DescriptionListTerm>
+                <DescriptionListTerm>{t('templates:detail.osType')}</DescriptionListTerm>
                 <DescriptionListDescription>
                   {getOSType(selectedTemplate)}
                 </DescriptionListDescription>
@@ -397,33 +399,33 @@ const Templates: React.FC = () => {
             <Divider style={{ margin: '1.5rem 0' }} />
 
             <Title headingLevel="h3" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem' }}>
-              Hardware Specifications
+              {t('templates:detail.hardwareSpecs')}
             </Title>
 
             <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
               <DescriptionListGroup>
-                <DescriptionListTerm>CPU Cores</DescriptionListTerm>
+                <DescriptionListTerm>{t('templates:detail.cpuCores')}</DescriptionListTerm>
                 <DescriptionListDescription>
                   {getParamValue(selectedTemplate, 'vm_cpu_cores')}
                 </DescriptionListDescription>
               </DescriptionListGroup>
 
               <DescriptionListGroup>
-                <DescriptionListTerm>Memory</DescriptionListTerm>
+                <DescriptionListTerm>{t('templates:detail.memory')}</DescriptionListTerm>
                 <DescriptionListDescription>
                   {getParamValue(selectedTemplate, 'vm_memory_size')}
                 </DescriptionListDescription>
               </DescriptionListGroup>
 
               <DescriptionListGroup>
-                <DescriptionListTerm>Disk Size</DescriptionListTerm>
+                <DescriptionListTerm>{t('templates:detail.diskSize')}</DescriptionListTerm>
                 <DescriptionListDescription>
                   {getParamValue(selectedTemplate, 'vm_disk_size')}
                 </DescriptionListDescription>
               </DescriptionListGroup>
 
               <DescriptionListGroup>
-                <DescriptionListTerm>Network Type</DescriptionListTerm>
+                <DescriptionListTerm>{t('templates:detail.networkType')}</DescriptionListTerm>
                 <DescriptionListDescription>
                   {getParamValue(selectedTemplate, 'vm_network_type')}
                 </DescriptionListDescription>
@@ -435,21 +437,21 @@ const Templates: React.FC = () => {
                 <Divider style={{ margin: '1.5rem 0' }} />
 
                 <Title headingLevel="h3" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem' }}>
-                  Host Class Details
+                  {t('templates:detail.hostClassDetails')}
                 </Title>
 
                 <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
                   {getMachineInfo(selectedTemplate.id).hostClass && (
                     <>
                       <DescriptionListGroup>
-                        <DescriptionListTerm>Description</DescriptionListTerm>
+                        <DescriptionListTerm>{t('templates:detail.description')}</DescriptionListTerm>
                         <DescriptionListDescription>
                           {getMachineInfo(selectedTemplate.id).hostClass!.description}
                         </DescriptionListDescription>
                       </DescriptionListGroup>
 
                       <DescriptionListGroup>
-                        <DescriptionListTerm>Category</DescriptionListTerm>
+                        <DescriptionListTerm>{t('templates:detail.category')}</DescriptionListTerm>
                         <DescriptionListDescription>
                           {getMachineInfo(selectedTemplate.id).hostClass!.category}
                         </DescriptionListDescription>
@@ -463,29 +465,29 @@ const Templates: React.FC = () => {
             <Divider style={{ margin: '1.5rem 0' }} />
 
             <Button variant="primary" isBlock onClick={handleCreateVMClick} icon={<RocketIcon />}>
-              Create VM from Template
+              {t('templates:actions.createVM')}
             </Button>
           </>
         ) : (
           <>
             {createSuccess ? (
-              <Alert variant="success" isInline title="Success" style={{ marginBottom: '1rem' }}>
-                Virtual machine created successfully!
+              <Alert variant="success" isInline title={t('templates:quickCreate.success')} style={{ marginBottom: '1rem' }}>
+                {t('templates:quickCreate.successMessage')}
               </Alert>
             ) : (
               <>
                 {createError && (
-                  <Alert variant="danger" isInline title="Error" style={{ marginBottom: '1rem' }}>
+                  <Alert variant="danger" isInline title={t('templates:quickCreate.error')} style={{ marginBottom: '1rem' }}>
                     {createError}
                   </Alert>
                 )}
 
                 <Title headingLevel="h3" size="md" style={{ marginBottom: '1rem' }}>
-                  Create Virtual Machine
+                  {t('templates:quickCreate.title')}
                 </Title>
 
                 <Form>
-                  <FormGroup label="Virtual Machine Name" isRequired fieldId="vm-name">
+                  <FormGroup label={t('templates:quickCreate.vmName')} isRequired fieldId="vm-name">
                     <TextInput
                       isRequired
                       type="text"
@@ -505,7 +507,7 @@ const Templates: React.FC = () => {
                     />
                     {vmNameValidated === ValidatedOptions.default && (
                       <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.25rem' }}>
-                        Lowercase alphanumeric with hyphens (e.g., my-vm-01)
+                        {t('templates:quickCreate.vmNameHelp')}
                       </div>
                     )}
                   </FormGroup>
@@ -515,16 +517,16 @@ const Templates: React.FC = () => {
 
                 <div style={{ padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                   <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>Template Configuration:</strong>
+                    <strong>{t('templates:quickCreate.templateConfig')}</strong>
                   </div>
                   <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                    • CPU: <strong>{getParamValue(selectedTemplate, 'vm_cpu_cores')} cores</strong>
+                    • {t('templates:quickCreate.cpu')}: <strong>{getParamValue(selectedTemplate, 'vm_cpu_cores')} {t('templates:filters.cores')}</strong>
                   </div>
                   <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                    • Memory: <strong>{getParamValue(selectedTemplate, 'vm_memory_size')}</strong>
+                    • {t('templates:quickCreate.memory')}: <strong>{getParamValue(selectedTemplate, 'vm_memory_size')}</strong>
                   </div>
                   <div style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                    • Disk: <strong>{getParamValue(selectedTemplate, 'vm_disk_size')}</strong>
+                    • {t('templates:quickCreate.disk')}: <strong>{getParamValue(selectedTemplate, 'vm_disk_size')}</strong>
                   </div>
                 </div>
 
@@ -536,14 +538,14 @@ const Templates: React.FC = () => {
                     isLoading={isCreatingVM}
                     style={{ flex: 1 }}
                   >
-                    {isCreatingVM ? 'Creating...' : 'Create'}
+                    {isCreatingVM ? t('templates:actions.creating') : t('templates:actions.create')}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setIsQuickCreateMode(false)}
                     isDisabled={isCreatingVM}
                   >
-                    Cancel
+                    {t('templates:actions.cancel')}
                   </Button>
                 </div>
               </>
@@ -557,12 +559,12 @@ const Templates: React.FC = () => {
   const filterPanel = (
     <SidebarPanel variant="sticky" style={{ backgroundColor: '#f5f5f5', padding: '1.5rem', minWidth: '280px' }}>
       <Title headingLevel="h3" size="md" style={{ marginBottom: '1.5rem' }}>
-        Filters
+        {t('templates:filters.title')}
       </Title>
 
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '0.75rem', fontWeight: 600, fontSize: '0.875rem' }}>
-          OS
+          {t('templates:filters.os')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {osFilterOptions.map(osType => (
@@ -581,14 +583,14 @@ const Templates: React.FC = () => {
 
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '0.75rem', fontWeight: 600, fontSize: '0.875rem' }}>
-          Hardware - CPU Cores
+          {t('templates:filters.hardwareCPU')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {cpuCoreOptions.map(cores => (
             <Checkbox
               key={cores}
               id={`cpu-${cores}`}
-              label={`${cores} cores`}
+              label={`${cores} ${t('templates:filters.cores')}`}
               isChecked={selectedCPUCores.includes(cores)}
               onChange={(_event, checked) => handleCPUCoresChange(cores, checked)}
             />
@@ -622,10 +624,10 @@ const Templates: React.FC = () => {
           <SidebarContent style={{ padding: '1.5rem' }}>
             <div style={{ marginBottom: '1.5rem' }}>
               <Title headingLevel="h1" size="2xl" style={{ marginBottom: '0.5rem' }}>
-                Virtual Machine Template
+                {t('templates:title')}
               </Title>
               <p style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                Select a template to deploy a virtual machine
+                {t('templates:description')}
               </p>
             </div>
 
@@ -633,7 +635,7 @@ const Templates: React.FC = () => {
               <div style={{ textAlign: 'center', padding: '3rem' }}>
                 <Spinner size="xl" />
                 <p style={{ marginTop: '1rem', color: 'var(--pf-v6-global--Color--200)' }}>
-                  Loading templates...
+                  {t('templates:list.loading')}
                 </p>
               </div>
             ) : (
@@ -711,13 +713,13 @@ const Templates: React.FC = () => {
                                   minHeight: '2.625rem',
                                 }}
                               >
-                                {template.description || 'No description provided'}
+                                {template.description || t('templates:detail.noDescription')}
                               </p>
                             </div>
 
                             <div style={{ marginBottom: '1rem' }}>
                               <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#000000', marginBottom: '0.5rem' }}>
-                                Configuration
+                                {t('templates:detail.configuration')}
                               </div>
                               <ul style={{
                                 margin: 0,
@@ -727,10 +729,10 @@ const Templates: React.FC = () => {
                                 color: 'var(--pf-v6-global--Color--200)',
                                 lineHeight: '1.6',
                               }}>
-                                <li><strong>CPU:</strong> {cpuCores} cores</li>
-                                <li><strong>Memory:</strong> {memory}</li>
-                                <li><strong>Disk:</strong> {diskSize}</li>
-                                <li><strong>OS:</strong> {getOSType(template)}</li>
+                                <li><strong>{t('templates:quickCreate.cpu')}:</strong> {cpuCores} {t('templates:filters.cores')}</li>
+                                <li><strong>{t('templates:quickCreate.memory')}:</strong> {memory}</li>
+                                <li><strong>{t('templates:quickCreate.disk')}:</strong> {diskSize}</li>
+                                <li><strong>{t('templates:filters.os')}:</strong> {getOSType(template)}</li>
                               </ul>
                             </div>
                           </CardBody>
@@ -757,7 +759,7 @@ const Templates: React.FC = () => {
                       borderRadius: '4px',
                     }}
                   >
-                    No templates found matching your filters
+                    {t('templates:list.noResults')}
                   </div>
                 )}
               </>
