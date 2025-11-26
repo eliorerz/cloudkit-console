@@ -681,7 +681,7 @@ const VirtualMachineCreateNew: React.FC = () => {
 
   return (
     <AppLayout>
-      <PageSection variant="default">
+      <PageSection variant="default" style={{ maxWidth: '800px' }}>
         <Breadcrumb>
           <BreadcrumbItem to={`/${fromPage}`} onClick={(e) => { e.preventDefault(); navigate(`/${fromPage}`); }}>
             VM Templates

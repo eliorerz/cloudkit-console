@@ -21,7 +21,7 @@ import {
   Popover,
   Divider,
 } from '@patternfly/react-core'
-import { HelpIcon, ExternalLinkAltIcon } from '@patternfly/react-icons'
+import { HelpIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { listClusterTemplates, createCluster } from '../api/clustersApi'
 import { ClusterTemplate } from '../api/types'
@@ -67,8 +67,29 @@ const ClusterCreate: React.FC = () => {
   const [clusterName, setClusterName] = useState('')
   const [pullSecret, setPullSecret] = useState('')
   const [parameters, setParameters] = useState<Record<string, any>>({})
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [hasDefaults, setHasDefaults] = useState(false)
 
   useEffect(() => {
+    // Load default values from localStorage
+    const defaultPullSecret = localStorage.getItem('default_pull_secret')
+    const defaultSshKey = localStorage.getItem('default_ssh_key')
+
+    if (defaultPullSecret) {
+      setPullSecret(defaultPullSecret)
+    }
+
+    if (defaultPullSecret || defaultSshKey) {
+      setHasDefaults(true)
+      // Also set the ssh key in parameters if it exists
+      if (defaultSshKey) {
+        setParameters(prev => ({
+          ...prev,
+          ssh_public_key: defaultSshKey
+        }))
+      }
+    }
+
     loadTemplate()
     loadHostClasses()
   }, [templateId])
@@ -278,7 +299,7 @@ const ClusterCreate: React.FC = () => {
 
   return (
     <AppLayout>
-      <PageSection variant="default">
+      <PageSection variant="default" style={{ maxWidth: '800px' }}>
         <Breadcrumb>
           <BreadcrumbItem to="/admin/cluster-catalog" onClick={(e) => { e.preventDefault(); navigate('/admin/cluster-catalog'); }}>
             Cluster Catalog
@@ -300,7 +321,7 @@ const ClusterCreate: React.FC = () => {
         )}
       </PageSection>
 
-      <PageSection>
+      <PageSection style={{ maxWidth: '800px' }}>
         {error && (
           <Alert variant="danger" title="Error" isInline style={{ marginBottom: '1rem' }}>
             {error}
@@ -366,7 +387,7 @@ const ClusterCreate: React.FC = () => {
               <Divider />
 
               {/* Basic Information */}
-              <FormSection title="Basic Information">
+              <FormSection title="Basic Information" style={{ marginBlockStart: '1rem' }}>
                 <FormGroup label="Cluster Name" isRequired fieldId="cluster-name">
                   <TextInput
                     isRequired
@@ -381,10 +402,10 @@ const ClusterCreate: React.FC = () => {
               </FormSection>
 
               {/* Template Parameters */}
-              {template.parameters && template.parameters.length > 0 && (
+              {template.parameters && template.parameters.filter(param => param.name !== 'pull_secret' && param.name !== 'ssh_public_key').length > 0 && (
                 <FormSection title="Template Parameters">
                   {template.parameters
-                    .filter(param => param.name !== 'pull_secret') // Skip pull_secret as it's handled separately
+                    .filter(param => param.name !== 'pull_secret' && param.name !== 'ssh_public_key') // Skip pull_secret and ssh_public_key as they're handled separately
                     .map((param) => {
                     const paramValue = parameters[param.name]
 
@@ -514,33 +535,111 @@ const ClusterCreate: React.FC = () => {
                 </FormSection>
               )}
 
-              {/* Pull Secret */}
+              {/* Authentication */}
               <FormSection title="Authentication">
-                <FormGroup
-                  label="Pull Secret"
-                  isRequired
-                  fieldId="pull-secret"
-                >
-                  <TextArea
-                    isRequired
-                    id="pull-secret"
-                    name="pull-secret"
-                    value={pullSecret}
-                    onChange={(_event, value) => setPullSecret(value)}
-                    rows={8}
-                    placeholder='{"auths":{"cloud.openshift.com":{"auth":"...","email":"..."}}}'
+                {hasDefaults && !showAdvanced && (
+                  <Alert
+                    variant="info"
+                    isInline
+                    title="Using default credentials"
+                    style={{ marginBottom: '1rem' }}
+                  >
+                    Default pull secret and SSH key will be used for cluster authentication.
+                    Check "Show advanced options" below to customize these values.
+                  </Alert>
+                )}
+
+                <FormGroup fieldId="show-advanced">
+                  <Checkbox
+                    id="show-advanced"
+                    label="Show advanced authentication options"
+                    isChecked={showAdvanced}
+                    onChange={(_event, checked) => {
+                      setShowAdvanced(checked)
+                      // When showing advanced options, clear the fields for user to input
+                      if (checked) {
+                        setPullSecret('')
+                        setParameters(prev => ({
+                          ...prev,
+                          ssh_public_key: ''
+                        }))
+                      } else {
+                        // When hiding advanced, restore defaults
+                        const defaultPullSecret = localStorage.getItem('default_pull_secret')
+                        const defaultSshKey = localStorage.getItem('default_ssh_key')
+                        if (defaultPullSecret) setPullSecret(defaultPullSecret)
+                        if (defaultSshKey) {
+                          setParameters(prev => ({
+                            ...prev,
+                            ssh_public_key: defaultSshKey
+                          }))
+                        }
+                      }
+                    }}
                   />
-                  <div style={{ fontSize: '0.8rem', color: 'var(--pf-v6-global--Color--200)', marginTop: '0.5rem' }}>
-                    A Red Hat account pull secret can be found in{' '}
-                    <a
-                      href="https://console.redhat.com/openshift/install/pull-secret"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      OpenShift Cluster Manager <ExternalLinkAltIcon style={{ verticalAlign: 'middle' }} />
-                    </a>
-                  </div>
                 </FormGroup>
+
+                {(!hasDefaults || showAdvanced) && (
+                  <>
+                    <FormGroup
+                      label="Pull Secret"
+                      isRequired
+                      fieldId="pull-secret"
+                    >
+                      <div style={{ maxWidth: '734px' }}>
+                        <TextArea
+                          isRequired
+                          id="pull-secret"
+                          name="pull-secret"
+                          value={pullSecret}
+                          onChange={(_event, value) => setPullSecret(value)}
+                          rows={8}
+                          placeholder='{"auths":{"cloud.openshift.com":{"auth":"...","email":"..."}}}'
+                          style={{ width: '100%' }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--pf-v6-global--Color--200)', marginTop: '0.5rem', maxWidth: '734px' }}>
+                        A Red Hat account pull secret can be found in{' '}
+                        <a
+                          href="https://console.redhat.com/openshift/install/pull-secret"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          OpenShift Cluster Manager{' '}
+                          <svg
+                            viewBox="0 0 512 512"
+                            style={{ width: '0.75em', height: '0.75em', verticalAlign: 'middle', display: 'inline-block' }}
+                            fill="currentColor"
+                          >
+                            <path d="M432,320H400a16,16,0,0,0-16,16V448H64V128H208a16,16,0,0,0,16-16V80a16,16,0,0,0-16-16H48A48,48,0,0,0,0,112V464a48,48,0,0,0,48,48H400a48,48,0,0,0,48-48V336A16,16,0,0,0,432,320ZM488,0h-128c-21.37,0-32.05,25.91-17,41l35.73,35.73L135,320.37a24,24,0,0,0,0,34L157.67,377a24,24,0,0,0,34,0L435.28,133.32,471,169c15,15,41,4.5,41-17V24A24,24,0,0,0,488,0Z" />
+                          </svg>
+                        </a>
+                      </div>
+                    </FormGroup>
+
+                    {template.parameters?.find(p => p.name === 'ssh_public_key') && (
+                      <FormGroup
+                        label="SSH Public Key"
+                        fieldId="ssh-public-key"
+                      >
+                        <div style={{ maxWidth: '734px' }}>
+                          <TextArea
+                            id="ssh-public-key"
+                            name="ssh-public-key"
+                            value={parameters.ssh_public_key || ''}
+                            onChange={(_event, value) => handleParameterChange('ssh_public_key', value)}
+                            rows={4}
+                            placeholder="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..."
+                            style={{ width: '100%' }}
+                          />
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--pf-v6-global--Color--200)', marginTop: '0.5rem', maxWidth: '734px' }}>
+                          A public ssh key that will be installed into the authorized_keys file of the core user on cluster worker nodes.
+                        </div>
+                      </FormGroup>
+                    )}
+                  </>
+                )}
               </FormSection>
 
               {/* Actions */}

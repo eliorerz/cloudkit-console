@@ -52,7 +52,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   // Get language code from selected language
   const getLanguageCode = (lang: string): string => {
-    if (lang === 'Chinese') return 'ZH'
+    if (lang.includes('Chinese') || lang.includes('中文')) return 'ZH'
     return 'EN'
   }
   const { logout, username, displayName, role, token, user, organizations } = useAuth()
@@ -91,6 +91,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       navigate('/admin/cluster-catalog')
     } else if (selectedItem.itemId === 'clusters') {
       navigate('/admin/clusters')
+    } else if (selectedItem.itemId === 'settings') {
+      navigate('/settings')
     }
   }
 
@@ -182,9 +184,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   </DropdownItem>
                   <DropdownItem
                     key="zh-cn"
-                    onClick={() => setSelectedLanguage('Chinese')}
+                    onClick={() => setSelectedLanguage('中文 - Chinese (Simplified)')}
                   >
-                    Chinese
+                    中文 - Chinese (Simplified)
                   </DropdownItem>
                 </DropdownList>
               </Dropdown>
@@ -386,7 +388,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <NavItem
               itemId="settings"
               isActive={location.pathname === '/settings'}
-              disabled
             >
               Settings
             </NavItem>
