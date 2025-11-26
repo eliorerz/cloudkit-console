@@ -22,6 +22,7 @@ import {
   SidebarContent,
   Checkbox,
   Spinner,
+  SearchInput,
 } from '@patternfly/react-core'
 import { ServerIcon, OpenshiftIcon, CubeIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
@@ -74,6 +75,7 @@ const ClusterTemplateCatalog: React.FC = () => {
   const [hostClasses, setHostClasses] = useState<Record<string, HostClassInfo>>({})
 
   // Filter states
+  const [searchValue, setSearchValue] = useState('')
   const [gpuRequired, setGpuRequired] = useState(false)
   const [armBased, setArmBased] = useState(false)
   const [x86Arch, setX86Arch] = useState(false)
@@ -116,6 +118,19 @@ const ClusterTemplateCatalog: React.FC = () => {
   // Filtered templates based on filter criteria
   const filteredTemplates = useMemo(() => {
     return templates.filter((template) => {
+      // Search filter
+      if (searchValue) {
+        const searchLower = searchValue.toLowerCase()
+        const titleMatch = template.title?.toLowerCase().includes(searchLower)
+        const descriptionMatch = template.description?.toLowerCase().includes(searchLower)
+        const idMatch = template.id?.toLowerCase().includes(searchLower)
+        const tagsMatch = template.tags?.some(tag => tag.toLowerCase().includes(searchLower))
+
+        if (!titleMatch && !descriptionMatch && !idMatch && !tagsMatch) {
+          return false
+        }
+      }
+
       // GPU filter
       if (gpuRequired && !template.hasGPU) {
         return false
@@ -143,7 +158,7 @@ const ClusterTemplateCatalog: React.FC = () => {
 
       return true
     })
-  }, [templates, gpuRequired, armBased, x86Arch, includeAdvanced, selectedVersions])
+  }, [templates, searchValue, gpuRequired, armBased, x86Arch, includeAdvanced, selectedVersions])
 
   const handleTemplateClick = (template: ClusterTemplate) => {
     setSelectedTemplate(template)
@@ -486,18 +501,27 @@ const ClusterTemplateCatalog: React.FC = () => {
         <Sidebar hasGutter>
           {filterPanel}
           <SidebarContent style={{ padding: '1.5rem' }}>
-            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <Title headingLevel="h1" size="2xl" style={{ marginBottom: '0.5rem' }}>
-                  Cluster Templates
-                </Title>
-                <p style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                  Select a pre-configured cluster template to deploy
-                </p>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div>
+                  <Title headingLevel="h1" size="2xl" style={{ marginBottom: '0.5rem' }}>
+                    Cluster Templates
+                  </Title>
+                  <p style={{ color: 'var(--pf-v6-global--Color--200)' }}>
+                    Select a pre-configured cluster template to deploy
+                  </p>
+                </div>
+                <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog/create')}>
+                  Create Template
+                </Button>
               </div>
-              <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog/create')}>
-                Create Template
-              </Button>
+              <SearchInput
+                placeholder="Search templates by name, description, or tags..."
+                value={searchValue}
+                onChange={(_event, value) => setSearchValue(value)}
+                onClear={() => setSearchValue('')}
+                style={{ maxWidth: '600px' }}
+              />
             </div>
 
             {loading ? (
