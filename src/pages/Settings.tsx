@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -21,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext'
 import AppLayout from '../components/layouts/AppLayout'
 
 const Settings: React.FC = () => {
+  const { t } = useTranslation(['settings', 'common'])
   const { role } = useAuth()
   const [defaultPullSecret, setDefaultPullSecret] = useState('')
   const [defaultSshKey, setDefaultSshKey] = useState('')
@@ -50,13 +52,13 @@ const Settings: React.FC = () => {
 
   const handleSavePullSecret = () => {
     localStorage.setItem('default_pull_secret', defaultPullSecret)
-    setSuccessAlert('Default pull secret saved successfully')
+    setSuccessAlert(t('settings:messages.pullSecretSaved'))
     setTimeout(() => setSuccessAlert(null), 3000)
   }
 
   const handleSaveSshKey = () => {
     localStorage.setItem('default_ssh_key', defaultSshKey)
-    setSuccessAlert('Default SSH key saved successfully')
+    setSuccessAlert(t('settings:messages.sshKeySaved'))
     setTimeout(() => setSuccessAlert(null), 3000)
   }
 
@@ -73,14 +75,14 @@ const Settings: React.FC = () => {
       return (
         <div>
           <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-            General
+            {t('settings:general.title')}
           </Title>
           <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginBottom: '2rem' }}>
-            Set your individual preferences for the console experience. Any changes will be autosaved.
+            {t('settings:general.description')}
           </div>
 
           <Form style={{ maxWidth: '600px' }}>
-            <FormGroup label="Theme" fieldId="theme">
+            <FormGroup label={t('settings:general.theme.label')} fieldId="theme">
               <Dropdown
                 isOpen={isThemeDropdownOpen}
                 onSelect={() => {}}
@@ -102,7 +104,7 @@ const Settings: React.FC = () => {
                     onClick={() => handleThemeChange('System default')}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>System default</span>
+                      <span>{t('settings:general.theme.systemDefault')}</span>
                       {theme === 'System default' && <CheckIcon style={{ color: '#06c' }} />}
                     </div>
                   </DropdownItem>
@@ -111,7 +113,7 @@ const Settings: React.FC = () => {
                     onClick={() => handleThemeChange('Light')}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Light</span>
+                      <span>{t('settings:general.theme.light')}</span>
                       {theme === 'Light' && <CheckIcon style={{ color: '#06c' }} />}
                     </div>
                   </DropdownItem>
@@ -120,14 +122,14 @@ const Settings: React.FC = () => {
                     onClick={() => handleThemeChange('Dark')}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Dark</span>
+                      <span>{t('settings:general.theme.dark')}</span>
                       {theme === 'Dark' && <CheckIcon style={{ color: '#06c' }} />}
                     </div>
                   </DropdownItem>
                 </DropdownList>
               </Dropdown>
               <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                Console will appear as per the selected theme.
+                {t('settings:general.theme.description')}
               </div>
             </FormGroup>
           </Form>
@@ -139,27 +141,27 @@ const Settings: React.FC = () => {
       return (
         <div>
           <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-            Authentication
+            {t('settings:authentication.title')}
           </Title>
           <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginBottom: '2rem' }}>
-            Configure default authentication credentials for cluster deployments.
+            {t('settings:authentication.description')}
           </div>
 
           <Card style={{ marginBottom: '1.5rem' }}>
             <CardBody>
               <Form>
                 <FormGroup
-                  label="Pull Secret"
+                  label={t('settings:authentication.pullSecret.label')}
                   isRequired
                   fieldId="default-pull-secret"
                 >
                   <div style={{ maxWidth: '734px' }}>
                     <TextArea
                       id="default-pull-secret"
-                      value={showPullSecret ? defaultPullSecret : (defaultPullSecret ? 'Pull secret is configured. Click "Show and edit" below to view or modify.' : '')}
+                      value={showPullSecret ? defaultPullSecret : (defaultPullSecret ? t('settings:authentication.pullSecret.configured') : '')}
                       onChange={(_event, value) => setDefaultPullSecret(value)}
                       rows={8}
-                      placeholder='{"auths":{"cloud.openshift.com":{"auth":"...","email":"..."}}}'
+                      placeholder={t('settings:authentication.pullSecret.placeholder')}
                       style={{
                         fontFamily: showPullSecret ? 'monospace' : 'inherit',
                         fontSize: '0.875rem',
@@ -176,19 +178,19 @@ const Settings: React.FC = () => {
                       onClick={() => setShowPullSecret(!showPullSecret)}
                       style={{ padding: '0.5rem 0', fontSize: '0.875rem' }}
                     >
-                      {showPullSecret ? 'Hide' : 'Show and edit'}
+                      {showPullSecret ? t('common:actions.hide') : t('common:actions.showAndEdit')}
                     </Button>
                   )}
                 </FormGroup>
                 <div style={{ fontSize: '0.8rem', color: '#6a6e73', marginBottom: '1rem', maxWidth: '734px' }}>
-                  A Red Hat account pull secret can be found in{' '}
+                  {t('settings:authentication.pullSecret.helpText')}{' '}
                   <a
                     href="https://console.redhat.com/openshift/install/pull-secret"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: '#06c' }}
                   >
-                    OpenShift Cluster Manager{' '}
+                    {t('settings:authentication.openshiftManager')}{' '}
                     <svg
                       viewBox="0 0 512 512"
                       style={{ width: '0.75em', height: '0.75em', verticalAlign: 'middle', display: 'inline-block' }}
@@ -204,7 +206,7 @@ const Settings: React.FC = () => {
                   isDisabled={!defaultPullSecret.trim()}
                   style={{ maxWidth: '180px' }}
                 >
-                  Save Pull Secret
+                  {t('settings:authentication.pullSecret.button')}
                 </Button>
               </Form>
             </CardBody>
@@ -214,16 +216,16 @@ const Settings: React.FC = () => {
             <CardBody>
               <Form>
                 <FormGroup
-                  label="SSH Public Key"
+                  label={t('settings:authentication.sshKey.label')}
                   fieldId="default-ssh-key"
                 >
                   <div style={{ maxWidth: '734px' }}>
                     <TextArea
                       id="default-ssh-key"
-                      value={showSshKey ? defaultSshKey : (defaultSshKey ? 'SSH public key is configured. Click "Show and edit" below to view or modify.' : '')}
+                      value={showSshKey ? defaultSshKey : (defaultSshKey ? t('settings:authentication.sshKey.configured') : '')}
                       onChange={(_event, value) => setDefaultSshKey(value)}
                       rows={4}
-                      placeholder="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..."
+                      placeholder={t('settings:authentication.sshKey.placeholder')}
                       style={{
                         fontFamily: showSshKey ? 'monospace' : 'inherit',
                         fontSize: '0.875rem',
@@ -240,12 +242,12 @@ const Settings: React.FC = () => {
                       onClick={() => setShowSshKey(!showSshKey)}
                       style={{ padding: '0.5rem 0', fontSize: '0.875rem' }}
                     >
-                      {showSshKey ? 'Hide' : 'Show and edit'}
+                      {showSshKey ? t('common:actions.hide') : t('common:actions.showAndEdit')}
                     </Button>
                   )}
                 </FormGroup>
                 <div style={{ fontSize: '0.8rem', color: '#6a6e73', marginBottom: '1rem', maxWidth: '734px' }}>
-                  This SSH key will be used by default for all cluster deployments unless overridden.
+                  {t('settings:authentication.sshKey.helpText')}
                 </div>
                 <Button
                   variant="primary"
@@ -253,7 +255,7 @@ const Settings: React.FC = () => {
                   isDisabled={!defaultSshKey.trim()}
                   style={{ maxWidth: '180px' }}
                 >
-                  Save SSH Key
+                  {t('settings:authentication.sshKey.button')}
                 </Button>
               </Form>
             </CardBody>
@@ -269,7 +271,7 @@ const Settings: React.FC = () => {
     <AppLayout>
       <PageSection>
         <Title headingLevel="h1" size="2xl" style={{ marginBottom: '1.5rem' }}>
-          User Preferences
+          {t('settings:title')}
         </Title>
 
         {successAlert && (
@@ -301,7 +303,7 @@ const Settings: React.FC = () => {
                 color: selectedSection === 'general' ? '#151515' : '#6a6e73'
               }}
             >
-              General
+              {t('settings:sections.general')}
             </div>
             {isAdmin && (
               <div
@@ -316,7 +318,7 @@ const Settings: React.FC = () => {
                   color: selectedSection === 'authentication' ? '#151515' : '#6a6e73'
                 }}
               >
-                Authentication
+                {t('settings:sections.authentication')}
               </div>
             )}
           </div>

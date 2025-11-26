@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -27,6 +28,7 @@ import {
 import AppLayout from '../components/layouts/AppLayout'
 
 const Monitoring: React.FC = () => {
+  const { t } = useTranslation(['monitoring', 'common'])
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0)
 
   // Mock data - in real implementation, fetch from API
@@ -88,9 +90,9 @@ const Monitoring: React.FC = () => {
           <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#d2d2d2" strokeWidth="1" />
 
           {/* Y-axis labels */}
-          <text x="5" y={padding} fontSize="10" fill="#6a6e73">100%</text>
-          <text x="5" y={height / 2} fontSize="10" fill="#6a6e73">50%</text>
-          <text x="10" y={height - padding + 5} fontSize="10" fill="#6a6e73">0%</text>
+          <text x="5" y={padding} fontSize="10" fill="#6a6e73">100{t('monitoring:resources.utilized')}</text>
+          <text x="5" y={height / 2} fontSize="10" fill="#6a6e73">50{t('monitoring:resources.utilized')}</text>
+          <text x="10" y={height - padding + 5} fontSize="10" fill="#6a6e73">0{t('monitoring:resources.utilized')}</text>
 
           {/* Chart line */}
           <polyline
@@ -158,7 +160,7 @@ const Monitoring: React.FC = () => {
     <AppLayout>
       <PageSection>
         <Title headingLevel="h1" size="2xl" style={{ marginBottom: '1.5rem' }}>
-          Monitoring
+          {t('monitoring:title')}
         </Title>
 
         <Tabs
@@ -167,10 +169,10 @@ const Monitoring: React.FC = () => {
           aria-label="Monitoring tabs"
           style={{ marginBottom: '1.5rem' }}
         >
-          <Tab eventKey={0} title={<TabTitleText>Overview</TabTitleText>} />
-          <Tab eventKey={1} title={<TabTitleText>Clusters</TabTitleText>} />
-          <Tab eventKey={2} title={<TabTitleText>Resources</TabTitleText>} />
-          <Tab eventKey={3} title={<TabTitleText>Events</TabTitleText>} />
+          <Tab eventKey={0} title={<TabTitleText>{t('monitoring:tabs.overview')}</TabTitleText>} />
+          <Tab eventKey={1} title={<TabTitleText>{t('monitoring:tabs.clusters')}</TabTitleText>} />
+          <Tab eventKey={2} title={<TabTitleText>{t('monitoring:tabs.resources')}</TabTitleText>} />
+          <Tab eventKey={3} title={<TabTitleText>{t('monitoring:tabs.events')}</TabTitleText>} />
         </Tabs>
 
         {activeTabKey === 0 && (
@@ -184,7 +186,7 @@ const Monitoring: React.FC = () => {
                       <FlexItem>
                         <CheckCircleIcon style={{ fontSize: '1.5rem', color: '#3e8635' }} />
                       </FlexItem>
-                      <FlexItem>Healthy Clusters</FlexItem>
+                      <FlexItem>{t('monitoring:metrics.healthyClusters.title')}</FlexItem>
                     </Flex>
                   </CardTitle>
                   <CardBody>
@@ -192,7 +194,7 @@ const Monitoring: React.FC = () => {
                       {metrics.clusters.healthy}
                     </div>
                     <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                      out of {metrics.clusters.total} clusters
+                      {t('monitoring:metrics.healthyClusters.description', { total: metrics.clusters.total })}
                     </div>
                   </CardBody>
                 </Card>
@@ -205,7 +207,7 @@ const Monitoring: React.FC = () => {
                       <FlexItem>
                         <ExclamationTriangleIcon style={{ fontSize: '1.5rem', color: '#f0ab00' }} />
                       </FlexItem>
-                      <FlexItem>Warnings</FlexItem>
+                      <FlexItem>{t('monitoring:metrics.warnings.title')}</FlexItem>
                     </Flex>
                   </CardTitle>
                   <CardBody>
@@ -213,7 +215,7 @@ const Monitoring: React.FC = () => {
                       {metrics.clusters.warning}
                     </div>
                     <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                      require attention
+                      {t('monitoring:metrics.warnings.description')}
                     </div>
                   </CardBody>
                 </Card>
@@ -226,7 +228,7 @@ const Monitoring: React.FC = () => {
                       <FlexItem>
                         <ExclamationCircleIcon style={{ fontSize: '1.5rem', color: '#c9190b' }} />
                       </FlexItem>
-                      <FlexItem>Critical Issues</FlexItem>
+                      <FlexItem>{t('monitoring:metrics.criticalIssues.title')}</FlexItem>
                     </Flex>
                   </CardTitle>
                   <CardBody>
@@ -234,7 +236,7 @@ const Monitoring: React.FC = () => {
                       {metrics.clusters.critical}
                     </div>
                     <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                      immediate action needed
+                      {t('monitoring:metrics.criticalIssues.description')}
                     </div>
                   </CardBody>
                 </Card>
@@ -245,7 +247,7 @@ const Monitoring: React.FC = () => {
             <Grid hasGutter>
               <GridItem span={12}>
                 <Card>
-                  <CardTitle>Resource Utilization Trends (Last 12 Hours)</CardTitle>
+                  <CardTitle>{t('monitoring:charts.title')}</CardTitle>
                   <CardBody>
                     <Grid hasGutter>
                       <GridItem sm={12} md={6} lg={3}>
@@ -253,7 +255,7 @@ const Monitoring: React.FC = () => {
                           data={metrics.utilization}
                           metric="cpu"
                           color="#06c"
-                          label="CPU Usage (%)"
+                          label={t('monitoring:charts.cpuUsage')}
                         />
                       </GridItem>
                       <GridItem sm={12} md={6} lg={3}>
@@ -261,7 +263,7 @@ const Monitoring: React.FC = () => {
                           data={metrics.utilization}
                           metric="memory"
                           color="#8476d1"
-                          label="Memory Usage (%)"
+                          label={t('monitoring:charts.memoryUsage')}
                         />
                       </GridItem>
                       <GridItem sm={12} md={6} lg={3}>
@@ -269,7 +271,7 @@ const Monitoring: React.FC = () => {
                           data={metrics.utilization}
                           metric="gpu"
                           color="#3e8635"
-                          label="GPU Usage (%)"
+                          label={t('monitoring:charts.gpuUsage')}
                         />
                       </GridItem>
                       <GridItem sm={12} md={6} lg={3}>
@@ -277,7 +279,7 @@ const Monitoring: React.FC = () => {
                           data={metrics.utilization}
                           metric="storage"
                           color="#f0ab00"
-                          label="Storage Usage (%)"
+                          label={t('monitoring:charts.storageUsage')}
                         />
                       </GridItem>
                     </Grid>
@@ -288,7 +290,7 @@ const Monitoring: React.FC = () => {
               {/* Recent Events */}
               <GridItem sm={12} md={6}>
                 <Card style={{ height: '100%' }}>
-                  <CardTitle>Recent Events</CardTitle>
+                  <CardTitle>{t('monitoring:events.title')}</CardTitle>
                   <CardBody style={{ maxHeight: '400px', overflowY: 'auto' }}>
                     <List isPlain>
                       {metrics.events.map((event, index) => (
@@ -307,7 +309,7 @@ const Monitoring: React.FC = () => {
                               <Label
                                 color={event.type === 'success' ? 'green' : event.type === 'warning' ? 'orange' : event.type === 'error' ? 'red' : 'blue'}
                               >
-                                {event.type}
+                                {t(`monitoring:events.types.${event.type}`)}
                               </Label>
                             </FlexItem>
                           </Flex>
@@ -321,16 +323,16 @@ const Monitoring: React.FC = () => {
               {/* Current Resource Usage */}
               <GridItem sm={12} md={6}>
                 <Card style={{ height: '100%' }}>
-                  <CardTitle>Current Resource Usage</CardTitle>
+                  <CardTitle>{t('monitoring:resources.title')}</CardTitle>
                   <CardBody>
                     <div style={{ marginBottom: '1.5rem' }}>
                       <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} style={{ marginBottom: '0.5rem' }}>
                         <FlexItem>
-                          <span style={{ fontWeight: 600 }}>CPU</span>
+                          <span style={{ fontWeight: 600 }}>{t('monitoring:resources.cpu')}</span>
                         </FlexItem>
                         <FlexItem>
                           <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                            {metrics.resources.cpu.used} / {metrics.resources.cpu.total} cores
+                            {metrics.resources.cpu.used} / {metrics.resources.cpu.total} {t('monitoring:resources.cores')}
                           </span>
                         </FlexItem>
                       </Flex>
@@ -345,18 +347,18 @@ const Monitoring: React.FC = () => {
                         />
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#6a6e73', marginTop: '0.25rem' }}>
-                        {Math.round((metrics.resources.cpu.used / metrics.resources.cpu.total) * 100)}% utilized
+                        {Math.round((metrics.resources.cpu.used / metrics.resources.cpu.total) * 100)}{t('monitoring:resources.utilized')}
                       </div>
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>
                       <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} style={{ marginBottom: '0.5rem' }}>
                         <FlexItem>
-                          <span style={{ fontWeight: 600 }}>Memory</span>
+                          <span style={{ fontWeight: 600 }}>{t('monitoring:resources.memory')}</span>
                         </FlexItem>
                         <FlexItem>
                           <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                            {metrics.resources.memory.used} / {metrics.resources.memory.total} GB
+                            {metrics.resources.memory.used} / {metrics.resources.memory.total} {t('monitoring:resources.gb')}
                           </span>
                         </FlexItem>
                       </Flex>
@@ -371,18 +373,18 @@ const Monitoring: React.FC = () => {
                         />
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#6a6e73', marginTop: '0.25rem' }}>
-                        {Math.round((metrics.resources.memory.used / metrics.resources.memory.total) * 100)}% utilized
+                        {Math.round((metrics.resources.memory.used / metrics.resources.memory.total) * 100)}{t('monitoring:resources.utilized')}
                       </div>
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>
                       <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} style={{ marginBottom: '0.5rem' }}>
                         <FlexItem>
-                          <span style={{ fontWeight: 600 }}>GPU</span>
+                          <span style={{ fontWeight: 600 }}>{t('monitoring:resources.gpu')}</span>
                         </FlexItem>
                         <FlexItem>
                           <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                            {metrics.resources.gpu.used} / {metrics.resources.gpu.total} GPUs
+                            {metrics.resources.gpu.used} / {metrics.resources.gpu.total} {t('monitoring:resources.gpus')}
                           </span>
                         </FlexItem>
                       </Flex>
@@ -397,18 +399,18 @@ const Monitoring: React.FC = () => {
                         />
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#6a6e73', marginTop: '0.25rem' }}>
-                        {Math.round((metrics.resources.gpu.used / metrics.resources.gpu.total) * 100)}% utilized
+                        {Math.round((metrics.resources.gpu.used / metrics.resources.gpu.total) * 100)}{t('monitoring:resources.utilized')}
                       </div>
                     </div>
 
                     <div>
                       <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} style={{ marginBottom: '0.5rem' }}>
                         <FlexItem>
-                          <span style={{ fontWeight: 600 }}>Storage</span>
+                          <span style={{ fontWeight: 600 }}>{t('monitoring:resources.storage')}</span>
                         </FlexItem>
                         <FlexItem>
                           <span style={{ fontSize: '0.875rem', color: '#6a6e73' }}>
-                            {metrics.resources.storage.used} / {metrics.resources.storage.total} TB
+                            {metrics.resources.storage.used} / {metrics.resources.storage.total} {t('monitoring:resources.tb')}
                           </span>
                         </FlexItem>
                       </Flex>
@@ -423,7 +425,7 @@ const Monitoring: React.FC = () => {
                         />
                       </div>
                       <div style={{ fontSize: '0.75rem', color: '#6a6e73', marginTop: '0.25rem' }}>
-                        {Math.round((metrics.resources.storage.used / metrics.resources.storage.total) * 100)}% utilized
+                        {Math.round((metrics.resources.storage.used / metrics.resources.storage.total) * 100)}{t('monitoring:resources.utilized')}
                       </div>
                     </div>
                   </CardBody>
@@ -437,7 +439,7 @@ const Monitoring: React.FC = () => {
           <Card>
             <CardBody>
               <div style={{ textAlign: 'center', padding: '2rem', color: '#6a6e73' }}>
-                Cluster-specific monitoring views will be displayed here
+                {t('monitoring:placeholders.clusterMonitoring')}
               </div>
             </CardBody>
           </Card>
@@ -447,7 +449,7 @@ const Monitoring: React.FC = () => {
           <Card>
             <CardBody>
               <div style={{ textAlign: 'center', padding: '2rem', color: '#6a6e73' }}>
-                Detailed resource metrics and trends will be displayed here
+                {t('monitoring:placeholders.resourceDetails')}
               </div>
             </CardBody>
           </Card>
@@ -457,7 +459,7 @@ const Monitoring: React.FC = () => {
           <Card>
             <CardBody>
               <div style={{ textAlign: 'center', padding: '2rem', color: '#6a6e73' }}>
-                Complete event log and alerts will be displayed here
+                {t('monitoring:placeholders.eventLog')}
               </div>
             </CardBody>
           </Card>

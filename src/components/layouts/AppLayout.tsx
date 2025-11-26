@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Page,
   Masthead,
@@ -42,19 +43,24 @@ interface AppLayoutProps {
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const { t, i18n } = useTranslation(['navigation', 'common'])
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
   const [isPerspectiveDropdownOpen, setIsPerspectiveDropdownOpen] = useState(false)
-  const [selectedPerspective, setSelectedPerspective] = useState('Administrator')
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false)
-  const [selectedLanguage, setSelectedLanguage] = useState('English (US)')
 
-  // Get language code from selected language
-  const getLanguageCode = (lang: string): string => {
-    if (lang.includes('Chinese') || lang.includes('中文')) return 'ZH'
-    return 'EN'
+  // Get language code from current i18n language
+  const getLanguageCode = (): string => {
+    return i18n.language === 'zh' ? 'ZH' : 'EN'
   }
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng)
+    localStorage.setItem('language', lng)
+    setIsLanguageDropdownOpen(false)
+  }
+
   const { logout, username, displayName, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -142,7 +148,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               }}
             />
             <div style={{ fontSize: '1.125rem', fontWeight: '500' }}>
-              CloudKit Console
+              {t('navigation:header.title')}
             </div>
           </div>
         </MastheadBrand>
@@ -151,7 +157,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Toolbar isFullHeight>
           <ToolbarContent>
             <ToolbarItem align={{ default: 'alignEnd' }}>
-              <Button variant="plain" aria-label="Notifications">
+              <Button variant="plain" aria-label={t('navigation:header.notifications')}>
                 <BellIcon />
               </Button>
             </ToolbarItem>
@@ -166,11 +172,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
                     isExpanded={isLanguageDropdownOpen}
                     variant="plain"
-                    aria-label="Language selector"
+                    aria-label={t('navigation:header.language')}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <GlobeIcon />
-                      <span style={{ fontSize: '0.75rem' }}>{getLanguageCode(selectedLanguage)}</span>
+                      <span style={{ fontSize: '0.75rem' }}>{getLanguageCode()}</span>
                     </div>
                   </MenuToggle>
                 )}
@@ -178,21 +184,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <DropdownList>
                   <DropdownItem
                     key="en-us"
-                    onClick={() => setSelectedLanguage('English (US)')}
+                    onClick={() => changeLanguage('en')}
                   >
-                    English (US)
+                    {t('navigation:language.en')}
                   </DropdownItem>
                   <DropdownItem
                     key="zh-cn"
-                    onClick={() => setSelectedLanguage('中文 - Chinese (Simplified)')}
+                    onClick={() => changeLanguage('zh')}
                   >
-                    中文 - Chinese (Simplified)
+                    {t('navigation:language.zh')}
                   </DropdownItem>
                 </DropdownList>
               </Dropdown>
             </ToolbarItem>
             <ToolbarItem>
-              <Button variant="plain" aria-label="Help">
+              <Button variant="plain" aria-label={t('navigation:header.help')}>
                 <QuestionCircleIcon />
               </Button>
             </ToolbarItem>
@@ -216,7 +222,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   <DescriptionList isCompact>
                     <DescriptionListGroup>
                       <DescriptionListTerm style={{ color: '#6a6e73', fontSize: '0.875rem', fontWeight: 700 }}>
-                        Username:
+                        {t('navigation:user.username')}:
                       </DescriptionListTerm>
                       <DescriptionListDescription style={{ color: '#6a6e73', fontSize: '0.875rem' }}>
                         {username || 'N/A'}
@@ -224,7 +230,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     </DescriptionListGroup>
                     <DescriptionListGroup>
                       <DescriptionListTerm style={{ color: '#6a6e73', fontSize: '0.875rem', fontWeight: 700 }}>
-                        Account number:
+                        {t('navigation:user.accountNumber')}:
                       </DescriptionListTerm>
                       <DescriptionListDescription style={{ color: '#6a6e73', fontSize: '0.875rem' }}>
                         <Tooltip content={<div>{userUuid}</div>}>
@@ -234,7 +240,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     </DescriptionListGroup>
                     <DescriptionListGroup>
                       <DescriptionListTerm style={{ color: '#6a6e73', fontSize: '0.875rem', fontWeight: 700 }}>
-                        Organization:
+                        {t('navigation:user.organization')}:
                       </DescriptionListTerm>
                       <DescriptionListDescription style={{ color: '#6a6e73', fontSize: '0.875rem' }}>
                         {primaryOrg}
@@ -244,10 +250,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   <Divider style={{ margin: '1rem 0' }} />
                   <DropdownList style={{ marginLeft: '-1rem', marginRight: '-1rem' }}>
                     <DropdownItem key="token" onClick={showTokenModal}>
-                      View Token
+                      {t('navigation:user.viewToken')}
                     </DropdownItem>
                     <DropdownItem key="logout" onClick={handleLogout}>
-                      Logout
+                      {t('navigation:user.logout')}
                     </DropdownItem>
                   </DropdownList>
                 </div>
@@ -277,16 +283,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       isExpanded={isPerspectiveDropdownOpen}
                       style={{ fontSize: '0.875rem', width: '100%' }}
                     >
-                      {selectedPerspective}
+                      {t('navigation:perspective.administrator')}
                     </MenuToggle>
                   )}
                 >
                   <DropdownList>
                     <DropdownItem
                       key="administrator"
-                      onClick={() => setSelectedPerspective('Administrator')}
                     >
-                      Administrator
+                      {t('navigation:perspective.administrator')}
                     </DropdownItem>
                   </DropdownList>
                 </Dropdown>
@@ -297,14 +302,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               itemId="dashboard"
               isActive={location.pathname === '/' || location.pathname === '/overview'}
             >
-              Overview
+              {t('navigation:sidebar.overview')}
             </NavItem>
 
             <NavItem
               itemId="monitoring-dashboard"
               isActive={location.pathname === '/monitoring'}
             >
-              Monitoring
+              {t('navigation:sidebar.monitoring')}
             </NavItem>
 
             {role === 'fulfillment-admin' && (
@@ -316,20 +321,20 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   color: 'var(--pf-v6-global--Color--200)',
                   borderBottom: '1px solid rgb(210, 210, 210)'
                 }}>
-                  Platform
+                  {t('navigation:sidebar.platform')}
                 </div>
 
                 <NavItem
                   itemId="hubs"
                   isActive={location.pathname === '/hubs'}
                 >
-                  Hubs
+                  {t('navigation:sidebar.hubs')}
                 </NavItem>
                 <NavItem
                   itemId="organizations"
                   isActive={location.pathname === '/organizations'}
                 >
-                  Organizations
+                  {t('navigation:sidebar.organizations')}
                 </NavItem>
               </>
             )}
@@ -341,21 +346,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               color: 'var(--pf-v6-global--Color--200)',
               borderBottom: '1px solid rgb(210, 210, 210)'
             }}>
-              Workloads
+              {t('navigation:sidebar.workloads')}
             </div>
 
             <NavItem
               itemId="bare-metal-hosts"
               isActive={location.pathname === '/bare-metal-hosts'}
             >
-              Bare Metal Hosts
+              {t('navigation:sidebar.bareMetalHosts')}
             </NavItem>
 
             <NavItem
               itemId="virtual-machines"
               isActive={location.pathname === '/virtual-machines'}
             >
-              Virtual Machines
+              {t('navigation:sidebar.virtualMachines')}
             </NavItem>
 
             {role === 'fulfillment-admin' && (
@@ -363,7 +368,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 itemId="clusters"
                 isActive={location.pathname.startsWith('/admin/clusters')}
               >
-                Managed Clusters
+                {t('navigation:sidebar.managedClusters')}
               </NavItem>
             )}
 
@@ -371,7 +376,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               itemId="templates"
               isActive={location.pathname === '/templates'}
             >
-              VM Templates
+              {t('navigation:sidebar.vmTemplates')}
             </NavItem>
 
             {role === 'fulfillment-admin' && (
@@ -379,7 +384,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 itemId="cluster-catalog"
                 isActive={location.pathname === '/admin/cluster-catalog'}
               >
-                Cluster Catalog
+                {t('navigation:sidebar.clusterCatalog')}
               </NavItem>
             )}
 
@@ -389,7 +394,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               itemId="settings"
               isActive={location.pathname === '/settings'}
             >
-              Settings
+              {t('navigation:sidebar.settings')}
             </NavItem>
           </NavList>
         </Nav>
@@ -408,7 +413,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         onClose={() => setIsTokenModalOpen(false)}
         aria-labelledby="token-modal-title"
       >
-        <ModalHeader title="Authentication Token" labelId="token-modal-title" />
+        <ModalHeader title={t('navigation:token.title')} labelId="token-modal-title" />
         <ModalBody>
           <InputGroup>
             <InputGroupItem isFill>
