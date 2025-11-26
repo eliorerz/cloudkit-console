@@ -232,7 +232,6 @@ const ClusterTemplateCatalog: React.FC = () => {
         {selectedTemplate.node_sets && Object.entries(selectedTemplate.node_sets).map(([name, nodeSet]) => {
           const hostClassId = nodeSet.host_class || ''
           const hostClassInfo = hostClasses[hostClassId]
-          if (!hostClassInfo) return null
 
           return (
             <div key={name}>
@@ -241,66 +240,83 @@ const ClusterTemplateCatalog: React.FC = () => {
                 Worker Nodes ({nodeSet.size || 0})
               </Title>
 
-              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Host Class</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {hostClassInfo.name} ({hostClassInfo.description})
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
+              {hostClassInfo ? (
+                <>
+                  <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Host Class</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.name} ({hostClassInfo.description})
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
 
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Category</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {hostClassInfo.category}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-              </DescriptionList>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Category</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.category}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
+                </>
+              ) : (
+                <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Host Class</DescriptionListTerm>
+                    <DescriptionListDescription>
+                      {hostClassId}
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+                </DescriptionList>
+              )}
 
-              <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
-                CPU
-              </Title>
-              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Type</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {hostClassInfo.cpu.type}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
+              {hostClassInfo ? (
+                <>
+                  <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                    CPU
+                  </Title>
+                  <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Type</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.cpu.type}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
 
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Cores</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {hostClassInfo.cpu.cores} ({hostClassInfo.cpu.sockets} sockets × {hostClassInfo.cpu.threadsPerCore} threads/core)
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-              </DescriptionList>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Cores</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.cpu.cores} ({hostClassInfo.cpu.sockets} sockets × {hostClassInfo.cpu.threadsPerCore} threads/core)
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
 
-              <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
-                Memory
-              </Title>
-              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Total RAM</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {hostClassInfo.ram.size} {hostClassInfo.ram.type}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-              </DescriptionList>
+                  <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                    Memory
+                  </Title>
+                  <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Total RAM</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.ram.size} {hostClassInfo.ram.type}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
 
-              <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
-                Storage
-              </Title>
-              <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Disk</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {hostClassInfo.disk.size} {hostClassInfo.disk.type} ({hostClassInfo.disk.interface})
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-              </DescriptionList>
+                  <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                    Storage
+                  </Title>
+                  <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Disk</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {hostClassInfo.disk.size} {hostClassInfo.disk.type} ({hostClassInfo.disk.interface})
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
+                </>
+              ) : null}
 
-              {hostClassInfo.gpu && (
+              {hostClassInfo?.gpu && (
                 <>
                   <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
                     GPU
@@ -324,6 +340,36 @@ const ClusterTemplateCatalog: React.FC = () => {
                       <DescriptionListTerm>Memory per GPU</DescriptionListTerm>
                       <DescriptionListDescription>
                         {hostClassInfo.gpu.memory}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
+                </>
+              )}
+
+              {!hostClassInfo && selectedTemplate.metadata?.gpu_type && (
+                <>
+                  <Title headingLevel="h4" size="md" style={{ marginTop: '1.5rem', marginBottom: '0.8rem', fontWeight: 700, color: 'var(--pf-v6-global--Color--100)' }}>
+                    GPU
+                  </Title>
+                  <DescriptionList isHorizontal isCompact style={{ '--pf-v6-c-description-list--RowGap': '0.5rem' } as React.CSSProperties}>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Model</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        NVIDIA {selectedTemplate.metadata.gpu_type}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Count</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selectedTemplate.metadata.gpu_count}x GPUs
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Memory per GPU</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selectedTemplate.metadata.memory_gb}GB
                       </DescriptionListDescription>
                     </DescriptionListGroup>
                   </DescriptionList>
