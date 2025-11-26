@@ -19,34 +19,31 @@ import {
 } from '@patternfly/react-core'
 import { CheckIcon } from '@patternfly/react-icons'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import AppLayout from '../components/layouts/AppLayout'
 
 const Settings: React.FC = () => {
   const { t } = useTranslation(['settings', 'common'])
   const { role } = useAuth()
+  const { theme, setTheme: setThemeContext } = useTheme()
   const [defaultPullSecret, setDefaultPullSecret] = useState('')
   const [defaultSshKey, setDefaultSshKey] = useState('')
   const [successAlert, setSuccessAlert] = useState<string | null>(null)
   const [showPullSecret, setShowPullSecret] = useState(false)
   const [showSshKey, setShowSshKey] = useState(false)
   const [selectedSection, setSelectedSection] = useState('general')
-  const [theme, setTheme] = useState('Light')
   const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false)
 
   // Load saved values from localStorage on mount
   useEffect(() => {
     const savedPullSecret = localStorage.getItem('default_pull_secret')
     const savedSshKey = localStorage.getItem('default_ssh_key')
-    const savedTheme = localStorage.getItem('theme')
 
     if (savedPullSecret) {
       setDefaultPullSecret(savedPullSecret)
     }
     if (savedSshKey) {
       setDefaultSshKey(savedSshKey)
-    }
-    if (savedTheme) {
-      setTheme(savedTheme)
     }
   }, [])
 
@@ -62,10 +59,23 @@ const Settings: React.FC = () => {
     setTimeout(() => setSuccessAlert(null), 3000)
   }
 
-  const handleThemeChange = (selectedTheme: string) => {
-    setTheme(selectedTheme)
-    localStorage.setItem('theme', selectedTheme)
+  const handleThemeChange = (selectedTheme: 'system' | 'light' | 'dark') => {
+    setThemeContext(selectedTheme)
     setIsThemeDropdownOpen(false)
+  }
+
+  // Get display value for theme dropdown
+  const getThemeDisplayValue = () => {
+    switch (theme) {
+      case 'system':
+        return t('settings:general.theme.systemDefault')
+      case 'light':
+        return t('settings:general.theme.light')
+      case 'dark':
+        return t('settings:general.theme.dark')
+      default:
+        return t('settings:general.theme.systemDefault')
+    }
   }
 
   const isAdmin = role === 'fulfillment-admin'
@@ -94,36 +104,36 @@ const Settings: React.FC = () => {
                     isExpanded={isThemeDropdownOpen}
                     style={{ width: '100%' }}
                   >
-                    {theme}
+                    {getThemeDisplayValue()}
                   </MenuToggle>
                 )}
               >
                 <DropdownList>
                   <DropdownItem
                     key="system"
-                    onClick={() => handleThemeChange('System default')}
+                    onClick={() => handleThemeChange('system')}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{t('settings:general.theme.systemDefault')}</span>
-                      {theme === 'System default' && <CheckIcon style={{ color: '#06c' }} />}
+                      {theme === 'system' && <CheckIcon style={{ color: '#06c' }} />}
                     </div>
                   </DropdownItem>
                   <DropdownItem
                     key="light"
-                    onClick={() => handleThemeChange('Light')}
+                    onClick={() => handleThemeChange('light')}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{t('settings:general.theme.light')}</span>
-                      {theme === 'Light' && <CheckIcon style={{ color: '#06c' }} />}
+                      {theme === 'light' && <CheckIcon style={{ color: '#06c' }} />}
                     </div>
                   </DropdownItem>
                   <DropdownItem
                     key="dark"
-                    onClick={() => handleThemeChange('Dark')}
+                    onClick={() => handleThemeChange('dark')}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{t('settings:general.theme.dark')}</span>
-                      {theme === 'Dark' && <CheckIcon style={{ color: '#06c' }} />}
+                      {theme === 'dark' && <CheckIcon style={{ color: '#06c' }} />}
                     </div>
                   </DropdownItem>
                 </DropdownList>
