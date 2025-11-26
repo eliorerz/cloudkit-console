@@ -32,7 +32,7 @@ import {
   DescriptionListDescription,
   Divider,
 } from '@patternfly/react-core'
-import { BarsIcon, BellIcon, QuestionCircleIcon, CopyIcon } from '@patternfly/react-icons'
+import { BarsIcon, BellIcon, QuestionCircleIcon, CopyIcon, GlobeIcon } from '@patternfly/react-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 import '../../styles/app.css'
@@ -47,6 +47,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
   const [isPerspectiveDropdownOpen, setIsPerspectiveDropdownOpen] = useState(false)
   const [selectedPerspective, setSelectedPerspective] = useState('Administrator')
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState('English (US)')
+
+  // Get language code from selected language
+  const getLanguageCode = (lang: string): string => {
+    if (lang === 'Chinese') return 'ZH'
+    return 'EN'
+  }
   const { logout, username, displayName, role, token, user, organizations } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -144,6 +152,42 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <Button variant="plain" aria-label="Notifications">
                 <BellIcon />
               </Button>
+            </ToolbarItem>
+            <ToolbarItem>
+              <Dropdown
+                isOpen={isLanguageDropdownOpen}
+                onSelect={() => setIsLanguageDropdownOpen(false)}
+                onOpenChange={setIsLanguageDropdownOpen}
+                toggle={(toggleRef) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+                    isExpanded={isLanguageDropdownOpen}
+                    variant="plain"
+                    aria-label="Language selector"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <GlobeIcon />
+                      <span style={{ fontSize: '0.75rem' }}>{getLanguageCode(selectedLanguage)}</span>
+                    </div>
+                  </MenuToggle>
+                )}
+              >
+                <DropdownList>
+                  <DropdownItem
+                    key="en-us"
+                    onClick={() => setSelectedLanguage('English (US)')}
+                  >
+                    English (US)
+                  </DropdownItem>
+                  <DropdownItem
+                    key="zh-cn"
+                    onClick={() => setSelectedLanguage('Chinese')}
+                  >
+                    Chinese
+                  </DropdownItem>
+                </DropdownList>
+              </Dropdown>
             </ToolbarItem>
             <ToolbarItem>
               <Button variant="plain" aria-label="Help">
