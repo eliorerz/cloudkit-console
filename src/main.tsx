@@ -4,6 +4,7 @@ import App from './App.tsx'
 import '@patternfly/react-core/dist/styles/base.css'
 import '@patternfly/patternfly/patternfly.css'
 import '@patternfly/patternfly/patternfly-addons.css'
+import './styles/dark-theme.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import './i18n'
 import Login from './pages/Login'
 import { OIDCCallback } from './pages/OIDCCallback'
@@ -24,8 +25,9 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/callback" element={<OIDCCallback />} />
@@ -168,8 +170,9 @@ function App() {
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 
