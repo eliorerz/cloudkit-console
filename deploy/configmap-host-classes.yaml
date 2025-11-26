@@ -95,5 +95,55 @@ data:
           "count": 2,
           "memory": "192GB HBM3e"
         }
+      },
+      "h100": {
+        "name": "H100",
+        "description": "NVIDIA H100 GPU Server",
+        "category": "AI/ML Optimized",
+        "cpu": {
+          "type": "Intel Xeon Platinum 8480+",
+          "cores": 112,
+          "sockets": 2,
+          "threadsPerCore": 2
+        },
+        "ram": {
+          "size": "2TB",
+          "type": "DDR5"
+        },
+        "disk": {
+          "type": "NVMe SSD",
+          "size": "8x 3.84TB",
+          "interface": "PCIe Gen5"
+        },
+        "gpu": {
+          "model": "NVIDIA H100 Tensor Core GPU",
+          "count": 4,
+          "memory": "80GB HBM3"
+        }
+      },
+      "l40s": {
+        "name": "L40S",
+        "description": "NVIDIA L40S GPU Server",
+        "category": "AI/ML Development",
+        "cpu": {
+          "type": "Intel Xeon Gold 6442Y",
+          "cores": 48,
+          "sockets": 2,
+          "threadsPerCore": 2
+        },
+        "ram": {
+          "size": "512GB",
+          "type": "DDR5"
+        },
+        "disk": {
+          "type": "NVMe SSD",
+          "size": "4x 1.92TB",
+          "interface": "PCIe Gen4"
+        },
+        "gpu": {
+          "model": "NVIDIA L40S",
+          "count": 1,
+          "memory": "48GB GDDR6"
+        }
       }
     }

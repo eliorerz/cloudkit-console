@@ -9,6 +9,10 @@ export interface ClusterTemplate {
   metadata?: {
     creation_timestamp?: string
     creators?: string[]
+    version?: string
+    gpu_type?: string
+    gpu_count?: number
+    memory_gb?: number
   }
   parameters?: ClusterTemplateParameterDefinition[]
   node_sets?: Record<string, ClusterTemplateNodeSet>

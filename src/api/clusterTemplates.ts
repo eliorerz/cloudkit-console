@@ -1,18 +1,10 @@
 /**
  * Cluster Templates API
- * Fetches cluster templates from the public/cluster_templates directory
+ * Fetches cluster templates from the Fulfillment API service
  */
 
 import { ClusterTemplate } from './types'
-
-// List of template files to load
-const TEMPLATE_FILES = [
-  'simple-openshift-4-20-cluster.json',
-  'rhoai-3-0-openshift-4-20-cluster.json',
-  'ncp-ai-fabric-gb200-dpu-cluster.json',
-  'edge-computing-cluster.json',
-  'dev-test-cluster.json',
-]
+import { listClusterTemplates as listClusterTemplatesFromAPI } from './clustersApi'
 
 // Helper function to extract version from template
 function extractVersion(template: any): string {
@@ -43,9 +35,19 @@ function getArchitecture(_template: any): 'x86' | 'ARM' {
 
 // Helper function to check if template has GPU
 function hasGPU(template: any): boolean {
-  // Check if host_class contains gb200 or similar GPU indicators
+  // Check metadata for GPU info
+  if (template.metadata?.gpu_type) {
+    return true
+  }
+
+  // Check if host_class contains GPU indicators
   const hostClasses = template.node_sets ? Object.values(template.node_sets).map((ns: any) => ns.host_class) : []
-  return hostClasses.some((hc: string) => hc.toLowerCase().includes('gb200') || hc.toLowerCase().includes('gpu'))
+  return hostClasses.some((hc: string) =>
+    hc.toLowerCase().includes('gb200') ||
+    hc.toLowerCase().includes('h100') ||
+    hc.toLowerCase().includes('l40s') ||
+    hc.toLowerCase().includes('gpu')
+  )
 }
 
 // Helper function to determine if template is advanced
@@ -61,16 +63,32 @@ function generateTags(template: any): string[] {
     tags.push('AI/ML')
   }
 
+  if (template.id?.includes('inference') || template.description?.toLowerCase().includes('inference')) {
+    tags.push('Inference')
+  }
+
+  if (template.metadata?.gpu_type === 'H100' || template.id?.includes('h100')) {
+    tags.push('H100')
+  }
+
+  if (template.metadata?.gpu_type === 'L40s' || template.id?.includes('l40s')) {
+    tags.push('L40s')
+  }
+
   if (template.id?.includes('edge')) {
     tags.push('Edge')
   }
 
-  if (template.id?.includes('dev') || template.id?.includes('test')) {
+  if (template.id?.includes('dev') || template.id?.includes('test') || template.id?.includes('low_end')) {
     tags.push('Dev/Test')
   }
 
   if (template.id?.includes('ncp')) {
     tags.push('HPC')
+  }
+
+  if (template.id?.includes('premium')) {
+    tags.push('Premium')
   }
 
   if (!tags.length) {
@@ -98,29 +116,17 @@ function getNodeCount(template: any): number {
 }
 
 /**
- * Get all cluster templates
+ * Get all cluster templates from the Fulfillment API
  */
 export async function getClusterTemplates(): Promise<ClusterTemplate[]> {
-  const templates: ClusterTemplate[] = []
+  try {
+    // Fetch templates from the API
+    const response = await listClusterTemplatesFromAPI({ limit: 100 })
 
-  for (const filename of TEMPLATE_FILES) {
-    try {
-      const response = await fetch(`/cluster_templates/${filename}`)
-      if (!response.ok) {
-        console.error(`Failed to fetch template ${filename}: ${response.statusText}`)
-        continue
-      }
-
-      const rawTemplate = await response.json()
-
-      // Transform the raw template data to match our ClusterTemplate interface
+    // Transform the raw template data to add computed fields for UI
+    const templates = (response.items || []).map(rawTemplate => {
       const template: ClusterTemplate = {
-        id: rawTemplate.id || '',
-        title: rawTemplate.title || '',
-        description: rawTemplate.description || '',
-        metadata: rawTemplate.metadata,
-        parameters: rawTemplate.parameters || [],
-        node_sets: rawTemplate.node_sets || {},
+        ...rawTemplate,
         // Add computed fields for UI
         version: extractVersion(rawTemplate),
         architecture: getArchitecture(rawTemplate),
@@ -130,14 +136,14 @@ export async function getClusterTemplates(): Promise<ClusterTemplate[]> {
         icon: getIconType(rawTemplate),
         nodeCount: getNodeCount(rawTemplate),
       }
+      return template
+    })
 
-      templates.push(template)
-    } catch (error) {
-      console.error(`Error loading template from ${filename}:`, error)
-    }
+    return templates
+  } catch (error) {
+    console.error('Error loading cluster templates from API:', error)
+    return []
   }
-
-  return templates
 }
 
 /**
