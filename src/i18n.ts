@@ -20,6 +20,15 @@ import zhClusters from './locales/zh/clusters.json'
 import zhSettings from './locales/zh/settings.json'
 import zhTemplates from './locales/zh/templates.json'
 
+import zhTWCommon from './locales/zh-TW/common.json'
+import zhTWNavigation from './locales/zh-TW/navigation.json'
+import zhTWDashboard from './locales/zh-TW/dashboard.json'
+import zhTWMonitoring from './locales/zh-TW/monitoring.json'
+import zhTWVirtualMachines from './locales/zh-TW/virtualMachines.json'
+import zhTWClusters from './locales/zh-TW/clusters.json'
+import zhTWSettings from './locales/zh-TW/settings.json'
+import zhTWTemplates from './locales/zh-TW/templates.json'
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -44,6 +53,16 @@ i18n
         clusters: zhClusters,
         settings: zhSettings,
         templates: zhTemplates,
+      },
+      'zh-TW': {
+        common: zhTWCommon,
+        navigation: zhTWNavigation,
+        dashboard: zhTWDashboard,
+        monitoring: zhTWMonitoring,
+        virtualMachines: zhTWVirtualMachines,
+        clusters: zhTWClusters,
+        settings: zhTWSettings,
+        templates: zhTWTemplates,
       },
     },
     fallbackLng: 'en',
