@@ -31,7 +31,12 @@ spec:
           protocol: TCP
         volumeMounts:
         - name: os-images
-          mountPath: /app/config
+          mountPath: /app/config/os-images.json
+          subPath: os-images.json
+          readOnly: true
+        - name: host-classes
+          mountPath: /app/config/host-classes.json
+          subPath: host-classes.json
           readOnly: true
         livenessProbe:
           httpGet:
@@ -56,3 +61,6 @@ spec:
       - name: os-images
         configMap:
           name: cloudkit-os-images
+      - name: host-classes
+        configMap:
+          name: cloudkit-host-classes
