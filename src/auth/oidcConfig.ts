@@ -61,7 +61,7 @@ export function getOidcConfig() {
   redirect_uri: `${CONSOLE_URL}/callback`,
   post_logout_redirect_uri: `${CONSOLE_URL}/`,
   response_type: 'code',
-  scope: 'openid profile email',
+  scope: 'openid profile email roles groups',
 
   // PKCE for security (required by our client configuration)
   code_challenge_method: 'S256' as const,

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudkit-console
+  namespace: osac
+  labels:
+    app: cloudkit-console
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudkit-console
+  template:
+    metadata:
+      labels:
+        app: cloudkit-console
+    spec:
+      serviceAccountName: cloudkit-console
+      imagePullSecrets:
+      - name: quay-pull-secret
+      containers:
+      - name: console
+        image: quay.io/eerez/cloudkit-console:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: cloudkit-console-config
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: os-images
+          mountPath: /app/config
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: os-images
+        configMap:
+          name: cloudkit-os-images
