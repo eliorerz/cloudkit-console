@@ -1,26 +1,38 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
+import './i18n'
 import Login from './pages/Login'
 import { OIDCCallback } from './pages/OIDCCallback'
 import Dashboard from './pages/Dashboard'
 import VirtualMachines from './pages/VirtualMachines'
+import VirtualMachineCreate from './pages/VirtualMachineCreate'
+import VirtualMachineCreateNew from './pages/VirtualMachineCreateNew'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
+import BareMetalHosts from './pages/BareMetalHosts'
 import Templates from './pages/Templates'
 import AdminTemplates from './pages/AdminTemplates'
-import OSCatalog from './pages/OSCatalog'
 import Organizations from './pages/Organizations'
 import Hubs from './pages/Hubs'
+import ClusterTemplateCatalog from './pages/ClusterTemplateCatalog'
+import CreateClusterTemplate from './pages/CreateClusterTemplate'
+import Clusters from './pages/Clusters'
+import ClusterDetail from './pages/ClusterDetail'
+import ClusterCreate from './pages/ClusterCreate'
+import Monitoring from './pages/Monitoring'
+import Settings from './pages/Settings'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/callback" element={<OIDCCallback />} />
           <Route
-            path="/dashboard"
+            path="/overview"
             element={
               <ProtectedRoute>
                 <Dashboard />
@@ -36,6 +48,22 @@ function App() {
             }
           />
           <Route
+            path="/virtual-machines/create"
+            element={
+              <ProtectedRoute>
+                <VirtualMachineCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/virtual-machines/create-new"
+            element={
+              <ProtectedRoute>
+                <VirtualMachineCreateNew />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/virtual-machines/:id"
             element={
               <ProtectedRoute>
@@ -44,18 +72,18 @@ function App() {
             }
           />
           <Route
-            path="/templates"
+            path="/bare-metal-hosts"
             element={
               <ProtectedRoute>
-                <Templates />
+                <BareMetalHosts />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/os-catalog"
+            path="/templates"
             element={
               <ProtectedRoute>
-                <OSCatalog />
+                <Templates />
               </ProtectedRoute>
             }
           />
@@ -83,10 +111,68 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/admin/cluster-catalog"
+            element={
+              <ProtectedRoute>
+                <ClusterTemplateCatalog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/cluster-catalog/create"
+            element={
+              <ProtectedRoute>
+                <CreateClusterTemplate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/clusters"
+            element={
+              <ProtectedRoute>
+                <Clusters />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/clusters/create"
+            element={
+              <ProtectedRoute>
+                <ClusterCreate />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/clusters/:id"
+            element={
+              <ProtectedRoute>
+                <ClusterDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/monitoring"
+            element={
+              <ProtectedRoute>
+                <Monitoring />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/overview" replace />} />
+          <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

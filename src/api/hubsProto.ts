@@ -112,6 +112,33 @@ export function decodeHub(data: Uint8Array): Hub {
   return hub as Hub
 }
 
+// Decode protobuf Timestamp message to ISO 8601 string
+function decodeTimestamp(data: Uint8Array): string {
+  const reader = new ProtobufReader(data)
+  let seconds = 0
+  let nanos = 0
+
+  while (true) {
+    const tag = reader.readTag()
+    if (!tag) break
+
+    switch (tag.fieldNumber) {
+      case 1: // seconds (int64 encoded as varint)
+        seconds = reader.readVarint()
+        break
+      case 2: // nanos (int32)
+        nanos = reader.readInt32()
+        break
+      default:
+        reader.skipField(tag.wireType)
+    }
+  }
+
+  // Convert to ISO 8601 string
+  const date = new Date(seconds * 1000 + nanos / 1000000)
+  return date.toISOString()
+}
+
 // Decode Metadata message
 function decodeMetadata(data: Uint8Array): { creation_timestamp?: string } {
   const reader = new ProtobufReader(data)
@@ -124,8 +151,8 @@ function decodeMetadata(data: Uint8Array): { creation_timestamp?: string } {
     switch (tag.fieldNumber) {
       case 1: // creation_timestamp
         if (tag.wireType === 2) {
-          // Timestamp is a complex message, read as string for simplicity
-          metadata.creation_timestamp = reader.readString()
+          const timestampBytes = reader.readBytes()
+          metadata.creation_timestamp = decodeTimestamp(timestampBytes)
         }
         break
       default:
