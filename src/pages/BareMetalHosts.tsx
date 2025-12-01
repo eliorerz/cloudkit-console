@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   PageSection,
   Title,
@@ -32,6 +33,7 @@ import { getHosts } from '../api/hosts'
 import { Host } from '../api/types'
 
 const BareMetalHosts: React.FC = () => {
+  const navigate = useNavigate()
   const [hosts, setHosts] = useState<Host[]>([])
   const [loading, setLoading] = useState(true)
   const [searchValue, setSearchValue] = useState('')
@@ -72,24 +74,6 @@ const BareMetalHosts: React.FC = () => {
     return () => clearInterval(interval)
   }, [isInitialLoad])
 
-  const getStateBadge = (state?: string) => {
-    if (!state) return <Label color="grey">Unknown</Label>
-
-    const normalizedState = state.toUpperCase()
-
-    if (normalizedState.includes('READY') || normalizedState.includes('AVAILABLE')) {
-      return <Label color="green">Ready</Label>
-    } else if (normalizedState.includes('PROGRESSING') || normalizedState.includes('PROVISIONING')) {
-      return <Label color="blue">Progressing</Label>
-    } else if (normalizedState.includes('FAILED') || normalizedState.includes('ERROR')) {
-      return <Label color="red">Failed</Label>
-    } else if (normalizedState.includes('MAINTENANCE')) {
-      return <Label color="orange">Maintenance</Label>
-    }
-
-    return <Label color="grey">{state}</Label>
-  }
-
   const getPowerStateBadge = (powerState?: string) => {
     if (!powerState) return <Label color="grey">Unknown</Label>
 
@@ -98,7 +82,7 @@ const BareMetalHosts: React.FC = () => {
     if (normalizedState.includes('ON') || normalizedState.includes('RUNNING')) {
       return <Label color="green">On</Label>
     } else if (normalizedState.includes('OFF')) {
-      return <Label color="grey">Off</Label>
+      return <Label color="red">Off</Label>
     }
 
     return <Label color="grey">{powerState}</Label>
@@ -114,19 +98,16 @@ const BareMetalHosts: React.FC = () => {
   }
 
   const handleRowClick = (host: Host) => {
-    // Future: navigate to host detail page
-    // navigate(`/bare-metal-hosts/${host.id}`)
-    console.log('Host clicked:', host.id)
+    navigate(`/bare-metal-hosts/${host.id}`)
   }
 
   // Sorting logic
   const getSortableValue = (host: Host, columnIndex: number): string => {
     switch (columnIndex) {
-      case 0: return host.id
-      case 1: return host.status?.state || ''
-      case 2: return host.status?.power_state || ''
-      case 3: return host.status?.host_pool || ''
-      case 4: return host.metadata?.creation_timestamp || ''
+      case 0: return host.metadata?.name || host.id
+      case 1: return host.status?.power_state || ''
+      case 2: return host.status?.host_pool || ''
+      case 3: return host.metadata?.creation_timestamp || ''
       default: return ''
     }
   }
@@ -141,9 +122,9 @@ const BareMetalHosts: React.FC = () => {
     if (!searchValue) return true
     const searchLower = searchValue.toLowerCase()
     return (
+      host.metadata?.name?.toLowerCase().includes(searchLower) ||
       host.id.toLowerCase().includes(searchLower) ||
       host.status?.host_pool?.toLowerCase().includes(searchLower) ||
-      host.status?.state?.toLowerCase().includes(searchLower) ||
       host.status?.power_state?.toLowerCase().includes(searchLower)
     )
   })
@@ -179,7 +160,7 @@ const BareMetalHosts: React.FC = () => {
             <ToolbarContent>
               <ToolbarItem>
                 <SearchInput
-                  placeholder="Search by ID, state, or host pool"
+                  placeholder="Search by name or host pool"
                   value={searchValue}
                   onChange={(_event, value) => setSearchValue(value)}
                   onClear={() => setSearchValue('')}
@@ -214,18 +195,15 @@ const BareMetalHosts: React.FC = () => {
                 <Thead>
                   <Tr>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 0 }}>
-                      ID
+                      Name
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 1 }}>
-                      State
-                    </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 2 }}>
                       Power State
                     </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
+                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 2 }}>
                       Host Pool
                     </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
+                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
                       Created
                     </Th>
                     <Th></Th>
@@ -233,9 +211,8 @@ const BareMetalHosts: React.FC = () => {
                 </Thead>
                 <Tbody>
                   {paginatedHosts.map((host) => (
-                    <Tr key={host.id} style={{ cursor: 'pointer' }}>
-                      <Td dataLabel="ID" onClick={() => handleRowClick(host)}>{host.id}</Td>
-                      <Td dataLabel="State" onClick={() => handleRowClick(host)}>{getStateBadge(host.status?.state)}</Td>
+                    <Tr key={host.id} style={{ cursor: 'pointer', height: '55px' }}>
+                      <Td dataLabel="Name" onClick={() => handleRowClick(host)}>{host.metadata?.name || host.id}</Td>
                       <Td dataLabel="Power State" onClick={() => handleRowClick(host)}>{getPowerStateBadge(host.status?.power_state)}</Td>
                       <Td dataLabel="Host Pool" onClick={() => handleRowClick(host)}>{host.status?.host_pool || 'N/A'}</Td>
                       <Td dataLabel="Created" onClick={() => handleRowClick(host)}>{formatTimestamp(host.metadata?.creation_timestamp)}</Td>

@@ -168,7 +168,10 @@ export enum VirtualMachineState {
 export interface Host {
   id: string
   metadata?: {
+    name?: string
     creation_timestamp?: string
+    creators?: string[]
+    tenants?: string[]
   }
   spec?: {
     power_state?: string
