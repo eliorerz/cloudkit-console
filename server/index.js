@@ -85,16 +85,109 @@ app.get('/api/os-images', (req, res) => {
   }
 });
 
+// Host Classes catalog endpoint
+app.get('/api/host-classes', (req, res) => {
+  const hostClassesPath = path.join(__dirname, '../config/host-classes.json');
+
+  try {
+    // Check if file exists (mounted from ConfigMap in production)
+    if (fs.existsSync(hostClassesPath)) {
+      const hostClassesData = fs.readFileSync(hostClassesPath, 'utf8');
+      res.json(JSON.parse(hostClassesData));
+    } else {
+      // Fallback data for local development
+      res.json({
+        "fc430": {
+          "name": "FC430",
+          "description": "Cisco UCS C240 M4",
+          "category": "Compute Optimized",
+          "cpu": {
+            "type": "Intel Xeon E5-2680 v4",
+            "cores": 28,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "256GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "SSD",
+            "size": "2x 480GB",
+            "interface": "SATA"
+          },
+          "gpu": null
+        },
+        "fc640": {
+          "name": "FC640",
+          "description": "Dell PowerEdge R640",
+          "category": "Balanced",
+          "cpu": {
+            "type": "Intel Xeon Gold 6238R",
+            "cores": 56,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "384GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "NVMe SSD",
+            "size": "4x 960GB",
+            "interface": "PCIe"
+          },
+          "gpu": null
+        },
+        "fc740": {
+          "name": "FC740",
+          "description": "HPE ProLiant DL380 Gen10",
+          "category": "Storage Optimized",
+          "cpu": {
+            "type": "Intel Xeon Gold 6248R",
+            "cores": 48,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "512GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "NVMe SSD",
+            "size": "8x 1.6TB",
+            "interface": "PCIe"
+          },
+          "gpu": null
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error reading host classes config:', error);
+    res.status(500).json({ error: 'Failed to load host classes catalog' });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, '../dist')));
+// Serve static files from the dist directory with caching for assets
+app.use(express.static(path.join(__dirname, '../dist'), {
+  setHeaders: (res, path) => {
+    // Cache assets (JS, CSS, images) for 1 year since they have content hashes
+    if (path.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
 
-// SPA fallback - serve index.html for all other routes
+// SPA fallback - serve index.html for all other routes with no-cache
 app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 

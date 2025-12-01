@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useAuth } from '../contexts/AuthContext'
 import {
   PageSection,
   Title,
@@ -36,45 +38,19 @@ import {
   Tbody,
   Td,
 } from '@patternfly/react-table'
-import { VirtualMachineIcon, SearchIcon, EllipsisVIcon, ThIcon, ListIcon, PlayIcon, PowerOffIcon, RedoIcon, DesktopIcon, TrashIcon, CpuIcon, MemoryIcon, DatabaseIcon } from '@patternfly/react-icons'
+import { VirtualMachineIcon, SearchIcon, EllipsisVIcon, ThIcon, ListIcon, PlayIcon, PowerOffIcon, RedoIcon, TrashIcon, FilterIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { getVirtualMachines, deleteVirtualMachine, createVirtualMachine } from '../api/vms'
 import { getTemplates } from '../api/templates'
 import { VirtualMachine, Template } from '../api/types'
 import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
-import { getOSImages, OSImage } from '../api/os-images'
 
 type ViewType = 'cards' | 'table'
 
-// Helper function to get OS icon from image source
-const getOSIcon = (vm: VirtualMachine, osImages: OSImage[]): string | null => {
-  const imageSource = vm.spec?.template_parameters?.vm_image_source?.value || vm.spec?.template_parameters?.vm_image_source
-  if (!imageSource) return null
-
-  // Try to match the image source with known OS images
-  for (const osImage of osImages) {
-    if (imageSource.includes(osImage.repository)) {
-      return osImage.icon
-    }
-  }
-
-  // Fallback: try to detect OS from image path
-  const imageLower = imageSource.toLowerCase()
-  if (imageLower.includes('ubuntu')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo-ubuntu_cof-orange-hex.svg'
-  } else if (imageLower.includes('fedora')) {
-    return 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fedora/fedora-original.svg'
-  } else if (imageLower.includes('centos')) {
-    return 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/centos/centos-original.svg'
-  } else if (imageLower.includes('debian')) {
-    return 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/debian/debian-original.svg'
-  }
-
-  return null
-}
-
 const VirtualMachines: React.FC = () => {
+  const { t } = useTranslation(['virtualMachines', 'common'])
   const navigate = useNavigate()
+  const { username } = useAuth()
   const [vms, setVms] = useState<VirtualMachine[]>([])
   const [loading, setLoading] = useState(true)
   const [searchValue, setSearchValue] = useState('')
@@ -84,13 +60,11 @@ const VirtualMachines: React.FC = () => {
   const [deleting, setDeleting] = useState(false)
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
   const [viewType, setViewType] = useState<ViewType>('cards')
+  const [showOnlyMyVMs, setShowOnlyMyVMs] = useState(false)
 
   // Create VM wizard
   const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
-
-  // OS Images for icon matching
-  const [osImages, setOsImages] = useState<OSImage[]>([])
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -126,21 +100,6 @@ const VirtualMachines: React.FC = () => {
     return () => clearInterval(interval)
   }, [isInitialLoad])
 
-  // Fetch OS images for icon matching
-  useEffect(() => {
-    const fetchOSImages = async () => {
-      try {
-        const response = await getOSImages()
-        setOsImages(response.images || [])
-      } catch (error) {
-        console.error('Error fetching OS images:', error)
-        setOsImages([])
-      }
-    }
-
-    fetchOSImages()
-  }, [])
-
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
@@ -156,16 +115,16 @@ const VirtualMachines: React.FC = () => {
   }, [])
 
   const getStateBadge = (state?: string) => {
-    if (!state) return <Label color="grey">Unknown</Label>
+    if (!state) return <Label color="grey">{t('common:status.unknown')}</Label>
 
     const normalizedState = state.toUpperCase()
 
     if (normalizedState.includes('READY')) {
-      return <Label color="green">Ready</Label>
+      return <Label color="green">{t('common:status.ready')}</Label>
     } else if (normalizedState.includes('PROGRESSING')) {
-      return <Label color="blue">Progressing</Label>
+      return <Label color="blue">{t('common:status.pending')}</Label>
     } else if (normalizedState.includes('FAILED')) {
-      return <Label color="red">Failed</Label>
+      return <Label color="red">{t('common:status.failed')}</Label>
     }
 
     return <Label color="grey">{state}</Label>
@@ -257,6 +216,15 @@ const VirtualMachines: React.FC = () => {
 
   // Filter and sort
   let filteredVMs = vms.filter(vm => {
+    // Filter by "My VMs"
+    if (showOnlyMyVMs && username) {
+      const creators = vm.metadata?.creators || []
+      if (!creators.includes(username)) {
+        return false
+      }
+    }
+
+    // Filter by search
     if (!searchValue) return true
     const searchLower = searchValue.toLowerCase()
     return (
@@ -285,200 +253,188 @@ const VirtualMachines: React.FC = () => {
   const endIndex = startIndex + perPage
   const paginatedVMs = filteredVMs.slice(startIndex, endIndex)
 
+  // Helper to get image name from source
+  const getImageName = (vm: VirtualMachine): string => {
+    const imageSource = vm.spec?.template_parameters?.vm_image_source?.value || vm.spec?.template_parameters?.vm_image_source
+    if (!imageSource) return 'N/A'
+
+    // Extract image name from containerdisk URL
+    // e.g., "docker://quay.io/containerdisks/fedora:43" -> "Fedora 43"
+    const match = imageSource.match(/\/([^/:]+):([^/:]+)$/)
+    if (match) {
+      const [, os, version] = match
+      return `${os.charAt(0).toUpperCase() + os.slice(1)} ${version}`
+    }
+
+    return imageSource
+  }
+
   const renderCardsView = () => (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, 396px)',
-      gap: '1rem',
+      gridTemplateColumns: 'repeat(auto-fill, 400px)',
+      gap: '0.75rem',
       width: '100%',
-      padding: '0'
+      justifyContent: 'start'
     }}>
       {paginatedVMs.map((vm) => {
-        const osIcon = getOSIcon(vm, osImages)
-
         return (
         <Card
           key={vm.id}
+          isCompact
           style={{
-            height: '320px',
-            width: '396px',
             border: '1px solid #d2d2d2',
-            borderRadius: '8px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            transition: 'all 0.2s ease-in-out',
+            borderRadius: '18px',
+            transition: 'all 0.2s ease',
             cursor: 'pointer',
-            overflow: 'hidden',
+            maxWidth: '400px',
+            minHeight: '250px',
             display: 'flex',
             flexDirection: 'column'
           }}
           onClick={() => handleRowClick(vm)}
           onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'
-            e.currentTarget.style.transform = 'translateY(-2px)'
+            e.currentTarget.style.borderColor = '#0066cc'
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,102,204,0.1)'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'
-            e.currentTarget.style.transform = 'translateY(0)'
+            e.currentTarget.style.borderColor = '#d2d2d2'
+            e.currentTarget.style.boxShadow = 'none'
           }}
         >
-          <CardBody style={{ padding: '1rem', display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Header with OS icon, name, state and actions */}
-            <div style={{ marginBottom: '1rem' }}>
-              <Flex alignItems={{ default: 'alignItemsCenter' }} justifyContent={{ default: 'justifyContentSpaceBetween' }}>
-                <FlexItem flex={{ default: 'flex_1' }}>
-                  <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
-                    <FlexItem>
-                      {osIcon ? (
-                        <img
-                          src={osIcon}
-                          alt="OS Logo"
-                          style={{
-                            width: '48px',
-                            height: '48px',
-                            objectFit: 'contain'
-                          }}
-                          onError={(e) => {
-                            // Fallback to generic icon on error
-                            const target = e.currentTarget
-                            const parent = target.parentElement
-                            if (parent) {
-                              parent.innerHTML = `
-                                <svg width="48" height="48" viewBox="0 0 48 48">
-                                  <rect x="4" y="4" width="40" height="40" rx="4" fill="#E8F4F8"/>
-                                  <circle cx="16" cy="16" r="6" fill="#FF6B6B"/>
-                                  <circle cx="32" cy="16" r="6" fill="#4ECDC4"/>
-                                  <circle cx="16" cy="32" r="6" fill="#45B7D1"/>
-                                  <circle cx="32" cy="32" r="6" fill="#FFA07A"/>
-                                  <rect x="20" y="20" width="8" height="8" rx="1" fill="#96CEB4"/>
-                                </svg>
-                              `
-                            }
-                          }}
-                        />
-                      ) : (
-                        <svg width="48" height="48" viewBox="0 0 48 48">
-                          <rect x="4" y="4" width="40" height="40" rx="4" fill="#E8F4F8"/>
-                          <circle cx="16" cy="16" r="6" fill="#FF6B6B"/>
-                          <circle cx="32" cy="16" r="6" fill="#4ECDC4"/>
-                          <circle cx="16" cy="32" r="6" fill="#45B7D1"/>
-                          <circle cx="32" cy="32" r="6" fill="#FFA07A"/>
-                          <rect x="20" y="20" width="8" height="8" rx="1" fill="#96CEB4"/>
-                        </svg>
-                      )}
-                    </FlexItem>
-                    <FlexItem>
-                      <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#151515', marginBottom: '0.15rem' }}>
-                        {vm.metadata?.name || vm.id}
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: '#6a6e73' }}>
-                        {vm.id}
-                      </div>
-                    </FlexItem>
-                  </Flex>
-                </FlexItem>
-                <FlexItem>
-                  <Dropdown
-                    isOpen={openActionMenuId === vm.id}
-                    onSelect={() => setOpenActionMenuId(null)}
-                    toggle={(toggleRef) => (
-                      <MenuToggle
-                        ref={toggleRef}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setOpenActionMenuId(openActionMenuId === vm.id ? null : vm.id)
-                        }}
-                        variant="plain"
-                      >
-                        <EllipsisVIcon />
-                      </MenuToggle>
-                    )}
-                  >
-                    <DropdownList>
-                      <DropdownItem key="start" onClick={(e) => { e?.stopPropagation(); }} icon={<PlayIcon style={{ color: '#3e8635' }} />}>
-                        Start
-                      </DropdownItem>
-                      <DropdownItem key="stop" onClick={(e) => { e?.stopPropagation(); }} icon={<PowerOffIcon style={{ color: '#f0ab00' }} />}>
-                        Stop
-                      </DropdownItem>
-                      <DropdownItem key="restart" onClick={(e) => { e?.stopPropagation(); }} icon={<RedoIcon style={{ color: '#0066cc' }} />}>
-                        Restart
-                      </DropdownItem>
-                      <DropdownItem key="console" onClick={(e) => { e?.stopPropagation(); }} icon={<DesktopIcon />}>
-                        Console
-                      </DropdownItem>
-                      <DropdownItem key="delete" onClick={(e) => { e?.stopPropagation(); handleDeleteClick(vm); }} icon={<TrashIcon style={{ color: '#c9190b' }} />}>
-                        Delete
-                      </DropdownItem>
-                    </DropdownList>
-                  </Dropdown>
-                </FlexItem>
-              </Flex>
-            </div>
-
-            {/* VM Details */}
-            <div style={{ fontSize: '0.875rem', color: '#6a6e73', flex: 1, paddingLeft: '0.5rem' }}>
-              <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
-                  <strong>IP Address:</strong> {vm.status?.ip_address || 'N/A'}
-                </div>
-                {getStateBadge(vm.status?.state)}
-              </div>
-              <div style={{ marginBottom: '0.75rem' }}>
-                <strong>Hub:</strong> {vm.status?.hub || 'N/A'}
-              </div>
-              <div>
-                <strong>Created:</strong> {formatTimestamp(vm.metadata?.creation_timestamp)}
-              </div>
-            </div>
-
-            {/* Separator line */}
-            <div style={{
-              borderTop: '1px solid #d2d2d2',
-              marginTop: '1.5rem',
-              marginBottom: '0.75rem',
-              marginLeft: '1.5rem',
-              marginRight: '1.5rem'
-            }} />
-
-            {/* Hardware specs at bottom */}
+          <CardBody style={{ padding: '1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+            {/* Top row: VM name and status */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              minHeight: '100px'
+              alignItems: 'center',
+              marginBottom: '0.75rem'
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
-                  <CpuIcon />
-                </div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515' }}>
-                  {vm.spec?.template_parameters?.vm_cpu_cores?.value || vm.spec?.template_parameters?.vm_cpu_cores || 'N/A'}
-                </div>
-                <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
-                  vCPU Cores
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: '#0066cc', fontSize: '1.25rem' }}>●</span>
+                <div>
+                  <div style={{ fontWeight: 500, fontSize: '1.15rem', color: '#151515' }}>
+                    {vm.metadata?.name || vm.id}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#6a6e73' }}>
+                    {vm.id}
+                  </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
-                  <MemoryIcon />
+              <div>
+                {getStateBadge(vm.status?.state)}
+              </div>
+            </div>
+
+            {/* Metrics grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '1rem',
+              padding: '0.75rem',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '4px',
+              marginBottom: '0.75rem'
+            }}>
+              <div>
+                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  CPU
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515' }}>
-                  {vm.spec?.template_parameters?.vm_memory_size?.value || vm.spec?.template_parameters?.vm_memory_size || 'N/A'}
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
+                  {vm.spec?.template_parameters?.vm_cpu_cores?.value || vm.spec?.template_parameters?.vm_cpu_cores || 'N/A'} vCPU
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
                   Memory
                 </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                <div style={{ fontSize: '3rem', color: '#06c', lineHeight: '1' }}>
-                  <DatabaseIcon />
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
+                  {vm.spec?.template_parameters?.vm_memory_size?.value || vm.spec?.template_parameters?.vm_memory_size || 'N/A'}
                 </div>
-                <div style={{ fontSize: '1rem', fontWeight: '600', color: '#151515' }}>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  Storage
+                </div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
                   {vm.spec?.template_parameters?.vm_disk_size?.value || vm.spec?.template_parameters?.vm_disk_size || 'N/A'}
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#6a6e73', paddingTop: '0.25rem' }}>
-                  Disk Size
+              </div>
+              <div>
+                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  Image
+                </div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
+                  {getImageName(vm)}
                 </div>
               </div>
+            </div>
+
+            {/* Bottom row: Created timestamp */}
+            <div style={{
+              fontSize: '0.8125rem',
+              color: '#6a6e73'
+            }}>
+              {t('virtualMachines:list.created')}: {formatTimestamp(vm.metadata?.creation_timestamp)}
+            </div>
+
+            {/* Spacer to push buttons to bottom */}
+            <div style={{ flex: 1 }} />
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+              <Dropdown
+                isOpen={openActionMenuId === vm.id}
+                onSelect={() => setOpenActionMenuId(null)}
+                toggle={(toggleRef) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setOpenActionMenuId(openActionMenuId === vm.id ? null : vm.id)
+                    }}
+                    variant="primary"
+                    size="sm"
+                  >
+                    {t('common:common.actions')}
+                  </MenuToggle>
+                )}
+              >
+                <DropdownList>
+                  <DropdownItem key="start" onClick={(e) => { e?.stopPropagation(); }} icon={<PlayIcon style={{ color: '#3e8635' }} />}>
+                    {t('virtualMachines:start')}
+                  </DropdownItem>
+                  <DropdownItem key="stop" onClick={(e) => { e?.stopPropagation(); }} icon={<PowerOffIcon style={{ color: '#f0ab00' }} />}>
+                    {t('virtualMachines:stop')}
+                  </DropdownItem>
+                  <DropdownItem key="restart" onClick={(e) => { e?.stopPropagation(); }} icon={<RedoIcon style={{ color: '#0066cc' }} />}>
+                    {t('virtualMachines:restart')}
+                  </DropdownItem>
+                  <DropdownItem key="delete" onClick={(e) => { e?.stopPropagation(); handleDeleteClick(vm); }} icon={<TrashIcon style={{ color: '#c9190b' }} />}>
+                    {t('virtualMachines:delete')}
+                  </DropdownItem>
+                </DropdownList>
+              </Dropdown>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  // TODO: Implement console action
+                }}
+              >
+                {t('virtualMachines:console')}
+              </Button>
+              <Button
+                variant="link"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleRowClick(vm)
+                }}
+              >
+                {t('virtualMachines:list.viewDetails')}
+              </Button>
             </div>
           </CardBody>
         </Card>
@@ -492,10 +448,10 @@ const VirtualMachines: React.FC = () => {
       <PageSection>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <Title headingLevel="h1" size="2xl">
-            Virtual Machines
+            {t('virtualMachines:title')}
           </Title>
           <Button variant="primary" onClick={handleCreateVMClick}>
-            Create VM
+            {t('virtualMachines:list.createVM')}
           </Button>
         </div>
 
@@ -504,12 +460,22 @@ const VirtualMachines: React.FC = () => {
             <ToolbarContent>
               <ToolbarItem>
                 <SearchInput
-                  placeholder="Search by name, IP, or hub"
+                  placeholder={t('virtualMachines:list.searchPlaceholder')}
                   value={searchValue}
                   onChange={(_event, value) => setSearchValue(value)}
                   onClear={() => setSearchValue('')}
                   style={{ width: '400px' }}
                 />
+              </ToolbarItem>
+              <ToolbarItem>
+                <Button
+                  variant={showOnlyMyVMs ? ButtonVariant.primary : ButtonVariant.secondary}
+                  icon={<FilterIcon />}
+                  onClick={() => setShowOnlyMyVMs(!showOnlyMyVMs)}
+                  size="sm"
+                >
+                  {t('virtualMachines:list.myVMs')}
+                </Button>
               </ToolbarItem>
               <ToolbarItem>
                 <Flex spaceItems={{ default: 'spaceItemsSm' }}>
@@ -520,7 +486,7 @@ const VirtualMachines: React.FC = () => {
                       onClick={() => setViewType('cards')}
                       size="sm"
                     >
-                      Cards
+                      {t('virtualMachines:list.viewCards')}
                     </Button>
                   </FlexItem>
                   <FlexItem>
@@ -530,7 +496,7 @@ const VirtualMachines: React.FC = () => {
                       onClick={() => setViewType('table')}
                       size="sm"
                     >
-                      Table
+                      {t('virtualMachines:list.viewTable')}
                     </Button>
                   </FlexItem>
                 </Flex>
@@ -542,7 +508,7 @@ const VirtualMachines: React.FC = () => {
             {loading ? (
               <div style={{ textAlign: 'center', padding: '2rem' }}>
                 <Spinner size="xl" />
-                <p style={{ marginTop: '1rem', color: '#6a6e73' }}>Loading virtual machines...</p>
+                <p style={{ marginTop: '1rem', color: '#6a6e73' }}>{t('virtualMachines:list.loading')}</p>
               </div>
             ) : filteredVMs.length === 0 ? (
               <EmptyState>
@@ -550,12 +516,12 @@ const VirtualMachines: React.FC = () => {
                   {vms.length === 0 ? <VirtualMachineIcon /> : <SearchIcon />}
                 </div>
                 <Title headingLevel="h4" size="lg">
-                  {vms.length === 0 ? "No virtual machines" : "No results found"}
+                  {vms.length === 0 ? t('virtualMachines:list.empty') : t('virtualMachines:list.noResults')}
                 </Title>
                 <EmptyStateBody>
                   {vms.length === 0
-                    ? "There are no virtual machines to display. Create a virtual machine to get started."
-                    : "No virtual machines match your search criteria. Try adjusting your filters."}
+                    ? t('virtualMachines:list.emptyDescription')
+                    : t('virtualMachines:list.noResultsDescription')}
                 </EmptyStateBody>
               </EmptyState>
             ) : viewType === 'cards' ? (
@@ -565,19 +531,19 @@ const VirtualMachines: React.FC = () => {
                 <Thead>
                   <Tr>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 0 }}>
-                      Name
+                      {t('common:common.name')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 1 }}>
-                      State
+                      {t('common:common.status')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 2 }}>
-                      IP Address
+                      {t('virtualMachines:list.columns.ip')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
-                      Hub
+                      {t('virtualMachines:list.columns.hub')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
-                      Created
+                      {t('common:common.created')}
                     </Th>
                     <Th></Th>
                   </Tr>
@@ -585,11 +551,11 @@ const VirtualMachines: React.FC = () => {
                 <Tbody>
                   {paginatedVMs.map((vm) => (
                     <Tr key={vm.id} style={{ cursor: 'pointer' }}>
-                      <Td dataLabel="Name" onClick={() => handleRowClick(vm)}>{vm.metadata?.name || vm.id}</Td>
-                      <Td dataLabel="State" onClick={() => handleRowClick(vm)}>{getStateBadge(vm.status?.state)}</Td>
-                      <Td dataLabel="IP Address" onClick={() => handleRowClick(vm)}>{vm.status?.ip_address || 'N/A'}</Td>
-                      <Td dataLabel="Hub" onClick={() => handleRowClick(vm)}>{vm.status?.hub || 'N/A'}</Td>
-                      <Td dataLabel="Created" onClick={() => handleRowClick(vm)}>{formatTimestamp(vm.metadata?.creation_timestamp)}</Td>
+                      <Td dataLabel={t('common:common.name')} onClick={() => handleRowClick(vm)}>{vm.metadata?.name || vm.id}</Td>
+                      <Td dataLabel={t('common:common.status')} onClick={() => handleRowClick(vm)}>{getStateBadge(vm.status?.state)}</Td>
+                      <Td dataLabel={t('virtualMachines:list.columns.ip')} onClick={() => handleRowClick(vm)}>{vm.status?.ip_address || 'N/A'}</Td>
+                      <Td dataLabel={t('virtualMachines:list.columns.hub')} onClick={() => handleRowClick(vm)}>{vm.status?.hub || 'N/A'}</Td>
+                      <Td dataLabel={t('common:common.created')} onClick={() => handleRowClick(vm)}>{formatTimestamp(vm.metadata?.creation_timestamp)}</Td>
                       <Td isActionCell>
                         <Dropdown
                           isOpen={openActionMenuId === vm.id}
@@ -606,7 +572,7 @@ const VirtualMachines: React.FC = () => {
                         >
                           <DropdownList>
                             <DropdownItem onClick={() => handleDeleteClick(vm)}>
-                              Delete
+                              {t('virtualMachines:delete')}
                             </DropdownItem>
                           </DropdownList>
                         </Dropdown>
@@ -646,13 +612,13 @@ const VirtualMachines: React.FC = () => {
         onClose={() => setDeleteModalOpen(false)}
         aria-labelledby="delete-vm-modal-title"
       >
-        <ModalHeader title="Delete virtual machine" labelId="delete-vm-modal-title" />
+        <ModalHeader title={t('virtualMachines:delete')} labelId="delete-vm-modal-title" />
         <ModalBody>
-          Are you sure you want to delete the virtual machine <strong>{vmToDelete?.id}</strong>? This action cannot be undone.
+          {t('virtualMachines:list.deleteConfirm', { name: vmToDelete?.id })}
         </ModalBody>
         <ModalFooter>
           <Button key="cancel" variant="link" onClick={() => setDeleteModalOpen(false)} isDisabled={deleting}>
-            Cancel
+            {t('common:actions.cancel')}
           </Button>
           <Button
             key="confirm"
@@ -661,7 +627,7 @@ const VirtualMachines: React.FC = () => {
             isDisabled={deleting}
             isLoading={deleting}
           >
-            {deleting ? 'Deleting...' : 'Delete'}
+            {deleting ? t('virtualMachines:list.deleting') : t('common:actions.delete')}
           </Button>
         </ModalFooter>
       </Modal>
