@@ -157,6 +157,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       sub: user.profile.sub,
       given_name: (user.profile as any).given_name,
       family_name: (user.profile as any).family_name,
+      groups: (user.profile as any).groups,
+      roles: (user.profile as any).roles,
+      realm_access: (user.profile as any).realm_access,
+      resource_access: (user.profile as any).resource_access,
     })
     console.log('Full profile object:', user.profile)
   }
@@ -175,10 +179,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     || user?.profile?.sub
     || null
 
-  // Determine role based on groups
+  // Determine role based on groups and roles
   const groups = (user?.profile?.groups as string[]) || []
   const organizations = (user?.profile?.organizations as string[]) || groups  // organizations and groups are the same
-  const role = groups.includes('/admins') ? 'fulfillment-admin' : 'fulfillment-client'
+
+  // Extract roles from different possible locations in the token
+  const realmRoles = (user?.profile as any)?.realm_access?.roles || []
+  const resourceRoles = (user?.profile as any)?.resource_access?.['cloudkit-console']?.roles || []
+  const directRoles = (user?.profile as any)?.roles || []
+  const allRoles = [...realmRoles, ...resourceRoles, ...directRoles]
+
+  // User is admin if:
+  // 1. They're in the /admins group (global admin), OR
+  // 2. They have the organization-admin role (organization-level admin)
+  const role = (groups.includes('/admins') || allRoles.includes('organization-admin'))
+    ? 'fulfillment-admin'
+    : 'fulfillment-client'
 
   return (
     <AuthContext.Provider

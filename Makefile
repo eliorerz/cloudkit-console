@@ -1,9 +1,21 @@
 .PHONY: help dev build build-push deploy clean
 
+# Environment selection: dev or integration
+ENV ?= dev
+
 IMAGE_NAME ?= cloudkit-console
 IMAGE_TAG ?= latest
 REGISTRY ?= quay.io/eerez
-NAMESPACE ?= innabox-devel
+
+# Environment-specific settings
+ifeq ($(ENV),integration)
+  NAMESPACE ?= osac
+  DEPLOY_DIR = deploy/integration
+else
+  NAMESPACE ?= innabox-devel
+  DEPLOY_DIR = deploy/dev
+endif
+
 CONTAINER_TOOL ?= $(shell which podman 2>/dev/null || which docker 2>/dev/null)
 
 help:
@@ -11,8 +23,12 @@ help:
 	@echo "  dev        - Run development server locally"
 	@echo "  build      - Build container image"
 	@echo "  build-push - Build and push container image with unique timestamp tag"
-	@echo "  deploy     - Deploy to Kubernetes cluster"
-	@echo "  clean      - Remove deployment from cluster"
+	@echo "  deploy     - Deploy to Kubernetes cluster (ENV=dev|integration)"
+	@echo "  clean      - Remove deployment from cluster (ENV=dev|integration)"
+	@echo ""
+	@echo "Environment variables:"
+	@echo "  ENV        - Target environment: dev (default) or integration"
+	@echo "  NAMESPACE  - Kubernetes namespace (default based on ENV)"
 
 dev:
 	npm install
@@ -33,10 +49,12 @@ build-push:
 	@echo "Image pushed with tag: $(UNIQUE_TAG)"
 
 deploy:
-	kubectl apply -f deploy/ -n $(NAMESPACE)
+	@echo "Deploying to $(ENV) environment (namespace: $(NAMESPACE))..."
+	kubectl apply -f $(DEPLOY_DIR)/ -n $(NAMESPACE)
 
 clean:
-	kubectl delete -f deploy/ -n $(NAMESPACE) --ignore-not-found=true
+	@echo "Cleaning $(ENV) environment (namespace: $(NAMESPACE))..."
+	kubectl delete -f $(DEPLOY_DIR)/ -n $(NAMESPACE) --ignore-not-found=true
 
 ## deploy-image: Update UI deployment with latest unique image
 deploy-image:
