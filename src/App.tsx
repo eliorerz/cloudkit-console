@@ -10,6 +10,7 @@ import VirtualMachineCreate from './pages/VirtualMachineCreate'
 import VirtualMachineCreateNew from './pages/VirtualMachineCreateNew'
 import VirtualMachineDetail from './pages/VirtualMachineDetail'
 import BareMetalHosts from './pages/BareMetalHosts'
+import HostDetail from './pages/HostDetail'
 import Templates from './pages/Templates'
 import AdminTemplates from './pages/AdminTemplates'
 import Organizations from './pages/Organizations'
@@ -76,6 +77,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BareMetalHosts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bare-metal-hosts/:id"
+            element={
+              <ProtectedRoute>
+                <HostDetail />
               </ProtectedRoute>
             }
           />

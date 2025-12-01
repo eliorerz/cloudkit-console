@@ -168,18 +168,18 @@ const Settings: React.FC = () => {
                   <div style={{ maxWidth: '734px' }}>
                     <TextArea
                       id="default-pull-secret"
-                      value={showPullSecret ? defaultPullSecret : (defaultPullSecret ? t('settings:authentication.pullSecret.configured') : '')}
+                      value={showPullSecret || !defaultPullSecret ? defaultPullSecret : t('settings:authentication.pullSecret.configured')}
                       onChange={(_event, value) => setDefaultPullSecret(value)}
                       rows={8}
                       placeholder={t('settings:authentication.pullSecret.placeholder')}
                       style={{
-                        fontFamily: showPullSecret ? 'monospace' : 'inherit',
+                        fontFamily: (showPullSecret || !defaultPullSecret) ? 'monospace' : 'inherit',
                         fontSize: '0.875rem',
                         width: '100%',
-                        color: showPullSecret ? '#151515' : '#8a8d90',
-                        fontStyle: showPullSecret ? 'normal' : 'italic'
+                        color: (showPullSecret || !defaultPullSecret) ? '#151515' : '#8a8d90',
+                        fontStyle: (showPullSecret || !defaultPullSecret) ? 'normal' : 'italic'
                       }}
-                      readOnly={!showPullSecret}
+                      readOnly={!!(defaultPullSecret && !showPullSecret)}
                     />
                   </div>
                   {defaultPullSecret && (
@@ -232,18 +232,18 @@ const Settings: React.FC = () => {
                   <div style={{ maxWidth: '734px' }}>
                     <TextArea
                       id="default-ssh-key"
-                      value={showSshKey ? defaultSshKey : (defaultSshKey ? t('settings:authentication.sshKey.configured') : '')}
+                      value={showSshKey || !defaultSshKey ? defaultSshKey : t('settings:authentication.sshKey.configured')}
                       onChange={(_event, value) => setDefaultSshKey(value)}
                       rows={4}
                       placeholder={t('settings:authentication.sshKey.placeholder')}
                       style={{
-                        fontFamily: showSshKey ? 'monospace' : 'inherit',
+                        fontFamily: (showSshKey || !defaultSshKey) ? 'monospace' : 'inherit',
                         fontSize: '0.875rem',
                         width: '100%',
-                        color: showSshKey ? '#151515' : '#8a8d90',
-                        fontStyle: showSshKey ? 'normal' : 'italic'
+                        color: (showSshKey || !defaultSshKey) ? '#151515' : '#8a8d90',
+                        fontStyle: (showSshKey || !defaultSshKey) ? 'normal' : 'italic'
                       }}
-                      readOnly={!showSshKey}
+                      readOnly={!!(defaultSshKey && !showSshKey)}
                     />
                   </div>
                   {defaultSshKey && (
