@@ -1,7 +1,7 @@
 {
   "title": "托管集群",
   "catalog": "集群目录",
-  "create": "创建集群",
+  "createButton": "创建集群",
   "delete": "删除集群",
   "details": "集群详情",
   "list": {

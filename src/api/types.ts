@@ -49,6 +49,7 @@ export interface Cluster {
     name?: string
     creation_timestamp?: string
     creators?: string[]
+    tenants?: string[]
   }
   spec?: ClusterSpec
   status?: ClusterStatus
@@ -66,6 +67,7 @@ export interface ClusterStatus {
   api_url?: string
   console_url?: string
   node_sets?: Record<string, ClusterNodeSet>
+  hub?: string
 }
 
 export enum ClusterState {
@@ -179,8 +181,18 @@ export interface Host {
   status?: {
     state?: string
     power_state?: string
+    conditions?: HostCondition[]
     host_pool?: string
+    cluster?: string
   }
+}
+
+export interface HostCondition {
+  type?: string
+  status?: string
+  last_transition_time?: string
+  reason?: string
+  message?: string
 }
 
 export interface HostPool {

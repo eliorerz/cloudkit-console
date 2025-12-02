@@ -367,7 +367,7 @@ const Clusters: React.FC = () => {
               </ToolbarItem>
               <ToolbarItem align={{ default: 'alignEnd' }}>
                 <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog')}>
-                  {t('clusters:create')}
+                  {t('clusters:createButton')}
                 </Button>
               </ToolbarItem>
             </ToolbarContent>

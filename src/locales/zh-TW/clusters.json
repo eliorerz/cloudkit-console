@@ -1,5 +1,6 @@
 {
   "title": "託管叢集",
+  "createButton": "建立叢集",
   "catalog": {
     "title": "叢集目錄",
     "description": "瀏覽並從預先組態的範本部署 OpenShift 叢集",
