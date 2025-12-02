@@ -18,11 +18,16 @@ import {
   Spinner,
   Alert,
   Button,
+  AlertGroup,
+  AlertVariant,
+  AlertActionCloseButton,
 } from '@patternfly/react-core'
+import { ExternalLinkAltIcon, CopyIcon } from '@patternfly/react-icons'
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table'
 import AppLayout from '../components/layouts/AppLayout'
-import { getCluster } from '../api/clustersApi'
+import { getCluster, getClusterPassword } from '../api/clustersApi'
 import { Cluster, ClusterState } from '../api/types'
+import { getUserManager } from '../auth/oidcConfig'
 
 // Mock networking data for demo
 const mockNetworking: Record<string, any> = {
@@ -41,12 +46,50 @@ const ClusterDetail: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0)
+  const [password, setPassword] = useState<string>('')
+  const [loadingPassword, setLoadingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [usingPrivateApi, setUsingPrivateApi] = useState(false)
+  const [alerts, setAlerts] = useState<Array<{ key: number; title: string }>>([])
+
+  const addAlert = (title: string) => {
+    const key = Date.now()
+    setAlerts((prevAlerts) => [...prevAlerts, { key, title }])
+    setTimeout(() => {
+      setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.key !== key))
+    }, 3000)
+  }
+
+  const copyPassword = () => {
+    if (password) {
+      navigator.clipboard.writeText(password).then(() => {
+        addAlert('Password copied to clipboard')
+      }).catch((err) => {
+        console.error('Failed to copy password:', err)
+        addAlert('Failed to copy password')
+      })
+    }
+  }
 
   useEffect(() => {
     if (id) {
+      checkAdminStatus()
       loadCluster()
+      loadPassword()
     }
   }, [id])
+
+  const checkAdminStatus = async () => {
+    try {
+      const userManager = getUserManager()
+      const user = await userManager.getUser()
+      const roles = user?.profile?.roles as string[] | undefined
+      const admin = roles?.includes('fulfillment-admin') || false
+      setUsingPrivateApi(admin)
+    } catch (err) {
+      console.error('Failed to check admin status:', err)
+    }
+  }
 
   const loadCluster = async () => {
     if (!id) return
@@ -61,6 +104,22 @@ const ClusterDetail: React.FC = () => {
       setError(err.message || 'Failed to load cluster')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPassword = async () => {
+    if (!id) return
+
+    try {
+      setLoadingPassword(true)
+      setPasswordError(null)
+      const pwd = await getClusterPassword(id)
+      setPassword(pwd)
+    } catch (err: any) {
+      console.error('Failed to load password:', err)
+      setPasswordError(err.message || 'Failed to load password')
+    } finally {
+      setLoadingPassword(false)
     }
   }
 
@@ -106,6 +165,21 @@ const ClusterDetail: React.FC = () => {
 
   return (
     <AppLayout>
+      <AlertGroup isToast isLiveRegion>
+        {alerts.map((alert) => (
+          <Alert
+            key={alert.key}
+            variant={AlertVariant.success}
+            title={alert.title}
+            timeout={3000}
+            actionClose={
+              <AlertActionCloseButton
+                onClose={() => setAlerts((prev) => prev.filter((a) => a.key !== alert.key))}
+              />
+            }
+          />
+        ))}
+      </AlertGroup>
       <PageSection variant="default">
         <Breadcrumb>
           <BreadcrumbItem to="/admin/clusters" onClick={(e) => { e.preventDefault(); navigate('/admin/clusters'); }}>
@@ -165,8 +239,54 @@ const ClusterDetail: React.FC = () => {
                     <DescriptionListDescription>
                       {cluster.status?.console_url ? (
                         <a href={cluster.status.console_url} target="_blank" rel="noopener noreferrer">
-                          {cluster.status.console_url}
+                          {cluster.status.console_url} <ExternalLinkAltIcon style={{ marginLeft: '0.25rem' }} />
                         </a>
+                      ) : (
+                        '-'
+                      )}
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Username</DescriptionListTerm>
+                    <DescriptionListDescription>
+                      kubeadmin
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Password</DescriptionListTerm>
+                    <DescriptionListDescription>
+                      {loadingPassword ? (
+                        <Spinner size="md" />
+                      ) : passwordError ? (
+                        <span style={{ color: 'var(--pf-v5-global--danger-color--100)' }}>
+                          {passwordError}
+                        </span>
+                      ) : password ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input
+                            type="password"
+                            value={password}
+                            readOnly
+                            style={{
+                              border: '1px solid var(--pf-v5-global--BorderColor--100)',
+                              padding: '0.375rem 0.5rem',
+                              borderRadius: '3px',
+                              backgroundColor: 'var(--pf-v5-global--BackgroundColor--100)',
+                              color: 'var(--pf-v5-global--Color--100)',
+                              fontFamily: 'monospace',
+                              fontSize: '14px',
+                              width: '200px',
+                            }}
+                          />
+                          <Button
+                            variant="plain"
+                            aria-label="Copy password"
+                            onClick={copyPassword}
+                            icon={<CopyIcon />}
+                          />
+                        </div>
                       ) : (
                         '-'
                       )}
@@ -188,6 +308,15 @@ const ClusterDetail: React.FC = () => {
                       <DescriptionListTerm>Created By</DescriptionListTerm>
                       <DescriptionListDescription>
                         {cluster.metadata.creators.join(', ')}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  )}
+
+                  {usingPrivateApi && (
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>API Mode</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        <Label color="blue">Private API (Admin)</Label>
                       </DescriptionListDescription>
                     </DescriptionListGroup>
                   )}
