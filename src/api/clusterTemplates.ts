@@ -159,7 +159,7 @@ export async function getClusterTemplate(id: string): Promise<ClusterTemplate | 
  */
 export async function createClusterTemplate(template: Partial<ClusterTemplate>): Promise<ClusterTemplate> {
   const config = await fetch('/api/config').then(res => res.json())
-  const apiBaseUrl = config.FULFILLMENT_API_URL || 'https://fulfillment-api-innabox-devel.apps.ostest.test.metalkube.org'
+  const apiBaseUrl = config.fulfillmentApiUrl
 
   const response = await fetch(`${apiBaseUrl}/api/fulfillment/v1/cluster_templates`, {
     method: 'POST',

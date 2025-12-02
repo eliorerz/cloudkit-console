@@ -8,8 +8,19 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const FULFILLMENT_API = process.env.FULFILLMENT_API_URL || 'https://fulfillment-api-innabox-devel.apps.ostest.test.metalkube.org';
-const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'https://keycloak-innabox-devel.apps.ostest.test.metalkube.org';
+
+// Validate required environment variables
+if (!process.env.FULFILLMENT_API_URL) {
+  console.error('ERROR: FULFILLMENT_API_URL environment variable is not set in ConfigMap');
+  process.exit(1);
+}
+if (!process.env.KEYCLOAK_URL) {
+  console.error('ERROR: KEYCLOAK_URL environment variable is not set in ConfigMap');
+  process.exit(1);
+}
+
+const FULFILLMENT_API = process.env.FULFILLMENT_API_URL;
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL;
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'innabox';
 const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID || 'cloudkit-console';
 const NAMESPACE = process.env.NAMESPACE || 'innabox-devel';
