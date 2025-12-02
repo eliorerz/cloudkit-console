@@ -94,10 +94,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Sync access token to localStorage for API client
   useEffect(() => {
     if (user?.access_token) {
-      console.log('Storing access token in localStorage for API client')
       localStorage.setItem('cloudkit_token', user.access_token)
     } else {
-      console.log('Removing access token from localStorage')
       localStorage.removeItem('cloudkit_token')
     }
   }, [user])

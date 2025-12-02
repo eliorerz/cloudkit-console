@@ -303,10 +303,13 @@ function decodeAnyValue(typeUrl: string, data: Uint8Array): any {
         return reader.readString()
       } else if (typeUrl.includes('Int32Value')) {
         return reader.readInt32()
+      } else if (typeUrl.includes('Int64Value')) {
+        // Read Int64 as number (note: may lose precision for very large values)
+        return reader.readVarint()
       } else if (typeUrl.includes('BoolValue')) {
         return reader.readBool()
       }
-      // Add more types as needed (Int64Value, DoubleValue, etc.)
+      // Add more wrapper types as needed (DoubleValue, FloatValue would require implementing readDouble/readFloat)
     }
 
     reader.skipField(tag.wireType)

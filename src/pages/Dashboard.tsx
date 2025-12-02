@@ -111,20 +111,10 @@ const Dashboard: React.FC = () => {
 
     const fetchVMs = async () => {
       try {
-        const lsToken = localStorage.getItem('cloudkit_token')
-        console.log(`Fetching VMs (attempt ${retryCount + 1}/${maxRetries}) for username:`, username)
-        console.log('Token from useAuth:', !!token)
-        console.log('Token exists in localStorage:', !!lsToken)
-        console.log('Auth loading:', authLoading)
-
         const response = await getVirtualMachines()
-        console.log('VM API Response type:', typeof response)
 
         // Validate response is a proper list response, not HTML
         if (response && typeof response === 'object' && 'items' in response) {
-          console.log('✓ Valid VM response received')
-          console.log('VM items:', response.items)
-          console.log('VM items length:', response.items?.length || 0)
           setVms(response.items || [])
           setVmsFetched(true)
         } else {

@@ -25,6 +25,7 @@ import { HelpIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { listClusterTemplates, createCluster } from '../api/clustersApi'
 import { ClusterTemplate } from '../api/types'
+import { formatDescriptionText } from '../utils/formatText'
 
 interface HostClassInfo {
   name: string
@@ -421,9 +422,7 @@ const ClusterCreate: React.FC = () => {
                                 <Popover
                                   aria-label={`${param.title || param.name} help`}
                                   bodyContent={
-                                    <div dangerouslySetInnerHTML={{
-                                      __html: param.description.replace(/`([^`]+)`/g, '<code style="background-color: var(--pf-v6-global--BackgroundColor--200); padding: 0.125rem 0.25rem; border-radius: 3px; font-family: monospace; font-size: 0.875em;">$1</code>')
-                                    }} />
+                                    <div>{formatDescriptionText(param.description)}</div>
                                   }
                                 >
                                   <Button
@@ -458,9 +457,7 @@ const ClusterCreate: React.FC = () => {
                                 <Popover
                                   aria-label={`${param.title || param.name} help`}
                                   bodyContent={
-                                    <div dangerouslySetInnerHTML={{
-                                      __html: param.description.replace(/`([^`]+)`/g, '<code style="background-color: var(--pf-v6-global--BackgroundColor--200); padding: 0.125rem 0.25rem; border-radius: 3px; font-family: monospace; font-size: 0.875em;">$1</code>')
-                                    }} />
+                                    <div>{formatDescriptionText(param.description)}</div>
                                   }
                                 >
                                   <Button
@@ -502,9 +499,7 @@ const ClusterCreate: React.FC = () => {
                                 <Popover
                                   aria-label={`${param.title || param.name} help`}
                                   bodyContent={
-                                    <div dangerouslySetInnerHTML={{
-                                      __html: param.description.replace(/`([^`]+)`/g, '<code style="background-color: var(--pf-v6-global--BackgroundColor--200); padding: 0.125rem 0.25rem; border-radius: 3px; font-family: monospace; font-size: 0.875em;">$1</code>')
-                                    }} />
+                                    <div>{formatDescriptionText(param.description)}</div>
                                   }
                                 >
                                   <Button
