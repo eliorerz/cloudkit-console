@@ -67,7 +67,20 @@ class APIClient {
   }
 
   async get<T>(endpoint: string): Promise<T> {
-    const response = await this.client.get<T>(endpoint)
+    const response = await this.client.get<T>(endpoint, {
+      validateStatus: (status) => status >= 200 && status < 300,
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
+
+    // Validate that we got JSON, not HTML
+    const contentType = response.headers['content-type']
+    if (contentType && !contentType.includes('application/json')) {
+      console.error(`Expected JSON but received ${contentType}`)
+      throw new Error(`API returned ${contentType} instead of JSON`)
+    }
+
     return response.data
   }
 

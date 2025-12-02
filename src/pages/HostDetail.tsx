@@ -24,6 +24,7 @@ import {
   FlexItem,
 } from '@patternfly/react-core'
 import { ServerIcon } from '@patternfly/react-icons'
+import yaml from 'js-yaml'
 import AppLayout from '../components/layouts/AppLayout'
 import { getHost } from '../api/hosts'
 import { Host } from '../api/types'
@@ -234,7 +235,9 @@ const HostDetail: React.FC = () => {
                       overflow: 'auto',
                       maxHeight: '600px'
                     }}>
-                      {JSON.stringify(host, null, 2)}
+                      {host && typeof host === 'object' && host.id
+                        ? yaml.dump(host, { indent: 2, noRefs: true })
+                        : 'Error: Invalid host data'}
                     </pre>
                   </CardBody>
                 </Tab>
