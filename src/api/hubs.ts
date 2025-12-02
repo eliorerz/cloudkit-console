@@ -1,32 +1,44 @@
-import { grpcClient } from './grpcClient'
 import { Hub, ListResponse } from './types'
-import {
-  encodeHubsListRequest,
-  decodeHubsListResponse,
-  encodeHubsGetRequest,
-  decodeHubsGetResponse,
-  encodeHubsCreateRequest,
-  decodeHubsCreateResponse,
-  encodeHubsUpdateRequest,
-  decodeHubsUpdateResponse,
-  encodeHubsDeleteRequest,
-  decodeHubsDeleteResponse,
-} from './hubsProto'
+import { getUserManager } from '../auth/oidcConfig'
 
-// API functions using gRPC-Web client to call private.v1.Hubs service
+// Helper to get API base URL
+const getApiBaseUrl = async (): Promise<string> => {
+  const response = await fetch('/api/config')
+  if (!response.ok) {
+    throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`)
+  }
+  const config = await response.json()
+  if (!config.fulfillmentApiUrl) {
+    throw new Error('fulfillmentApiUrl not found in configuration')
+  }
+  return config.fulfillmentApiUrl
+}
+
 export const getHubs = async (): Promise<ListResponse<Hub>> => {
   try {
-    const requestBytes = encodeHubsListRequest({})
-    const response = await grpcClient.call(
-      'private.v1.Hubs',
-      'List',
-      requestBytes,
-      decodeHubsListResponse
-    )
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/private/v1/hubs`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch hubs: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
     return {
-      items: response.items || [],
-      total: response.total || 0,
-      size: response.size || 0,
+      items: data.items || [],
+      total: data.total || 0,
+      size: data.size || 0,
     }
   } catch (error) {
     console.error('Failed to fetch hubs:', error)
@@ -36,14 +48,26 @@ export const getHubs = async (): Promise<ListResponse<Hub>> => {
 
 export const getHub = async (id: string): Promise<Hub> => {
   try {
-    const requestBytes = encodeHubsGetRequest({ id })
-    const response = await grpcClient.call(
-      'private.v1.Hubs',
-      'Get',
-      requestBytes,
-      decodeHubsGetResponse
-    )
-    return response.object
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/private/v1/hubs/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch hub ${id}: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data.object || data
   } catch (error) {
     console.error(`Failed to fetch hub ${id}:`, error)
     throw error
@@ -52,14 +76,30 @@ export const getHub = async (id: string): Promise<Hub> => {
 
 export const createHub = async (hub: Partial<Hub>): Promise<Hub> => {
   try {
-    const requestBytes = encodeHubsCreateRequest({ object: hub as Hub })
-    const response = await grpcClient.call(
-      'private.v1.Hubs',
-      'Create',
-      requestBytes,
-      decodeHubsCreateResponse
-    )
-    return response.object
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/private/v1/hubs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ object: hub }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create hub: ${response.status} ${response.statusText}: ${errorText}`)
+    }
+
+    const data = await response.json()
+    return data.object || data
   } catch (error) {
     console.error('Failed to create hub:', error)
     throw error
@@ -68,19 +108,30 @@ export const createHub = async (hub: Partial<Hub>): Promise<Hub> => {
 
 export const updateHub = async (id: string, hub: Partial<Hub>): Promise<Hub> => {
   try {
-    const requestBytes = encodeHubsUpdateRequest({
-      object: { ...hub, id } as Hub,
-      update_mask: {
-        paths: Object.keys(hub),
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/private/v1/hubs/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ object: { ...hub, id } }),
     })
-    const response = await grpcClient.call(
-      'private.v1.Hubs',
-      'Update',
-      requestBytes,
-      decodeHubsUpdateResponse
-    )
-    return response.object
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to update hub ${id}: ${response.status} ${response.statusText}: ${errorText}`)
+    }
+
+    const data = await response.json()
+    return data.object || data
   } catch (error) {
     console.error(`Failed to update hub ${id}:`, error)
     throw error
@@ -89,13 +140,24 @@ export const updateHub = async (id: string, hub: Partial<Hub>): Promise<Hub> => 
 
 export const deleteHub = async (id: string): Promise<void> => {
   try {
-    const requestBytes = encodeHubsDeleteRequest({ id })
-    await grpcClient.call(
-      'private.v1.Hubs',
-      'Delete',
-      requestBytes,
-      decodeHubsDeleteResponse
-    )
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/private/v1/hubs/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete hub ${id}: ${response.status} ${response.statusText}`)
+    }
   } catch (error) {
     console.error(`Failed to delete hub ${id}:`, error)
     throw error
