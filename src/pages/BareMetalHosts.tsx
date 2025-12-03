@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   PageSection,
   Title,
@@ -30,7 +30,8 @@ import {
 import { ServerIcon, SearchIcon, EllipsisVIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { getHosts } from '../api/hosts'
-import { Host } from '../api/types'
+import { Host, Cluster } from '../api/types'
+import { listClusters } from '../api/clustersApi'
 
 const BareMetalHosts: React.FC = () => {
   const navigate = useNavigate()
@@ -39,6 +40,7 @@ const BareMetalHosts: React.FC = () => {
   const [searchValue, setSearchValue] = useState('')
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
+  const [clusterNames, setClusterNames] = useState<Map<string, string>>(new Map())
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -49,13 +51,26 @@ const BareMetalHosts: React.FC = () => {
   const [perPage, setPerPage] = useState(10)
 
   useEffect(() => {
-    const fetchHosts = async () => {
+    const fetchData = async () => {
       if (isInitialLoad) {
         setLoading(true)
       }
       try {
-        const response = await getHosts()
-        setHosts(response.items || [])
+        const [hostsResponse, clustersResponse] = await Promise.all([
+          getHosts(),
+          listClusters().catch(() => ({ items: [], total: 0, size: 0 })) // Gracefully handle cluster fetch failure
+        ])
+
+        setHosts(hostsResponse.items || [])
+
+        // Create a map of cluster IDs to names
+        const nameMap = new Map<string, string>()
+        clustersResponse.items?.forEach((cluster: Cluster) => {
+          if (cluster.id && cluster.metadata?.name) {
+            nameMap.set(cluster.id, cluster.metadata.name)
+          }
+        })
+        setClusterNames(nameMap)
       } catch (error) {
         console.error('Error fetching hosts:', error)
         setHosts([])
@@ -67,10 +82,10 @@ const BareMetalHosts: React.FC = () => {
       }
     }
 
-    fetchHosts()
+    fetchData()
 
     // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchHosts, 30000)
+    const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [isInitialLoad])
 
@@ -106,8 +121,10 @@ const BareMetalHosts: React.FC = () => {
     switch (columnIndex) {
       case 0: return host.metadata?.name || host.id
       case 1: return host.status?.power_state || ''
-      case 2: return host.status?.host_pool || ''
-      case 3: return host.metadata?.creation_timestamp || ''
+      case 2: return host.spec?.rack || ''
+      case 3: return host.spec?.boot_ip || ''
+      case 4: return host.status?.cluster || ''
+      case 5: return host.metadata?.creation_timestamp || ''
       default: return ''
     }
   }
@@ -125,7 +142,9 @@ const BareMetalHosts: React.FC = () => {
       host.metadata?.name?.toLowerCase().includes(searchLower) ||
       host.id.toLowerCase().includes(searchLower) ||
       host.status?.host_pool?.toLowerCase().includes(searchLower) ||
-      host.status?.power_state?.toLowerCase().includes(searchLower)
+      host.status?.power_state?.toLowerCase().includes(searchLower) ||
+      host.spec?.rack?.toLowerCase().includes(searchLower) ||
+      host.spec?.boot_ip?.toLowerCase().includes(searchLower)
     )
   })
 
@@ -201,9 +220,15 @@ const BareMetalHosts: React.FC = () => {
                       Power State
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 2 }}>
-                      Host Pool
+                      Rack
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
+                      Boot IP
+                    </Th>
+                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
+                      Cluster
+                    </Th>
+                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 5 }}>
                       Created
                     </Th>
                     <Th></Th>
@@ -214,7 +239,19 @@ const BareMetalHosts: React.FC = () => {
                     <Tr key={host.id} style={{ cursor: 'pointer', height: '55px' }}>
                       <Td dataLabel="Name" onClick={() => handleRowClick(host)}>{host.metadata?.name || host.id}</Td>
                       <Td dataLabel="Power State" onClick={() => handleRowClick(host)}>{getPowerStateBadge(host.status?.power_state)}</Td>
-                      <Td dataLabel="Host Pool" onClick={() => handleRowClick(host)}>{host.status?.host_pool || 'N/A'}</Td>
+                      <Td dataLabel="Rack" onClick={() => handleRowClick(host)}>{host.spec?.rack || 'N/A'}</Td>
+                      <Td dataLabel="Boot IP" onClick={() => handleRowClick(host)}>{host.spec?.boot_ip || 'N/A'}</Td>
+                      <Td dataLabel="Cluster">
+                        {host.status?.cluster ? (
+                          <Link
+                            to={`/admin/clusters/${host.status.cluster}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ color: '#06c', textDecoration: 'none' }}
+                          >
+                            {clusterNames.get(host.status.cluster) || host.status.cluster.substring(0, 8) + '...'}
+                          </Link>
+                        ) : 'N/A'}
+                      </Td>
                       <Td dataLabel="Created" onClick={() => handleRowClick(host)}>{formatTimestamp(host.metadata?.creation_timestamp)}</Td>
                       <Td isActionCell>
                         <Dropdown
@@ -237,6 +274,11 @@ const BareMetalHosts: React.FC = () => {
                             <DropdownItem key="power">
                               Power Options
                             </DropdownItem>
+                            {host.spec?.bcm_link && (
+                              <DropdownItem key="bcm" onClick={() => window.open(host.spec?.bcm_link, '_blank')}>
+                                Open BCM Link
+                              </DropdownItem>
+                            )}
                           </DropdownList>
                         </Dropdown>
                       </Td>

@@ -177,6 +177,17 @@ export interface Host {
   }
   spec?: {
     power_state?: string
+    rack?: string
+    boot_ip?: string
+    boot_mac?: string
+    bcm_link?: string
+    class?: string
+    bmc?: {
+      url?: string
+      user?: string
+      password?: string
+      insecure?: boolean
+    }
   }
   status?: {
     state?: string
