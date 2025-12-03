@@ -61,6 +61,7 @@ const Dashboard: React.FC = () => {
   const [loadingClusters, setLoadingClusters] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
+  const [templatesLoading, setTemplatesLoading] = useState(true)
   const [clusterTemplatesCount, setClusterTemplatesCount] = useState(0)
 
   useEffect(() => {
@@ -93,6 +94,8 @@ const Dashboard: React.FC = () => {
       } catch (error) {
         console.error('Failed to fetch templates:', error)
         setTemplates([])
+      } finally {
+        setTemplatesLoading(false)
       }
     }
 
@@ -328,15 +331,23 @@ const Dashboard: React.FC = () => {
                 </Flex>
               </CardTitle>
               <CardBody>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                  {role === 'fulfillment-admin' ? templates.length + clusterTemplatesCount : templates.length}
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  {role === 'fulfillment-admin'
-                    ? `${templates.length} VM · ${clusterTemplatesCount} Cluster`
-                    : t('dashboard:metrics.templates.available')
-                  }
-                </div>
+                {templatesLoading ? (
+                  <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                    <Spinner size="md" />
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                      {role === 'fulfillment-admin' ? templates.length + clusterTemplatesCount : templates.length}
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                      {role === 'fulfillment-admin'
+                        ? `${templates.length} VM · ${clusterTemplatesCount} Cluster`
+                        : t('dashboard:metrics.templates.available')
+                      }
+                    </div>
+                  </>
+                )}
               </CardBody>
             </Card>
           </GalleryItem>
