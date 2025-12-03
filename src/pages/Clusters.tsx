@@ -398,6 +398,9 @@ const Clusters: React.FC = () => {
                   <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
                     {t('clusters:list.columns.createdAt')}
                   </Th>
+                  <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 5 }}>
+                    Tenants
+                  </Th>
                   <Th></Th>
                 </Tr>
               </Thead>
@@ -424,6 +427,16 @@ const Clusters: React.FC = () => {
                     <Td>
                       {cluster.metadata?.creation_timestamp
                         ? new Date(cluster.metadata.creation_timestamp).toLocaleString()
+                        : '-'
+                      }
+                    </Td>
+                    <Td>
+                      {cluster.metadata?.tenants && cluster.metadata.tenants.length > 0
+                        ? cluster.metadata.tenants.map(tenant => (
+                            <Label key={tenant} color="blue" style={{ marginRight: '0.25rem' }}>
+                              {tenant}
+                            </Label>
+                          ))
                         : '-'
                       }
                     </Td>

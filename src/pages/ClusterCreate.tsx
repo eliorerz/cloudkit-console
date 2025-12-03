@@ -20,11 +20,17 @@ import {
   ActionGroup,
   Popover,
   Divider,
+  Select,
+  SelectOption,
+  SelectList,
+  MenuToggle,
+  MenuToggleElement,
 } from '@patternfly/react-core'
 import { HelpIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { listClusterTemplates, createCluster } from '../api/clustersApi'
-import { ClusterTemplate } from '../api/types'
+import { ClusterTemplate, Tenant } from '../api/types'
+import { listTenants } from '../api/tenants'
 import { formatDescriptionText } from '../utils/formatText'
 
 interface HostClassInfo {
@@ -71,6 +77,12 @@ const ClusterCreate: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [hasDefaults, setHasDefaults] = useState(false)
 
+  // Tenant selection state
+  const [tenants, setTenants] = useState<Tenant[]>([])
+  const [selectedTenants, setSelectedTenants] = useState<string[]>([])
+  const [loadingTenants, setLoadingTenants] = useState(false)
+  const [isTenantSelectOpen, setIsTenantSelectOpen] = useState(false)
+
   useEffect(() => {
     // Load default values from localStorage
     const defaultPullSecret = localStorage.getItem('default_pull_secret')
@@ -93,7 +105,21 @@ const ClusterCreate: React.FC = () => {
 
     loadTemplate()
     loadHostClasses()
+    loadTenants()
   }, [templateId])
+
+  const loadTenants = async () => {
+    try {
+      setLoadingTenants(true)
+      const response = await listTenants()
+      setTenants(response.items || [])
+    } catch (err) {
+      console.error('Failed to load tenants:', err)
+      // Non-critical, just log the error
+    } finally {
+      setLoadingTenants(false)
+    }
+  }
 
   const loadHostClasses = async () => {
     try {
@@ -233,11 +259,18 @@ const ClusterCreate: React.FC = () => {
 
       console.log('Wrapped parameters:', wrappedParameters)
 
-      // Build cluster spec
+      // Build cluster spec with optional tenants
+      const metadata: any = {
+        name: clusterName,
+      }
+
+      // Add tenants to metadata if any are selected
+      if (selectedTenants.length > 0) {
+        metadata.tenants = selectedTenants
+      }
+
       const clusterSpec = {
-        metadata: {
-          name: clusterName,
-        },
+        metadata: metadata,
         spec: {
           template: template.id,
           template_parameters: wrappedParameters,
@@ -399,6 +432,56 @@ const ClusterCreate: React.FC = () => {
                     onChange={(_event, value) => setClusterName(value)}
                     placeholder="my-cluster"
                   />
+                </FormGroup>
+
+                <FormGroup label="Tenants" fieldId="tenants">
+                  <Select
+                    id="tenants"
+                    isOpen={isTenantSelectOpen}
+                    selected={selectedTenants}
+                    onSelect={(_event, selection) => {
+                      const selectionString = selection as string
+                      if (selectedTenants.includes(selectionString)) {
+                        setSelectedTenants(selectedTenants.filter(item => item !== selectionString))
+                      } else {
+                        setSelectedTenants([...selectedTenants, selectionString])
+                      }
+                    }}
+                    onOpenChange={(isOpen) => setIsTenantSelectOpen(isOpen)}
+                    toggle={(toggleRef: React.Ref<MenuToggleElement>) => (
+                      <MenuToggle
+                        ref={toggleRef}
+                        onClick={() => setIsTenantSelectOpen(!isTenantSelectOpen)}
+                        isExpanded={isTenantSelectOpen}
+                        isDisabled={loadingTenants || tenants.length === 0}
+                        style={{ width: '100%' }}
+                      >
+                        {loadingTenants ? (
+                          'Loading tenants...'
+                        ) : selectedTenants.length === 0 ? (
+                          'Select tenants'
+                        ) : (
+                          `${selectedTenants.length} tenant${selectedTenants.length > 1 ? 's' : ''} selected`
+                        )}
+                      </MenuToggle>
+                    )}
+                  >
+                    <SelectList>
+                      {tenants.map((tenant) => (
+                        <SelectOption
+                          key={tenant.id}
+                          value={tenant.metadata?.name || tenant.id}
+                          hasCheckbox
+                          isSelected={selectedTenants.includes(tenant.metadata?.name || tenant.id)}
+                        >
+                          {tenant.metadata?.name || tenant.id}
+                        </SelectOption>
+                      ))}
+                    </SelectList>
+                  </Select>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--pf-v6-global--Color--200)', marginTop: '0.5rem' }}>
+                    Select one or more tenants to deploy this cluster under. Leave empty to deploy without tenant assignment.
+                  </div>
                 </FormGroup>
               </FormSection>
 
