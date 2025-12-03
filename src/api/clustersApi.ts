@@ -3,45 +3,8 @@
  * Provides high-level functions for cluster templates and clusters
  */
 
-import { apiClient } from './client'
 import { Cluster, ClusterTemplate, ListResponse } from './types'
 import { getUserManager } from '../auth/oidcConfig'
-
-// ============================================
-// Cluster Templates
-// ============================================
-
-export const listClusterTemplates = async (options?: {
-  offset?: number
-  limit?: number
-  filter?: string
-  order?: string
-}): Promise<ListResponse<ClusterTemplate>> => {
-  try {
-    // Build query parameters
-    const params = new URLSearchParams()
-    if (options?.offset !== undefined) params.append('offset', options.offset.toString())
-    if (options?.limit !== undefined) params.append('limit', options.limit.toString())
-    if (options?.filter) params.append('filter', options.filter)
-    if (options?.order) params.append('order', options.order)
-
-    const endpoint = `/cluster_templates${params.toString() ? '?' + params.toString() : ''}`
-    const response = await apiClient.get<ListResponse<ClusterTemplate>>(endpoint)
-
-    return {
-      items: response.items || [],
-      total: response.total || 0,
-      size: response.size || 0,
-    }
-  } catch (error) {
-    console.error('Failed to list cluster templates:', error)
-    throw error
-  }
-}
-
-// ============================================
-// Clusters
-// ============================================
 
 // Helper to get API base URL
 const getApiBaseUrl = async (): Promise<string> => {
@@ -55,6 +18,59 @@ const getApiBaseUrl = async (): Promise<string> => {
   }
   return config.fulfillmentApiUrl
 }
+
+// ============================================
+// Cluster Templates
+// ============================================
+
+export const listClusterTemplates = async (options?: {
+  offset?: number
+  limit?: number
+  filter?: string
+  order?: string
+}): Promise<ListResponse<ClusterTemplate>> => {
+  try {
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    // Build query parameters
+    const params = new URLSearchParams()
+    if (options?.offset !== undefined) params.append('offset', options.offset.toString())
+    if (options?.limit !== undefined) params.append('limit', options.limit.toString())
+    if (options?.filter) params.append('filter', options.filter)
+    if (options?.order) params.append('order', options.order)
+
+    const url = `${baseUrl}/api/fulfillment/v1/cluster_templates${params.toString() ? '?' + params.toString() : ''}`
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to list cluster templates: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return {
+      items: data.items || [],
+      total: data.total || 0,
+      size: data.size || 0,
+    }
+  } catch (error) {
+    console.error('Failed to list cluster templates:', error)
+    throw error
+  }
+}
+
+// ============================================
+// Clusters
+// ============================================
 
 export const listClusters = async (options?: {
   offset?: number
