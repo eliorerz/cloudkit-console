@@ -43,7 +43,9 @@ const Login: React.FC = () => {
           className="custom-logo"
         />
         <h1 className="custom-login-title">Log in to your account</h1>
-        <p className="custom-login-subtitle">CloudKit Console</p>
+        <p className="custom-login-subtitle">
+          Open Sovereign AI Cloud
+        </p>
       </div>
       {error && (
         <Alert
@@ -66,7 +68,7 @@ const Login: React.FC = () => {
       </div>
       <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.875rem', color: '#6a6e73' }}>
         <p style={{ marginBottom: '0.5rem' }}>
-          Use your Keycloak credentials to access the CloudKit Console.
+          Use your Keycloak credentials to access the Open Sovereign AI Cloud.
         </p>
       </div>
     </LoginPage>

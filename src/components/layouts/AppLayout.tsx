@@ -146,12 +146,18 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               src="/logo.png"
               alt="CloudKit"
               style={{
-                height: '50px',
-                width: '50px'
+                height: '60px',
+                width: '60px'
               }}
             />
-            <div style={{ fontSize: '1.125rem', fontWeight: '500' }}>
-              {t('navigation:header.title')}
+            <div style={{ fontSize: '1.125rem' }}>
+              <span style={{ fontWeight: '500' }}>Open</span>
+              {' '}
+              <span style={{ fontWeight: '500' }}>Sovereign</span>
+              {' '}
+              <span style={{ fontWeight: '500', color: '#c61d1d' }}>AI</span>
+              {' '}
+              <span style={{ fontWeight: '500' }}>Cloud</span>
             </div>
           </div>
         </MastheadBrand>
