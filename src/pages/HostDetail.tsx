@@ -40,13 +40,17 @@ const HostDetail: React.FC = () => {
   const [hostClass, setHostClass] = useState<HostClass | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showBcmPassword, setShowBcmPassword] = useState(false)
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       if (!id) return
 
       try {
-        setLoading(true)
+        // Only show loading spinner on first load, not on auto-refresh
+        if (isFirstLoad) {
+          setLoading(true)
+        }
 
         // Step 1: Get host data (contains class UUID in spec.class)
         const hostData = await getHost(id)
@@ -80,7 +84,11 @@ const HostDetail: React.FC = () => {
         console.error('Error fetching host:', err)
         setError('Failed to load host details')
       } finally {
+        // Update loading state and mark first load complete
         setLoading(false)
+        if (isFirstLoad) {
+          setIsFirstLoad(false)
+        }
       }
     }
 
@@ -89,7 +97,7 @@ const HostDetail: React.FC = () => {
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
-  }, [id])
+  }, [id, isFirstLoad])
 
   const getPowerStateBadge = (powerState?: string) => {
     if (!powerState) return <Label color="grey">Unknown</Label>
