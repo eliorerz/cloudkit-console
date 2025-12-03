@@ -88,6 +88,7 @@ export interface ClusterCondition {
 export interface ClusterNodeSet {
   host_class?: string
   size?: number
+  hosts?: string[]
 }
 
 export interface ClusterNetworkingMock {
