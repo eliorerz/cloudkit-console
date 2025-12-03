@@ -6,6 +6,7 @@ metadata:
   labels:
     app: cloudkit-console
 spec:
+  host: osac-console.apps.osac.service.demo
   to:
     kind: Service
     name: cloudkit-console
