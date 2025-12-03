@@ -59,10 +59,12 @@ const Dashboard: React.FC = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [vmsFetched, setVmsFetched] = useState(false)
   const [loadingClusters, setLoadingClusters] = useState(true)
+  const [isFirstClusterLoad, setIsFirstClusterLoad] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [clusterTemplatesCount, setClusterTemplatesCount] = useState(0)
+  const [clusterTemplatesLoading, setClusterTemplatesLoading] = useState(true)
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -105,6 +107,7 @@ const Dashboard: React.FC = () => {
   // Fetch cluster templates for admins
   useEffect(() => {
     if (role !== 'fulfillment-admin') {
+      setClusterTemplatesLoading(false)
       return
     }
 
@@ -115,6 +118,8 @@ const Dashboard: React.FC = () => {
       } catch (error) {
         console.error('Failed to fetch cluster templates:', error)
         setClusterTemplatesCount(0)
+      } finally {
+        setClusterTemplatesLoading(false)
       }
     }
 
@@ -182,7 +187,10 @@ const Dashboard: React.FC = () => {
     }
 
     const fetchClusters = async () => {
-      setLoadingClusters(true)
+      // Only show loading spinner on first load, not on auto-refresh
+      if (isFirstClusterLoad) {
+        setLoadingClusters(true)
+      }
       try {
         const response = await listClusters()
         const clusterItems = response.items || []
@@ -215,6 +223,9 @@ const Dashboard: React.FC = () => {
         setClustersError(0)
       } finally {
         setLoadingClusters(false)
+        if (isFirstClusterLoad) {
+          setIsFirstClusterLoad(false)
+        }
       }
     }
 
@@ -223,7 +234,7 @@ const Dashboard: React.FC = () => {
     // Refresh clusters every 30 seconds
     const interval = setInterval(fetchClusters, 30000)
     return () => clearInterval(interval)
-  }, [role])
+  }, [role, isFirstClusterLoad])
 
   // Helper to format VM state
   const formatState = (state?: string): string => {
@@ -331,7 +342,7 @@ const Dashboard: React.FC = () => {
                 </Flex>
               </CardTitle>
               <CardBody>
-                {templatesLoading ? (
+                {(templatesLoading || clusterTemplatesLoading) ? (
                   <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                     <Spinner size="md" />
                   </div>
