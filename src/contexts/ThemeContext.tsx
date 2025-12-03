@@ -29,7 +29,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     if (saved === 'System default') return 'system'
     if (saved === 'Light') return 'light'
     if (saved === 'Dark') return 'dark'
-    return (saved as ThemeMode) || 'system'
+    return (saved as ThemeMode) || 'light'
   })
 
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {
