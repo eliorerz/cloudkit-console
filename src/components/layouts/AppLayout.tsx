@@ -222,6 +222,41 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                         <ExternalLinkAltIcon style={{ fontSize: '0.75rem' }} />
                       </span>
                     </a>
+                    <a
+                      href="#"
+                      onClick={(e) => e.preventDefault()}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0.5rem',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        color: '#151515',
+                        fontSize: '0.875rem',
+                        transition: 'all 0.2s',
+                        position: 'relative'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f0f0f0'
+                        const icon = e.currentTarget.querySelector('.external-icon') as HTMLElement
+                        if (icon) icon.style.opacity = '1'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                        const icon = e.currentTarget.querySelector('.external-icon') as HTMLElement
+                        if (icon) icon.style.opacity = '0'
+                      }}
+                    >
+                      <img
+                        src="https://cdn.brandfetch.io/idv-kXnBLU/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1677048646511"
+                        alt="Red Hat"
+                        style={{ width: '24px', height: '24px', marginRight: '0.75rem' }}
+                      />
+                      <span style={{ flex: 1 }}>Advanced Cluster Management</span>
+                      <span className="external-icon" style={{ opacity: 0, transition: 'opacity 0.2s', marginLeft: '0.5rem' }}>
+                        <ExternalLinkAltIcon style={{ fontSize: '0.75rem' }} />
+                      </span>
+                    </a>
                   </div>
                 </div>
               </Dropdown>

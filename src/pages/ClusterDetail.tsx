@@ -21,6 +21,12 @@ import {
   AlertGroup,
   AlertVariant,
   AlertActionCloseButton,
+  Dropdown,
+  DropdownList,
+  DropdownItem,
+  MenuToggle,
+  Flex,
+  FlexItem,
 } from '@patternfly/react-core'
 import { ExternalLinkAltIcon, CopyIcon } from '@patternfly/react-icons'
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table'
@@ -51,6 +57,7 @@ const ClusterDetail: React.FC = () => {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [usingPrivateApi, setUsingPrivateApi] = useState(false)
   const [alerts, setAlerts] = useState<Array<{ key: number; title: string }>>([])
+  const [isActionsOpen, setIsActionsOpen] = useState(false)
 
   const addAlert = (title: string) => {
     const key = Date.now()
@@ -187,9 +194,44 @@ const ClusterDetail: React.FC = () => {
           </BreadcrumbItem>
           <BreadcrumbItem isActive>{cluster.id.substring(0, 8)}</BreadcrumbItem>
         </Breadcrumb>
-        <Title headingLevel="h1" size="2xl" style={{ marginTop: '1rem' }}>
-          Cluster: {cluster.metadata?.name || cluster.id.substring(0, 8)}
-        </Title>
+        <Flex alignItems={{ default: 'alignItemsCenter' }} style={{ marginTop: '1rem' }}>
+          <FlexItem>
+            <Title headingLevel="h1" size="2xl">
+              Cluster: {cluster.metadata?.name || cluster.id.substring(0, 8)}
+            </Title>
+          </FlexItem>
+          <FlexItem>
+            <Dropdown
+              isOpen={isActionsOpen}
+              onSelect={() => setIsActionsOpen(false)}
+              onOpenChange={setIsActionsOpen}
+              toggle={(toggleRef) => (
+                <MenuToggle
+                  ref={toggleRef}
+                  onClick={() => setIsActionsOpen(!isActionsOpen)}
+                  isExpanded={isActionsOpen}
+                >
+                  Actions
+                </MenuToggle>
+              )}
+            >
+              <DropdownList>
+                <DropdownItem
+                  key="scale-up"
+                  onClick={() => addAlert('Scale up feature not yet implemented')}
+                >
+                  Scale Up
+                </DropdownItem>
+                <DropdownItem
+                  key="scale-down"
+                  onClick={() => addAlert('Scale down feature not yet implemented')}
+                >
+                  Scale Down
+                </DropdownItem>
+              </DropdownList>
+            </Dropdown>
+          </FlexItem>
+        </Flex>
       </PageSection>
 
       <PageSection>

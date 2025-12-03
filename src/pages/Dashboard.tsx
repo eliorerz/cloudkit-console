@@ -31,7 +31,7 @@ import {
 import { getDashboardMetrics } from '../api/dashboard'
 import { getVirtualMachines, createVirtualMachine } from '../api/vms'
 import { getTemplates } from '../api/templates'
-import { listClusters } from '../api/clustersApi'
+import { listClusters, listClusterTemplates } from '../api/clustersApi'
 import { DashboardMetrics, VirtualMachine, Template, Cluster } from '../api/types'
 import AppLayout from '../components/layouts/AppLayout'
 import { useAuth } from '../contexts/AuthContext'
@@ -61,6 +61,7 @@ const Dashboard: React.FC = () => {
   const [loadingClusters, setLoadingClusters] = useState(true)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
+  const [clusterTemplatesCount, setClusterTemplatesCount] = useState(0)
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -97,6 +98,25 @@ const Dashboard: React.FC = () => {
 
     fetchTemplates()
   }, [])
+
+  // Fetch cluster templates for admins
+  useEffect(() => {
+    if (role !== 'fulfillment-admin') {
+      return
+    }
+
+    const fetchClusterTemplates = async () => {
+      try {
+        const response = await listClusterTemplates()
+        setClusterTemplatesCount(response.total || 0)
+      } catch (error) {
+        console.error('Failed to fetch cluster templates:', error)
+        setClusterTemplatesCount(0)
+      }
+    }
+
+    fetchClusterTemplates()
+  }, [role])
 
   // Fetch VMs for the logged-in user
   useEffect(() => {
@@ -308,9 +328,14 @@ const Dashboard: React.FC = () => {
                 </Flex>
               </CardTitle>
               <CardBody>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.templates.total}</div>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                  {role === 'fulfillment-admin' ? templates.length + clusterTemplatesCount : templates.length}
+                </div>
                 <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  {t('dashboard:metrics.templates.available')}
+                  {role === 'fulfillment-admin'
+                    ? `${templates.length} VM · ${clusterTemplatesCount} Cluster`
+                    : t('dashboard:metrics.templates.available')
+                  }
                 </div>
               </CardBody>
             </Card>
