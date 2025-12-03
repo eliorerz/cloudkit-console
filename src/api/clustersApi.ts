@@ -190,7 +190,15 @@ export const getClusterKubeconfig = async (id: string): Promise<string> => {
       throw new Error(`Failed to fetch kubeconfig: ${response.status} ${response.statusText}`)
     }
 
-    return await response.text()
+    // API returns JSON with base64-encoded data
+    const jsonResponse = await response.json()
+
+    // Decode base64 data
+    if (jsonResponse.data) {
+      return atob(jsonResponse.data)
+    }
+
+    throw new Error('Invalid kubeconfig response format')
   } catch (error) {
     console.error(`Failed to get kubeconfig for cluster ${id}:`, error)
     throw error

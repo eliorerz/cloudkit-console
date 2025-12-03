@@ -28,10 +28,10 @@ import {
   Flex,
   FlexItem,
 } from '@patternfly/react-core'
-import { ExternalLinkAltIcon, CopyIcon } from '@patternfly/react-icons'
+import { ExternalLinkAltIcon, CopyIcon, DownloadIcon, PlusCircleIcon, TrashIcon } from '@patternfly/react-icons'
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table'
 import AppLayout from '../components/layouts/AppLayout'
-import { getCluster, getClusterPassword } from '../api/clustersApi'
+import { getCluster, getClusterPassword, getClusterKubeconfig } from '../api/clustersApi'
 import { Cluster, ClusterState } from '../api/types'
 import { getUserManager } from '../auth/oidcConfig'
 
@@ -76,6 +76,35 @@ const ClusterDetail: React.FC = () => {
         addAlert('Failed to copy password')
       })
     }
+  }
+
+  const downloadKubeconfig = async () => {
+    if (!id) return
+
+    try {
+      addAlert('Downloading kubeconfig...')
+      const kubeconfigContent = await getClusterKubeconfig(id)
+
+      // Create a blob and download it
+      const blob = new Blob([kubeconfigContent], { type: 'text/yaml' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${cluster?.metadata?.name || cluster?.id}-kubeconfig.yaml`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      addAlert('Kubeconfig downloaded successfully')
+    } catch (err: any) {
+      console.error('Failed to download kubeconfig:', err)
+      addAlert('Failed to download kubeconfig')
+    }
+  }
+
+  const deleteCluster = () => {
+    addAlert('Delete cluster feature not yet implemented')
   }
 
   useEffect(() => {
@@ -217,16 +246,28 @@ const ClusterDetail: React.FC = () => {
             >
               <DropdownList>
                 <DropdownItem
-                  key="scale-up"
-                  onClick={() => addAlert('Scale up feature not yet implemented')}
+                  key="download-kubeconfig"
+                  onClick={downloadKubeconfig}
+                  icon={<DownloadIcon />}
                 >
-                  Scale Up
+                  Download Kubeconfig
                 </DropdownItem>
                 <DropdownItem
-                  key="scale-down"
-                  onClick={() => addAlert('Scale down feature not yet implemented')}
+                  key="scale-cluster"
+                  icon={<PlusCircleIcon />}
                 >
-                  Scale Down
+                  Scale Cluster
+                </DropdownItem>
+                <DropdownItem
+                  key="delete"
+                  onClick={deleteCluster}
+                  icon={<TrashIcon />}
+                  style={{
+                    backgroundColor: 'var(--pf-v5-global--danger-color--100)',
+                    color: 'white'
+                  }}
+                >
+                  Delete
                 </DropdownItem>
               </DropdownList>
             </Dropdown>

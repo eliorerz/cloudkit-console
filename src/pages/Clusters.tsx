@@ -447,6 +447,9 @@ const Clusters: React.FC = () => {
                           <DropdownItem onClick={() => navigate(`/admin/clusters/${cluster.id}`)}>
                             {t('clusters:list.actions.viewDetails')}
                           </DropdownItem>
+                          <DropdownItem onClick={() => navigate(`/admin/clusters/${cluster.id}`)}>
+                            Scale Cluster
+                          </DropdownItem>
                           <DropdownItem>
                             {t('clusters:list.actions.delete')}
                           </DropdownItem>
