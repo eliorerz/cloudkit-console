@@ -33,7 +33,7 @@ import {
   DescriptionListDescription,
   Divider,
 } from '@patternfly/react-core'
-import { BarsIcon, BellIcon, QuestionCircleIcon, CopyIcon, GlobeIcon } from '@patternfly/react-icons'
+import { BarsIcon, BellIcon, QuestionCircleIcon, CopyIcon, GlobeIcon, ThIcon, ExternalLinkAltIcon } from '@patternfly/react-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate, useLocation } from 'react-router-dom'
 import '../../styles/app.css'
@@ -49,6 +49,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [isTokenModalOpen, setIsTokenModalOpen] = useState(false)
   const [isPerspectiveDropdownOpen, setIsPerspectiveDropdownOpen] = useState(false)
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false)
+  const [isAppLauncherOpen, setIsAppLauncherOpen] = useState(false)
 
   // Get language code from current i18n language
   const getLanguageCode = (): string => {
@@ -159,6 +160,73 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Toolbar isFullHeight>
           <ToolbarContent>
             <ToolbarItem align={{ default: 'alignEnd' }}>
+              <Dropdown
+                isOpen={isAppLauncherOpen}
+                onSelect={() => setIsAppLauncherOpen(false)}
+                onOpenChange={setIsAppLauncherOpen}
+                toggle={(toggleRef) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    onClick={() => setIsAppLauncherOpen(!isAppLauncherOpen)}
+                    isExpanded={isAppLauncherOpen}
+                    variant="plain"
+                    aria-label="Application Launcher"
+                  >
+                    <ThIcon />
+                  </MenuToggle>
+                )}
+              >
+                <div style={{ padding: '1rem', minWidth: '280px' }}>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    color: '#6a6e73',
+                    marginBottom: '0.75rem'
+                  }}>
+                    Red Hat Applications
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <a
+                      href="https://console.redhat.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0.5rem',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        color: '#151515',
+                        fontSize: '0.875rem',
+                        transition: 'all 0.2s',
+                        position: 'relative'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f0f0f0'
+                        const icon = e.currentTarget.querySelector('.external-icon') as HTMLElement
+                        if (icon) icon.style.opacity = '1'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                        const icon = e.currentTarget.querySelector('.external-icon') as HTMLElement
+                        if (icon) icon.style.opacity = '0'
+                      }}
+                    >
+                      <img
+                        src="https://cdn.brandfetch.io/idv-kXnBLU/theme/dark/symbol.svg?c=1bxid64Mup7aczewSAYMX&t=1677048646511"
+                        alt="Red Hat"
+                        style={{ width: '24px', height: '24px', marginRight: '0.75rem' }}
+                      />
+                      <span style={{ flex: 1 }}>Red Hat Hybrid Cloud Console</span>
+                      <span className="external-icon" style={{ opacity: 0, transition: 'opacity 0.2s', marginLeft: '0.5rem' }}>
+                        <ExternalLinkAltIcon style={{ fontSize: '0.75rem' }} />
+                      </span>
+                    </a>
+                  </div>
+                </div>
+              </Dropdown>
+            </ToolbarItem>
+            <ToolbarItem>
               <Button variant="plain" aria-label={t('navigation:header.notifications')}>
                 <BellIcon />
               </Button>
