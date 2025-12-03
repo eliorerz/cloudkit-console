@@ -32,8 +32,10 @@ import { ExternalLinkAltIcon, CopyIcon, DownloadIcon, PlusCircleIcon, TrashIcon 
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table'
 import AppLayout from '../components/layouts/AppLayout'
 import { getCluster, getClusterPassword, getClusterKubeconfig } from '../api/clustersApi'
-import { Cluster, ClusterState } from '../api/types'
+import { Cluster, ClusterState, Host } from '../api/types'
 import { getUserManager } from '../auth/oidcConfig'
+import { getHost } from '../api/hosts'
+import { getHostClassById, getHostClasses, FulfillmentHostClass, HostClass } from '../api/host-classes'
 
 // Mock networking data for demo
 const mockNetworking: Record<string, any> = {
@@ -54,10 +56,13 @@ const ClusterDetail: React.FC = () => {
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0)
   const [password, setPassword] = useState<string>('')
   const [loadingPassword, setLoadingPassword] = useState(false)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [usingPrivateApi, setUsingPrivateApi] = useState(false)
   const [alerts, setAlerts] = useState<Array<{ key: number; title: string }>>([])
   const [isActionsOpen, setIsActionsOpen] = useState(false)
+  const [hostsData, setHostsData] = useState<Record<string, Host>>({})
+  const [hostClassesData, setHostClassesData] = useState<Record<string, FulfillmentHostClass>>({})
+  const [staticHostClasses, setStaticHostClasses] = useState<Record<string, HostClass>>({})
+  const [loadingHosts, setLoadingHosts] = useState(false)
 
   const addAlert = (title: string) => {
     const key = Date.now()
@@ -135,6 +140,8 @@ const ClusterDetail: React.FC = () => {
       setError(null)
       const clusterData = await getCluster(id)
       setCluster(clusterData)
+      // Load hosts data in the background
+      loadHostsData(clusterData)
     } catch (err: any) {
       console.error('Failed to load cluster:', err)
       setError(err.message || 'Failed to load cluster')
@@ -148,14 +155,53 @@ const ClusterDetail: React.FC = () => {
 
     try {
       setLoadingPassword(true)
-      setPasswordError(null)
       const pwd = await getClusterPassword(id)
       setPassword(pwd)
     } catch (err: any) {
       console.error('Failed to load password:', err)
-      setPasswordError(err.message || 'Failed to load password')
     } finally {
       setLoadingPassword(false)
+    }
+  }
+
+  const loadHostsData = async (clusterData: Cluster) => {
+    if (!clusterData.status?.node_sets) return
+
+    try {
+      setLoadingHosts(true)
+      const hostsMap: Record<string, Host> = {}
+      const hostClassesMap: Record<string, FulfillmentHostClass> = {}
+      const hostClassIds = new Set<string>()
+
+      // Fetch static host classes catalog
+      const staticClasses = await getHostClasses()
+      setStaticHostClasses(staticClasses)
+
+      // Collect all host IDs and host class IDs
+      for (const [, nodeSet] of Object.entries(clusterData.status.node_sets)) {
+        if (nodeSet.hosts) {
+          for (const hostId of nodeSet.hosts) {
+            const host = await getHost(hostId)
+            hostsMap[hostId] = host
+            if (host.spec?.class) {
+              hostClassIds.add(host.spec.class)
+            }
+          }
+        }
+      }
+
+      // Fetch all unique host classes
+      for (const hostClassId of hostClassIds) {
+        const hostClass = await getHostClassById(hostClassId)
+        hostClassesMap[hostClassId] = hostClass
+      }
+
+      setHostsData(hostsMap)
+      setHostClassesData(hostClassesMap)
+    } catch (err: any) {
+      console.error('Failed to load hosts data:', err)
+    } finally {
+      setLoadingHosts(false)
     }
   }
 
@@ -281,6 +327,11 @@ const ClusterDetail: React.FC = () => {
           <Tab eventKey={0} title={<TabTitleText>Overview</TabTitleText>}>
             <Card>
               <CardBody>
+                {!loadingPassword && !password && (
+                  <Alert variant="info" title="Cluster credentials pending" isInline style={{ marginBottom: '1rem' }}>
+                    Cluster credentials will be available after the installation completes. Please check back once the cluster state is READY.
+                  </Alert>
+                )}
                 <DescriptionList isHorizontal>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Cluster ID</DescriptionListTerm>
@@ -330,51 +381,45 @@ const ClusterDetail: React.FC = () => {
                     </DescriptionListDescription>
                   </DescriptionListGroup>
 
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Username</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      kubeadmin
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
+                  {!loadingPassword && password && (
+                    <>
+                      <DescriptionListGroup>
+                        <DescriptionListTerm>Username</DescriptionListTerm>
+                        <DescriptionListDescription>
+                          kubeadmin
+                        </DescriptionListDescription>
+                      </DescriptionListGroup>
 
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Password</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {loadingPassword ? (
-                        <Spinner size="md" />
-                      ) : passwordError ? (
-                        <span style={{ color: 'var(--pf-v5-global--danger-color--100)' }}>
-                          {passwordError}
-                        </span>
-                      ) : password ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="password"
-                            value={password}
-                            readOnly
-                            style={{
-                              border: '1px solid var(--pf-v5-global--BorderColor--100)',
-                              padding: '0.375rem 0.5rem',
-                              borderRadius: '3px',
-                              backgroundColor: 'var(--pf-v5-global--BackgroundColor--100)',
-                              color: 'var(--pf-v5-global--Color--100)',
-                              fontFamily: 'monospace',
-                              fontSize: '14px',
-                              width: '200px',
-                            }}
-                          />
-                          <Button
-                            variant="plain"
-                            aria-label="Copy password"
-                            onClick={copyPassword}
-                            icon={<CopyIcon />}
-                          />
-                        </div>
-                      ) : (
-                        '-'
-                      )}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
+                      <DescriptionListGroup>
+                        <DescriptionListTerm>Password</DescriptionListTerm>
+                        <DescriptionListDescription>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <input
+                              type="password"
+                              value={password}
+                              readOnly
+                              style={{
+                                border: '1px solid var(--pf-v5-global--BorderColor--100)',
+                                padding: '0.375rem 0.5rem',
+                                borderRadius: '3px',
+                                backgroundColor: 'var(--pf-v5-global--BackgroundColor--100)',
+                                color: 'var(--pf-v5-global--Color--100)',
+                                fontFamily: 'monospace',
+                                fontSize: '14px',
+                                width: '200px',
+                              }}
+                            />
+                            <Button
+                              variant="plain"
+                              aria-label="Copy password"
+                              onClick={copyPassword}
+                              icon={<CopyIcon />}
+                            />
+                          </div>
+                        </DescriptionListDescription>
+                      </DescriptionListGroup>
+                    </>
+                  )}
 
                   <DescriptionListGroup>
                     <DescriptionListTerm>Created At</DescriptionListTerm>
@@ -412,28 +457,78 @@ const ClusterDetail: React.FC = () => {
           <Tab eventKey={1} title={<TabTitleText>Nodes</TabTitleText>}>
             <Card>
               <CardBody>
-                <h3>Node Sets</h3>
-                {cluster.status?.node_sets && Object.keys(cluster.status.node_sets).length > 0 ? (
+                <h3>Hosts</h3>
+                {loadingHosts ? (
+                  <Spinner size="md" />
+                ) : cluster.status?.node_sets && Object.keys(cluster.status.node_sets).length > 0 ? (
                   <Table variant="compact">
                     <Thead>
                       <Tr>
-                        <Th>Name</Th>
+                        <Th>Host</Th>
                         <Th>Host Class</Th>
-                        <Th>Size</Th>
+                        <Th>CPU Type</Th>
+                        <Th>CPU Cores</Th>
+                        <Th>RAM Size</Th>
+                        <Th>GPU Model</Th>
+                        <Th>GPU Count</Th>
+                        <Th>Node Set</Th>
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {Object.entries(cluster.status.node_sets).map(([key, nodeSet]) => (
-                        <Tr key={key}>
-                          <Td>{key}</Td>
-                          <Td>{nodeSet.host_class || '-'}</Td>
-                          <Td>{nodeSet.size || 0}</Td>
-                        </Tr>
-                      ))}
+                      {Object.entries(cluster.status.node_sets).flatMap(([nodeSetName, nodeSet]) =>
+                        (nodeSet.hosts || []).map((hostId) => {
+                          const host = hostsData[hostId]
+                          const hostClassId = host?.spec?.class || nodeSet.host_class
+                          const fulfillmentClass = hostClassId ? hostClassesData[hostClassId] : null
+                          const className = fulfillmentClass?.metadata?.name
+                          const staticClass = className ? staticHostClasses[className] : null
+
+                          return (
+                            <Tr key={hostId}>
+                              <Td>
+                                <Button
+                                  variant="link"
+                                  isInline
+                                  onClick={() => navigate(`/bare-metal-hosts/${hostId}`)}
+                                  style={{ padding: 0, fontSize: 'inherit', color: '#0066cc' }}
+                                >
+                                  {host?.metadata?.name || hostId.substring(0, 12)}
+                                </Button>
+                              </Td>
+                              <Td>
+                                {staticClass ? (
+                                  <div>
+                                    <strong>{staticClass.name || '-'}</strong>
+                                    {staticClass.description && (
+                                      <div style={{ fontSize: '0.9em', color: '#6a6e73' }}>
+                                        {staticClass.description}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  fulfillmentClass?.metadata?.name || fulfillmentClass?.title || hostClassId?.substring(0, 12) || '-'
+                                )}
+                              </Td>
+                              <Td>{staticClass?.cpu?.type || '-'}</Td>
+                              <Td>{staticClass?.cpu ? (staticClass.cpu.cores * staticClass.cpu.sockets) : '-'}</Td>
+                              <Td>{staticClass?.ram?.size || '-'}</Td>
+                              <Td>
+                                {staticClass?.gpu?.model ? (
+                                  <Label color="purple" style={{ fontSize: '0.875rem' }}>
+                                    {staticClass.gpu.model}
+                                  </Label>
+                                ) : '-'}
+                              </Td>
+                              <Td>{staticClass?.gpu?.count || '-'}</Td>
+                              <Td>{nodeSetName}</Td>
+                            </Tr>
+                          )
+                        })
+                      )}
                     </Tbody>
                   </Table>
                 ) : (
-                  <p>No node sets configured</p>
+                  <p>No hosts configured</p>
                 )}
               </CardBody>
             </Card>
