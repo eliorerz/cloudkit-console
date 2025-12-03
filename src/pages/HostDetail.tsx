@@ -39,6 +39,7 @@ const HostDetail: React.FC = () => {
   const [activeTabKey, setActiveTabKey] = useState<string | number>(0)
   const [hostClass, setHostClass] = useState<HostClass | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [showBcmPassword, setShowBcmPassword] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -257,75 +258,60 @@ const HostDetail: React.FC = () => {
                     </DescriptionList>
 
                     {/* BCM Configuration Section */}
-                    {(host.spec?.bcm_link || host.spec?.bmc) && (
+                    {host.spec?.bcm_link && (
                       <>
                         <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid #d2d2d2' }} />
                         <Title headingLevel="h3" size="md" style={{ marginBottom: '1rem' }}>
                           BCM Configuration
                         </Title>
-                        <DescriptionList isHorizontal columnModifier={{ default: '2Col' }}>
-                          {host.spec?.bcm_link && (
-                            <DescriptionListGroup>
-                              <DescriptionListTerm>BCM Link</DescriptionListTerm>
-                              <DescriptionListDescription>
-                                <a href={host.spec.bcm_link} target="_blank" rel="noopener noreferrer" style={{ color: '#06c', wordBreak: 'break-all' }}>
-                                  {host.spec.bcm_link} <ExternalLinkAltIcon style={{ fontSize: '0.75rem' }} />
-                                </a>
-                              </DescriptionListDescription>
-                            </DescriptionListGroup>
-                          )}
+                        <DescriptionList isHorizontal columnModifier={{ default: '1Col' }}>
+                          <DescriptionListGroup>
+                            <DescriptionListTerm>BCM Link</DescriptionListTerm>
+                            <DescriptionListDescription>
+                              <a href={host.spec.bcm_link} target="_blank" rel="noopener noreferrer" style={{ color: '#06c', wordBreak: 'break-all' }}>
+                                {host.spec.bcm_link} <ExternalLinkAltIcon style={{ fontSize: '0.75rem' }} />
+                              </a>
+                            </DescriptionListDescription>
+                          </DescriptionListGroup>
+                        </DescriptionList>
 
-                          {host.spec?.bmc?.user && (
-                            <DescriptionListGroup>
-                              <DescriptionListTerm>BMC User</DescriptionListTerm>
-                              <DescriptionListDescription>
-                                <code>{host.spec.bmc.user}</code>
-                              </DescriptionListDescription>
-                            </DescriptionListGroup>
-                          )}
+                        <DescriptionList isHorizontal columnModifier={{ default: '2Col' }} style={{ marginTop: '1rem' }}>
+                          <DescriptionListGroup>
+                            <DescriptionListTerm>BCM User</DescriptionListTerm>
+                            <DescriptionListDescription>
+                              <code>root</code>
+                            </DescriptionListDescription>
+                          </DescriptionListGroup>
 
-                          {host.spec?.bmc?.password && (
-                            <DescriptionListGroup>
-                              <DescriptionListTerm>BMC Password</DescriptionListTerm>
-                              <DescriptionListDescription>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={host.spec.bmc.password}
-                                    readOnly
-                                    style={{
-                                      border: '1px solid var(--pf-v5-global--BorderColor--100)',
-                                      padding: '0.375rem 0.5rem',
-                                      borderRadius: '3px',
-                                      backgroundColor: 'var(--pf-v5-global--BackgroundColor--100)',
-                                      color: 'var(--pf-v5-global--Color--100)',
-                                      fontFamily: 'monospace',
-                                      fontSize: '14px',
-                                      width: '200px',
-                                    }}
-                                  />
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                  >
-                                    {showPassword ? 'Hide' : 'Show'}
-                                  </Button>
-                                </div>
-                              </DescriptionListDescription>
-                            </DescriptionListGroup>
-                          )}
-
-                          {host.spec?.bmc?.insecure !== undefined && (
-                            <DescriptionListGroup>
-                              <DescriptionListTerm>Insecure</DescriptionListTerm>
-                              <DescriptionListDescription>
-                                <Label color={host.spec.bmc.insecure ? 'orange' : 'green'}>
-                                  {host.spec.bmc.insecure ? 'Yes (Skip TLS Verification)' : 'No (TLS Verified)'}
-                                </Label>
-                              </DescriptionListDescription>
-                            </DescriptionListGroup>
-                          )}
+                          <DescriptionListGroup>
+                            <DescriptionListTerm>BCM Password</DescriptionListTerm>
+                            <DescriptionListDescription>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <input
+                                  type={showBcmPassword ? 'text' : 'password'}
+                                  value="redhat123"
+                                  readOnly
+                                  style={{
+                                    border: '1px solid var(--pf-v5-global--BorderColor--100)',
+                                    padding: '0.375rem 0.5rem',
+                                    borderRadius: '3px',
+                                    backgroundColor: 'var(--pf-v5-global--BackgroundColor--100)',
+                                    color: 'var(--pf-v5-global--Color--100)',
+                                    fontFamily: 'monospace',
+                                    fontSize: '14px',
+                                    width: '200px',
+                                  }}
+                                />
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => setShowBcmPassword(!showBcmPassword)}
+                                >
+                                  {showBcmPassword ? 'Hide' : 'Show'}
+                                </Button>
+                              </div>
+                            </DescriptionListDescription>
+                          </DescriptionListGroup>
                         </DescriptionList>
                       </>
                     )}
@@ -433,6 +419,78 @@ const HostDetail: React.FC = () => {
                     ) : (
                       <p style={{ color: '#6a6e73' }}>No hardware specifications available</p>
                     )}
+
+                    {/* BMC Configuration Section */}
+                    {host.spec?.bmc && (
+                      <>
+                        <hr style={{ margin: '1.5rem 0', border: 'none', borderTop: '1px solid #d2d2d2' }} />
+                        <Title headingLevel="h3" size="md" style={{ marginBottom: '1rem' }}>
+                          BMC Configuration
+                        </Title>
+                        <DescriptionList isHorizontal columnModifier={{ default: '2Col' }}>
+                          {host.spec?.bmc?.url && (
+                            <DescriptionListGroup>
+                              <DescriptionListTerm>BMC URL</DescriptionListTerm>
+                              <DescriptionListDescription>
+                                <code style={{ wordBreak: 'break-all' }}>{host.spec.bmc.url}</code>
+                              </DescriptionListDescription>
+                            </DescriptionListGroup>
+                          )}
+
+                          {host.spec?.bmc?.user && (
+                            <DescriptionListGroup>
+                              <DescriptionListTerm>BMC User</DescriptionListTerm>
+                              <DescriptionListDescription>
+                                <code>{host.spec.bmc.user}</code>
+                              </DescriptionListDescription>
+                            </DescriptionListGroup>
+                          )}
+
+                          {host.spec?.bmc?.password && (
+                            <DescriptionListGroup>
+                              <DescriptionListTerm>BMC Password</DescriptionListTerm>
+                              <DescriptionListDescription>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={host.spec.bmc.password}
+                                    readOnly
+                                    style={{
+                                      border: '1px solid var(--pf-v5-global--BorderColor--100)',
+                                      padding: '0.375rem 0.5rem',
+                                      borderRadius: '3px',
+                                      backgroundColor: 'var(--pf-v5-global--BackgroundColor--100)',
+                                      color: 'var(--pf-v5-global--Color--100)',
+                                      fontFamily: 'monospace',
+                                      fontSize: '14px',
+                                      width: '200px',
+                                    }}
+                                  />
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                  >
+                                    {showPassword ? 'Hide' : 'Show'}
+                                  </Button>
+                                </div>
+                              </DescriptionListDescription>
+                            </DescriptionListGroup>
+                          )}
+
+                          {host.spec?.bmc?.insecure !== undefined && (
+                            <DescriptionListGroup>
+                              <DescriptionListTerm>Insecure</DescriptionListTerm>
+                              <DescriptionListDescription>
+                                <Label color={host.spec.bmc.insecure ? 'orange' : 'green'}>
+                                  {host.spec.bmc.insecure ? 'Yes (Skip TLS Verification)' : 'No (TLS Verified)'}
+                                </Label>
+                              </DescriptionListDescription>
+                            </DescriptionListGroup>
+                          )}
+                        </DescriptionList>
+                      </>
+                    )}
                   </CardBody>
                 </Tab>
 
@@ -450,13 +508,6 @@ const HostDetail: React.FC = () => {
                         <DescriptionListTerm>Boot MAC</DescriptionListTerm>
                         <DescriptionListDescription>
                           <code>{host.spec?.boot_mac || 'N/A'}</code>
-                        </DescriptionListDescription>
-                      </DescriptionListGroup>
-
-                      <DescriptionListGroup>
-                        <DescriptionListTerm>BMC URL</DescriptionListTerm>
-                        <DescriptionListDescription>
-                          <code style={{ wordBreak: 'break-all' }}>{host.spec?.bmc?.url || 'N/A'}</code>
                         </DescriptionListDescription>
                       </DescriptionListGroup>
                     </DescriptionList>
