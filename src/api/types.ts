@@ -258,3 +258,16 @@ export interface DashboardMetrics {
     storageUtilization: number
   }
 }
+
+// ============================================
+// Tenant Types
+// ============================================
+
+export interface Tenant {
+  id: string
+  metadata?: {
+    name?: string
+    creation_timestamp?: string
+    tenants?: string[]
+  }
+}
