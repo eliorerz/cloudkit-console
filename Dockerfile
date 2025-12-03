@@ -14,7 +14,8 @@ FROM node:20-alpine
 
 # Install kubectl
 RUN apk add --no-cache curl && \
-    KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt) && \
+    KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt || echo "v1.31.4") && \
+    echo "Installing kubectl version: ${KUBECTL_VERSION}" && \
     curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/ && \
