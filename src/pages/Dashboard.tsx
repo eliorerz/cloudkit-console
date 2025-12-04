@@ -466,7 +466,7 @@ const Dashboard: React.FC = () => {
                       </span>
                     </FlexItem>
                     <FlexItem>
-                      Bare Metal Hosts
+                      {t('dashboard:metrics.hosts.title')}
                     </FlexItem>
                   </Flex>
                 </CardTitle>
@@ -479,7 +479,7 @@ const Dashboard: React.FC = () => {
                     <>
                       <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{hostsTotal}</div>
                       <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                        {hostsAssigned} Allocated · {hostsUnassigned} Available
+                        {hostsAssigned} {t('dashboard:metrics.hosts.allocated')} · {hostsUnassigned} {t('dashboard:metrics.hosts.available')}
                       </div>
                     </>
                   )}

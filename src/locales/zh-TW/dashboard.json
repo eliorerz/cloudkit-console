@@ -15,6 +15,11 @@
       "progressing": "進行中",
       "error": "錯誤"
     },
+    "hosts": {
+      "title": "裸機主機",
+      "allocated": "已分配",
+      "available": "可用"
+    },
     "vms": {
       "title": "虛擬機",
       "running": "執行中",

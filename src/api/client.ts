@@ -59,6 +59,9 @@ class APIClient {
         console.log('API client initialized with baseURL:', this.client.defaults.baseURL)
       } catch (error) {
         console.error('Failed to initialize API client:', error)
+        // Reset state to allow retry on next request
+        this.initPromise = null
+        this.initialized = false
         throw error
       }
     })()
