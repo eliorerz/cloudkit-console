@@ -30,14 +30,13 @@ import {
   ServerIcon,
 } from '@patternfly/react-icons'
 import { getDashboardMetrics } from '../api/dashboard'
-import { getVirtualMachines, createVirtualMachine } from '../api/vms'
+import { getVirtualMachines } from '../api/vms'
 import { getTemplates } from '../api/templates'
 import { listClusters, listClusterTemplates } from '../api/clustersApi'
 import { getHosts } from '../api/hosts'
 import { DashboardMetrics, VirtualMachine, Template, Cluster } from '../api/types'
 import AppLayout from '../components/layouts/AppLayout'
 import { useAuth } from '../contexts/AuthContext'
-import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation(['dashboard', 'common'])
@@ -62,7 +61,6 @@ const Dashboard: React.FC = () => {
   const [vmsFetched, setVmsFetched] = useState(false)
   const [loadingClusters, setLoadingClusters] = useState(true)
   const [isFirstClusterLoad, setIsFirstClusterLoad] = useState(true)
-  const [wizardOpen, setWizardOpen] = useState(false)
   const [templates, setTemplates] = useState<Template[]>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [clusterTemplatesCount, setClusterTemplatesCount] = useState(0)
@@ -354,19 +352,6 @@ const Dashboard: React.FC = () => {
     }
   }
 
-  // Handle VM creation from wizard
-  const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
-    await createVirtualMachine({
-      id: vmId,
-      spec: {
-        template: templateId,
-        template_parameters: parameters
-      }
-    })
-    // Refresh VMs list
-    const response = await getVirtualMachines()
-    setVms(response.items || [])
-  }
 
   return (
     <AppLayout>
@@ -757,7 +742,7 @@ const Dashboard: React.FC = () => {
             <Button
               variant="primary"
               icon={<PlusCircleIcon />}
-              onClick={() => setWizardOpen(true)}
+              onClick={() => navigate('/templates')}
               style={{ minWidth: '180px' }}
             >
               {t('dashboard:actions.createVM')}
@@ -783,13 +768,6 @@ const Dashboard: React.FC = () => {
           )}
         </Flex>
       </PageSection>
-
-      <CreateVMWizard
-        isOpen={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        onCreate={handleCreateVM}
-        templates={templates}
-      />
     </AppLayout>
   )
 }
