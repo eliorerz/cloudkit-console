@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -18,6 +19,7 @@ import { getHubs } from '../api/hubs'
 import { Hub } from '../api/types'
 
 const Hubs = () => {
+  const { t } = useTranslation(['hubs', 'common'])
   const [hubs, setHubs] = useState<Hub[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -61,17 +63,17 @@ const Hubs = () => {
           <ToolbarContent>
             <ToolbarItem>
               <Title headingLevel="h1" size="2xl">
-                Hubs
+                {t('hubs:title')}
               </Title>
             </ToolbarItem>
             <ToolbarItem align={{ default: 'alignEnd' }}>
-              <Tooltip content="Not supported yet">
+              <Tooltip content={t('hubs:notSupportedYet')}>
                 <Button
                   variant="secondary"
                   icon={<PlusIcon />}
                   isDisabled
                 >
-                  Add Hub
+                  {t('hubs:addHub')}
                 </Button>
               </Tooltip>
             </ToolbarItem>
@@ -90,19 +92,19 @@ const Hubs = () => {
 
         <div style={{ marginTop: '1rem' }}>
           {isLoading ? (
-            <div>Loading hubs...</div>
+            <div>{t('hubs:loading')}</div>
           ) : hubs.length === 0 ? (
-            <div>No hubs found. Click "Add Hub" to create one.</div>
+            <div>{t('hubs:empty')}</div>
           ) : (
-            <Table aria-label="Hubs table" variant="compact">
+            <Table aria-label={t('hubs:title')} variant="compact">
               <Thead>
                 <Tr>
-                  <Th>Name</Th>
-                  <Th>IP Address</Th>
-                  <Th>Namespace</Th>
-                  <Th>Tenants</Th>
-                  <Th>Creators</Th>
-                  <Th>Created</Th>
+                  <Th>{t('hubs:columns.name')}</Th>
+                  <Th>{t('hubs:columns.ipAddress')}</Th>
+                  <Th>{t('hubs:columns.namespace')}</Th>
+                  <Th>{t('hubs:columns.tenants')}</Th>
+                  <Th>{t('hubs:columns.creators')}</Th>
+                  <Th>{t('hubs:columns.created')}</Th>
                 </Tr>
               </Thead>
               <Tbody>

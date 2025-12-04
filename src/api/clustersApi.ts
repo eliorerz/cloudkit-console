@@ -188,13 +188,7 @@ export const getClusterKubeconfig = async (id: string): Promise<string> => {
       throw new Error('Not authenticated')
     }
 
-    // Get API base URL from config
-    const configResp = await fetch('/api/config')
-    if (!configResp.ok) {
-      throw new Error(`Failed to fetch config: ${configResp.status} ${configResp.statusText}`)
-    }
-    const config = await configResp.json()
-    const baseUrl = config.fulfillmentApiUrl
+    const baseUrl = await getApiBaseUrl()
 
     const response = await fetch(`${baseUrl}/api/fulfillment/v1/clusters/${id}/kubeconfig`, {
       headers: {
@@ -230,13 +224,7 @@ export const getClusterPassword = async (id: string): Promise<string> => {
       throw new Error('Not authenticated')
     }
 
-    // Get API base URL from config
-    const configResp = await fetch('/api/config')
-    if (!configResp.ok) {
-      throw new Error(`Failed to fetch config: ${configResp.status} ${configResp.statusText}`)
-    }
-    const config = await configResp.json()
-    const baseUrl = config.fulfillmentApiUrl
+    const baseUrl = await getApiBaseUrl()
 
     const response = await fetch(`${baseUrl}/api/fulfillment/v1/clusters/${id}/password`, {
       headers: {

@@ -15,6 +15,11 @@
       "progressing": "progressing",
       "error": "error"
     },
+    "hosts": {
+      "title": "Bare Metal Hosts",
+      "allocated": "Allocated",
+      "available": "Available"
+    },
     "vms": {
       "title": "Virtual Machines",
       "running": "running",
