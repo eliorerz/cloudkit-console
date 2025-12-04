@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -31,27 +32,27 @@ import { getTemplates } from '../api/templates'
 import { createVirtualMachine } from '../api/vms'
 import { Template } from '../api/types'
 
-// Machine size presets
-const machineSizeTiers = {
+// Machine size presets - moved to component to access t()
+const getMachineSizeTiers = (t: any) => ({
   standard: {
-    title: 'Standard Series',
+    title: t('vmCreate:machineSizes.standard'),
     sizes: [
-      { id: 'tiny', name: 'Tiny', cpu: 2, memory: 4, description: '2 vCPU / 4 Gi RAM' },
-      { id: 'small', name: 'Small', cpu: 4, memory: 8, description: '4 vCPU / 8 Gi RAM' },
-      { id: 'medium', name: 'Medium', cpu: 8, memory: 16, description: '8 vCPU / 16 Gi RAM' },
-      { id: 'large', name: 'Large', cpu: 16, memory: 32, description: '16 vCPU / 32 Gi RAM' },
+      { id: 'tiny', name: t('vmCreate:machineSizes.tiny.name'), cpu: 2, memory: 4, description: t('vmCreate:machineSizes.tiny.description') },
+      { id: 'small', name: t('vmCreate:machineSizes.small.name'), cpu: 4, memory: 8, description: t('vmCreate:machineSizes.small.description') },
+      { id: 'medium', name: t('vmCreate:machineSizes.medium.name'), cpu: 8, memory: 16, description: t('vmCreate:machineSizes.medium.description') },
+      { id: 'large', name: t('vmCreate:machineSizes.large.name'), cpu: 16, memory: 32, description: t('vmCreate:machineSizes.large.description') },
     ]
   },
   highPerformance: {
-    title: 'High-Performance Series',
+    title: t('vmCreate:machineSizes.highPerformance'),
     sizes: [
-      { id: 'xlarge', name: 'XLarge', cpu: 32, memory: 64, description: '32 vCPU / 64 Gi RAM' },
-      { id: '2xlarge', name: '2XLarge', cpu: 48, memory: 128, description: '48 vCPU / 128 Gi RAM' },
-      { id: '3xlarge', name: '3XLarge', cpu: 64, memory: 256, description: '64 vCPU / 256 Gi RAM' },
-      { id: '4xlarge', name: '4XLarge', cpu: 64, memory: 512, description: '64 vCPU / 512 Gi RAM' },
+      { id: 'xlarge', name: t('vmCreate:machineSizes.xlarge.name'), cpu: 32, memory: 64, description: t('vmCreate:machineSizes.xlarge.description') },
+      { id: '2xlarge', name: t('vmCreate:machineSizes.2xlarge.name'), cpu: 48, memory: 128, description: t('vmCreate:machineSizes.2xlarge.description') },
+      { id: '3xlarge', name: t('vmCreate:machineSizes.3xlarge.name'), cpu: 64, memory: 256, description: t('vmCreate:machineSizes.3xlarge.description') },
+      { id: '4xlarge', name: t('vmCreate:machineSizes.4xlarge.name'), cpu: 64, memory: 512, description: t('vmCreate:machineSizes.4xlarge.description') },
     ]
   }
-}
+})
 
 // Disk size options for slider
 const diskSizeOptions = [
@@ -82,6 +83,7 @@ interface WizardStep {
 }
 
 const VirtualMachineCreate: React.FC = () => {
+  const { t } = useTranslation(['vmCreate', 'common'])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const templateId = searchParams.get('template')
@@ -108,15 +110,18 @@ const VirtualMachineCreate: React.FC = () => {
   const [runStrategyOpen, setRunStrategyOpen] = useState(false)
   const [selectedSeries, setSelectedSeries] = useState<'standard' | 'highPerformance'>('standard')
 
+  // Machine size tiers with translations
+  const machineSizeTiers = useMemo(() => getMachineSizeTiers(t), [t])
+
   // Steps - dynamically build based on customization
   const steps: WizardStep[] = useMemo(() => {
     const allSteps = [
-      { id: 'vm-details', name: 'VM details', completed: currentStepIndex > 0 },
-      ...(customizeTemplate ? [{ id: 'hardware', name: 'Hardware Configuration', completed: currentStepIndex > 1 }] : []),
-      { id: 'review', name: 'Review and create', completed: currentStepIndex > (customizeTemplate ? 2 : 1) },
+      { id: 'vm-details', name: t('vmCreate:steps.vmDetails'), completed: currentStepIndex > 0 },
+      ...(customizeTemplate ? [{ id: 'hardware', name: t('vmCreate:steps.hardware'), completed: currentStepIndex > 1 }] : []),
+      { id: 'review', name: t('vmCreate:steps.review'), completed: currentStepIndex > (customizeTemplate ? 2 : 1) },
     ]
     return allSteps
-  }, [currentStepIndex, customizeTemplate])
+  }, [currentStepIndex, customizeTemplate, t])
 
   useEffect(() => {
     loadTemplate()
@@ -285,21 +290,21 @@ const VirtualMachineCreate: React.FC = () => {
         return (
           <div>
             <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-              Virtual Machine Details
+              {t('vmCreate:steps.vmDetails')}
             </Title>
             <Form>
-              <FormGroup label="Virtual Machine Name" isRequired fieldId="vm-name">
+              <FormGroup label={t('vmCreate:form.vmName.label')} isRequired fieldId="vm-name">
                 <TextInput
                   isRequired
                   type="text"
                   id="vm-name"
                   value={vmName}
                   onChange={(_event, value) => setVmName(value)}
-                  placeholder="my-virtual-machine"
+                  placeholder={t('vmCreate:form.vmName.placeholder')}
                 />
               </FormGroup>
 
-              <FormGroup label="VM Image Source" isRequired fieldId="vm-image" style={{ marginTop: '1.5rem' }}>
+              <FormGroup label={t('vmCreate:form.imageSource.label')} isRequired fieldId="vm-image" style={{ marginTop: '1.5rem' }}>
                 <TextInput
                   isRequired
                   type="text"
@@ -314,12 +319,12 @@ const VirtualMachineCreate: React.FC = () => {
                 />
               </FormGroup>
 
-              <FormGroup label="SSH Public Key" fieldId="ssh-key" style={{ marginTop: '1.5rem' }}>
+              <FormGroup label={t('vmCreate:form.sshKey.label')} fieldId="ssh-key" style={{ marginTop: '1.5rem' }}>
                 <TextArea
                   id="ssh-key"
                   value={sshPublicKey}
                   onChange={(_event, value) => setSshPublicKey(value)}
-                  placeholder="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..."
+                  placeholder={t('vmCreate:form.sshKey.placeholder')}
                   rows={5}
                   resizeOrientation="vertical"
                 />
@@ -328,21 +333,21 @@ const VirtualMachineCreate: React.FC = () => {
               <FormGroup fieldId="customize-template" style={{ marginTop: '1.5rem' }}>
                 <Checkbox
                   id="customize-template"
-                  label="Customize template parameters"
-                  description="Enable this to customize the VM image and other advanced settings"
+                  label={t('vmCreate:form.customize.label')}
+                  description={t('vmCreate:form.customize.description')}
                   isChecked={customizeTemplate}
                   onChange={(_event, checked) => setCustomizeTemplate(checked)}
                 />
               </FormGroup>
 
               {customizeTemplate && (
-                <FormGroup label="Cloud-init Configuration" fieldId="cloud-init" style={{ marginTop: '1.5rem' }}>
+                <FormGroup label={t('vmCreate:form.cloudInit.label')} fieldId="cloud-init" style={{ marginTop: '1.5rem' }}>
                   <FileUpload
                     id="cloud-init-file"
                     type="text"
                     value={cloudInitContent}
                     filename={cloudInitFilename}
-                    filenamePlaceholder="Drag and drop a file or upload one"
+                    filenamePlaceholder={t('vmCreate:form.cloudInit.placeholder')}
                     onFileInputChange={(_event, file) => {
                       setCloudInitFilename(file.name)
                       // Read file content
@@ -357,7 +362,7 @@ const VirtualMachineCreate: React.FC = () => {
                       setCloudInitFilename('')
                       setCloudInitContent('')
                     }}
-                    browseButtonText="Upload"
+                    browseButtonText={t('vmCreate:form.cloudInit.uploadButton')}
                     hideDefaultPreview
                   />
                 </FormGroup>
@@ -370,7 +375,7 @@ const VirtualMachineCreate: React.FC = () => {
         return (
           <div>
             <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-              Hardware Configuration
+              {t('vmCreate:hardware.title')}
             </Title>
             <Form>
 
@@ -386,7 +391,7 @@ const VirtualMachineCreate: React.FC = () => {
                     borderRadius: '4px'
                   }}>
                     <Title headingLevel="h4" size="md" style={{ marginBottom: '1rem', fontWeight: 600 }}>
-                      Series
+                      {t('vmCreate:hardware.series')}
                     </Title>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <div
@@ -466,7 +471,7 @@ const VirtualMachineCreate: React.FC = () => {
 
               {/* Storage Configuration */}
               <FormGroup
-                label="Storage"
+                label={t('vmCreate:form.storage.label')}
                 isRequired
                 fieldId="storage"
                 style={{ marginBottom: '2rem' }}
@@ -478,10 +483,10 @@ const VirtualMachineCreate: React.FC = () => {
                 }}>
                   <div style={{ marginBottom: '1rem' }}>
                     <Title headingLevel="h4" size="md" style={{ marginBottom: '0.5rem' }}>
-                      Disk Size: {formatDiskSize(vmDiskGi)}
+                      {t('vmCreate:form.storage.diskSize')}: {formatDiskSize(vmDiskGi)}
                     </Title>
                     <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginBottom: '1rem' }}>
-                      Select the storage capacity for your virtual machine
+                      {t('vmCreate:form.storage.description')}
                     </div>
                   </div>
                   <div style={{ padding: '0 0.5rem' }}>
@@ -501,7 +506,7 @@ const VirtualMachineCreate: React.FC = () => {
               </FormGroup>
 
               {/* Run Strategy Dropdown */}
-              <FormGroup label="Run Strategy" isRequired fieldId="run-strategy" style={{ marginBottom: '2rem' }}>
+              <FormGroup label={t('vmCreate:form.runStrategy.label')} isRequired fieldId="run-strategy" style={{ marginBottom: '2rem' }}>
                 <Dropdown
                   onSelect={(_event, value) => {
                     setVmRunStrategy(String(value))
@@ -521,10 +526,10 @@ const VirtualMachineCreate: React.FC = () => {
                   onOpenChange={(isOpen) => setRunStrategyOpen(isOpen)}
                 >
                   <DropdownList>
-                    <DropdownItem value="Always" key="always">Always</DropdownItem>
-                    <DropdownItem value="RerunOnFailure" key="rerun">RerunOnFailure</DropdownItem>
-                    <DropdownItem value="Manual" key="manual">Manual</DropdownItem>
-                    <DropdownItem value="Halted" key="halted">Halted</DropdownItem>
+                    <DropdownItem value="Always" key="always">{t('vmCreate:form.runStrategy.always')}</DropdownItem>
+                    <DropdownItem value="RerunOnFailure" key="rerun">{t('vmCreate:form.runStrategy.rerunOnFailure')}</DropdownItem>
+                    <DropdownItem value="Manual" key="manual">{t('vmCreate:form.runStrategy.manual')}</DropdownItem>
+                    <DropdownItem value="Halted" key="halted">{t('vmCreate:form.runStrategy.halted')}</DropdownItem>
                   </DropdownList>
                 </Dropdown>
               </FormGroup>
@@ -536,28 +541,28 @@ const VirtualMachineCreate: React.FC = () => {
         return (
           <div>
             <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-              Review and Create
+              {t('vmCreate:review.title')}
             </Title>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
                 <Title headingLevel="h3" size="md" style={{ marginBottom: '0.75rem' }}>
-                  Virtual Machine Details
+                  {t('vmCreate:steps.vmDetails')}
                 </Title>
                 <div style={{ padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>Name:</strong> {vmName}
+                    <strong>{t('vmCreate:review.vmName')}:</strong> {vmName}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>Image Source:</strong> {vmImageSource}
+                    <strong>{t('vmCreate:form.imageSource.label')}:</strong> {vmImageSource}
                   </div>
                   {sshPublicKey && (
                     <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                      <strong>SSH Key:</strong> Configured
+                      <strong>{t('vmCreate:review.sshKey')}:</strong> {t('vmCreate:review.configured')}
                     </div>
                   )}
                   {cloudInitFilename && (
                     <div style={{ fontSize: '0.82rem', color: '#6a6e73' }}>
-                      <strong>Cloud-init File:</strong> {cloudInitFilename}
+                      <strong>{t('vmCreate:review.cloudInit')}:</strong> {cloudInitFilename}
                     </div>
                   )}
                 </div>
@@ -565,20 +570,20 @@ const VirtualMachineCreate: React.FC = () => {
 
               <div>
                 <Title headingLevel="h3" size="md" style={{ marginBottom: '0.75rem' }}>
-                  Hardware Configuration
+                  {t('vmCreate:hardware.title')}
                 </Title>
                 <div style={{ padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>CPU Cores:</strong> {customizeTemplate ? vmCpuCores : (template?.parameters?.find(p => p.name === 'vm_cpu_cores')?.default?.value || vmCpuCores)}
+                    <strong>{t('vmCreate:review.cpu')}:</strong> {customizeTemplate ? vmCpuCores : (template?.parameters?.find(p => p.name === 'vm_cpu_cores')?.default?.value || vmCpuCores)}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>Memory:</strong> {customizeTemplate ? `${vmMemoryGi} Gi` : (template?.parameters?.find(p => p.name === 'vm_memory_size')?.default?.value || `${vmMemoryGi} Gi`)}
+                    <strong>{t('vmCreate:review.memory')}:</strong> {customizeTemplate ? `${vmMemoryGi} Gi` : (template?.parameters?.find(p => p.name === 'vm_memory_size')?.default?.value || `${vmMemoryGi} Gi`)}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>Disk Size:</strong> {customizeTemplate ? formatDiskSize(vmDiskGi) : (template?.parameters?.find(p => p.name === 'vm_disk_size')?.default?.value || formatDiskSize(vmDiskGi))}
+                    <strong>{t('vmCreate:review.disk')}:</strong> {customizeTemplate ? formatDiskSize(vmDiskGi) : (template?.parameters?.find(p => p.name === 'vm_disk_size')?.default?.value || formatDiskSize(vmDiskGi))}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73' }}>
-                    <strong>Run Strategy:</strong> {vmRunStrategy}
+                    <strong>{t('vmCreate:review.runStrategy')}:</strong> {vmRunStrategy}
                   </div>
                 </div>
               </div>
@@ -612,11 +617,11 @@ const VirtualMachineCreate: React.FC = () => {
     return (
       <AppLayout>
         <PageSection>
-          <Alert variant="danger" title="Error">
+          <Alert variant="danger" title={t('vmCreate:errors.error')}>
             {error}
           </Alert>
           <Button variant="primary" onClick={() => navigate(`/${fromPage}`)} style={{ marginTop: '1rem' }}>
-            Back to Templates
+            {t('vmCreate:breadcrumbs.templates')}
           </Button>
         </PageSection>
       </AppLayout>
@@ -627,11 +632,11 @@ const VirtualMachineCreate: React.FC = () => {
     return (
       <AppLayout>
         <PageSection>
-          <Alert variant="warning" title="Template not found">
-            The requested template could not be found.
+          <Alert variant="warning" title={t('vmCreate:errors.templateNotFound')}>
+            {t('vmCreate:errors.templateNotFound')}
           </Alert>
           <Button variant="primary" onClick={() => navigate(`/${fromPage}`)} style={{ marginTop: '1rem' }}>
-            Back to Templates
+            {t('vmCreate:breadcrumbs.templates')}
           </Button>
         </PageSection>
       </AppLayout>
@@ -699,12 +704,12 @@ const VirtualMachineCreate: React.FC = () => {
       <PageSection variant="default" style={{ maxWidth: '800px' }}>
         <Breadcrumb>
           <BreadcrumbItem to={`/${fromPage}`} onClick={(e) => { e.preventDefault(); navigate(`/${fromPage}`); }}>
-            VM Templates
+            {t('vmCreate:breadcrumbs.templates')}
           </BreadcrumbItem>
-          <BreadcrumbItem isActive>Create Virtual Machine</BreadcrumbItem>
+          <BreadcrumbItem isActive>{t('vmCreate:breadcrumbs.vmCreate')}</BreadcrumbItem>
         </Breadcrumb>
         <Title headingLevel="h1" size="2xl" style={{ marginTop: '1rem' }}>
-          Create Virtual Machine from Template: {template.title || template.id}
+          {t('vmCreate:title')}: {template.title || template.id}
         </Title>
         {template.description && (
           <div style={{
@@ -721,7 +726,7 @@ const VirtualMachineCreate: React.FC = () => {
       <PageSection style={{ padding: 0 }}>
         {error && (
           <div style={{ padding: '0 1.5rem' }}>
-            <Alert variant="danger" title="Error" isInline style={{ marginBottom: '1rem' }}>
+            <Alert variant="danger" title={t('vmCreate:errors.error')} isInline style={{ marginBottom: '1rem' }}>
               {error}
             </Alert>
           </div>
@@ -742,7 +747,7 @@ const VirtualMachineCreate: React.FC = () => {
                     isDisabled={!canProceed() || creating}
                     style={{ marginRight: '0.5rem' }}
                   >
-                    {currentStepIndex === steps.length - 1 ? (creating ? 'Creating...' : 'Create Virtual Machine') : 'Next'}
+                    {currentStepIndex === steps.length - 1 ? (creating ? t('vmCreate:buttons.creating') : t('vmCreate:buttons.create')) : t('vmCreate:buttons.next')}
                   </Button>
                   {currentStepIndex > 0 && (
                     <Button
@@ -751,7 +756,7 @@ const VirtualMachineCreate: React.FC = () => {
                       isDisabled={creating}
                       style={{ marginRight: '0.5rem' }}
                     >
-                      Back
+                      {t('vmCreate:buttons.back')}
                     </Button>
                   )}
                   <Button
@@ -759,7 +764,7 @@ const VirtualMachineCreate: React.FC = () => {
                     onClick={() => navigate(`/${fromPage}`)}
                     isDisabled={creating}
                   >
-                    Cancel
+                    {t('vmCreate:buttons.cancel')}
                   </Button>
                 </ActionGroup>
               </CardBody>
