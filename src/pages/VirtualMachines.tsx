@@ -94,6 +94,11 @@ const VirtualMachines: React.FC = () => {
     return () => clearInterval(interval)
   }, [isInitialLoad])
 
+  // Reset pagination when search or filter changes
+  useEffect(() => {
+    setPage(1)
+  }, [searchValue, showOnlyMyVMs])
+
 
   const getStateBadge = (state?: string) => {
     if (!state) return <Label color="grey">{t('common:status.unknown')}</Label>
@@ -525,7 +530,19 @@ const VirtualMachines: React.FC = () => {
                           )}
                         >
                           <DropdownList>
-                            <DropdownItem onClick={() => handleDeleteClick(vm)}>
+                            <DropdownItem key="start" onClick={() => { /* TODO: Implement start */ }} icon={<PlayIcon style={{ color: '#3e8635' }} />}>
+                              {t('virtualMachines:start')}
+                            </DropdownItem>
+                            <DropdownItem key="stop" onClick={() => { /* TODO: Implement stop */ }} icon={<PowerOffIcon style={{ color: '#f0ab00' }} />}>
+                              {t('virtualMachines:stop')}
+                            </DropdownItem>
+                            <DropdownItem key="restart" onClick={() => { /* TODO: Implement restart */ }} icon={<RedoIcon style={{ color: '#0066cc' }} />}>
+                              {t('virtualMachines:restart')}
+                            </DropdownItem>
+                            <DropdownItem key="console" onClick={() => { /* TODO: Implement console */ }}>
+                              {t('virtualMachines:console')}
+                            </DropdownItem>
+                            <DropdownItem key="delete" onClick={() => handleDeleteClick(vm)} icon={<TrashIcon style={{ color: '#c9190b' }} />}>
                               {t('virtualMachines:delete')}
                             </DropdownItem>
                           </DropdownList>
