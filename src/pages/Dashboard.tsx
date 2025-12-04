@@ -27,11 +27,13 @@ import {
   InProgressIcon,
   ExclamationCircleIcon,
   QuestionCircleIcon,
+  ServerIcon,
 } from '@patternfly/react-icons'
 import { getDashboardMetrics } from '../api/dashboard'
 import { getVirtualMachines, createVirtualMachine } from '../api/vms'
 import { getTemplates } from '../api/templates'
 import { listClusters, listClusterTemplates } from '../api/clustersApi'
+import { getHosts } from '../api/hosts'
 import { DashboardMetrics, VirtualMachine, Template, Cluster } from '../api/types'
 import AppLayout from '../components/layouts/AppLayout'
 import { useAuth } from '../contexts/AuthContext'
@@ -65,6 +67,11 @@ const Dashboard: React.FC = () => {
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [clusterTemplatesCount, setClusterTemplatesCount] = useState(0)
   const [clusterTemplatesLoading, setClusterTemplatesLoading] = useState(true)
+  const [hostsTotal, setHostsTotal] = useState(0)
+  const [hostsAssigned, setHostsAssigned] = useState(0)
+  const [hostsUnassigned, setHostsUnassigned] = useState(0)
+  const [loadingHosts, setLoadingHosts] = useState(true)
+  const [isFirstHostsLoad, setIsFirstHostsLoad] = useState(true)
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -235,6 +242,56 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(fetchClusters, 30000)
     return () => clearInterval(interval)
   }, [role, isFirstClusterLoad])
+
+  // Fetch bare metal hosts for admin users
+  useEffect(() => {
+    if (role !== 'fulfillment-admin') {
+      setLoadingHosts(false)
+      return
+    }
+
+    const fetchHosts = async () => {
+      // Only show loading spinner on first load, not on auto-refresh
+      if (isFirstHostsLoad) {
+        setLoadingHosts(true)
+      }
+      try {
+        const response = await getHosts()
+        const hostItems = response.items || []
+        setHostsTotal(response.total || 0)
+
+        // Calculate assigned vs unassigned hosts
+        let assigned = 0
+        let unassigned = 0
+        hostItems.forEach(host => {
+          // A host is assigned if it has a cluster in its status
+          if (host.status?.cluster) {
+            assigned++
+          } else {
+            unassigned++
+          }
+        })
+        setHostsAssigned(assigned)
+        setHostsUnassigned(unassigned)
+      } catch (error) {
+        console.error('Failed to fetch hosts:', error)
+        setHostsTotal(0)
+        setHostsAssigned(0)
+        setHostsUnassigned(0)
+      } finally {
+        setLoadingHosts(false)
+        if (isFirstHostsLoad) {
+          setIsFirstHostsLoad(false)
+        }
+      }
+    }
+
+    fetchHosts()
+
+    // Refresh hosts every 30 seconds
+    const interval = setInterval(fetchHosts, 30000)
+    return () => clearInterval(interval)
+  }, [role, isFirstHostsLoad])
 
   // Helper to format VM state
   const formatState = (state?: string): string => {
@@ -408,6 +465,39 @@ const Dashboard: React.FC = () => {
                   <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
                     {clustersReady} {t('dashboard:metrics.clusters.ready')} · {clustersProgressing} {t('dashboard:metrics.clusters.progressing')} · {clustersError} {t('dashboard:metrics.clusters.error')}
                   </div>
+                </CardBody>
+              </Card>
+            </GalleryItem>
+          )}
+
+          {role === 'fulfillment-admin' && (
+            <GalleryItem>
+              <Card isFullHeight>
+                <CardTitle>
+                  <Flex alignItems={{ default: 'alignItemsCenter' }}>
+                    <FlexItem>
+                      <span style={{ color: '#009596', fontSize: '1.5rem' }}>
+                        <ServerIcon />
+                      </span>
+                    </FlexItem>
+                    <FlexItem>
+                      Bare Metal Hosts
+                    </FlexItem>
+                  </Flex>
+                </CardTitle>
+                <CardBody>
+                  {loadingHosts ? (
+                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                      <Spinner size="md" />
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{hostsTotal}</div>
+                      <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                        {hostsAssigned} Allocated · {hostsUnassigned} Available
+                      </div>
+                    </>
+                  )}
                 </CardBody>
               </Card>
             </GalleryItem>
