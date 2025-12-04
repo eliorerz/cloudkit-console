@@ -145,24 +145,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Extract user information from OIDC user object
   const token = user?.access_token || null
 
-  // Debug: Log user profile to see available fields
-  if (user?.profile) {
-    console.log('User profile fields:', {
-      preferred_username: user.profile.preferred_username,
-      username: (user.profile as any).username,
-      name: user.profile.name,
-      email: user.profile.email,
-      sub: user.profile.sub,
-      given_name: (user.profile as any).given_name,
-      family_name: (user.profile as any).family_name,
-      groups: (user.profile as any).groups,
-      roles: (user.profile as any).roles,
-      realm_access: (user.profile as any).realm_access,
-      resource_access: (user.profile as any).resource_access,
-    })
-    console.log('Full profile object:', user.profile)
-  }
-
   // Username (actual username from preferred_username or username field)
   const username = user?.profile?.preferred_username
     || (user?.profile as any)?.username

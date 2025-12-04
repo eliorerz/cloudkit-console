@@ -1,6 +1,6 @@
 {
   "title": "托管集群",
-  "catalog": "集群目录",
+  "catalogTitle": "集群目录",
   "createButton": "创建集群",
   "delete": "删除集群",
   "details": "集群详情",

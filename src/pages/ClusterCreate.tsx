@@ -277,8 +277,6 @@ const ClusterCreate: React.FC = () => {
         },
       }
 
-      console.log('Cluster spec:', JSON.stringify(clusterSpec, null, 2))
-
       const newCluster = await createCluster(clusterSpec)
 
       // Redirect to cluster detail page
