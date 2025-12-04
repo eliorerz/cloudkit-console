@@ -9,6 +9,7 @@ import {
   Alert,
   AlertVariant,
   Tooltip,
+  Label,
 } from '@patternfly/react-core'
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table'
 import { PlusIcon } from '@patternfly/react-icons'
@@ -96,16 +97,50 @@ const Hubs = () => {
             <Table aria-label="Hubs table" variant="compact">
               <Thead>
                 <Tr>
-                  <Th>ID</Th>
+                  <Th>Name</Th>
+                  <Th>IP Address</Th>
                   <Th>Namespace</Th>
+                  <Th>Tenants</Th>
+                  <Th>Creators</Th>
                   <Th>Created</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {hubs.map((hub) => (
                   <Tr key={hub.id}>
-                    <Td>{hub.id}</Td>
+                    <Td>
+                      <div style={{ fontWeight: 500 }}>
+                        {hub.metadata?.name || hub.id.substring(0, 12)}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#6a6e73' }}>
+                        {hub.id}
+                      </div>
+                    </Td>
+                    <Td>
+                      <code style={{
+                        fontSize: '0.875rem',
+                        padding: '0.125rem 0.25rem',
+                        backgroundColor: '#f0f0f0',
+                        borderRadius: '3px'
+                      }}>
+                        {hub.ip || '-'}
+                      </code>
+                    </Td>
                     <Td>{hub.namespace || '-'}</Td>
+                    <Td>
+                      {hub.metadata?.tenants && hub.metadata.tenants.length > 0 ? (
+                        hub.metadata.tenants.map((tenant) => (
+                          <Label key={tenant} color="blue" style={{ marginRight: '0.25rem' }}>
+                            {tenant}
+                          </Label>
+                        ))
+                      ) : '-'}
+                    </Td>
+                    <Td>
+                      {hub.metadata?.creators && hub.metadata.creators.length > 0 ? (
+                        hub.metadata.creators.join(', ')
+                      ) : '-'}
+                    </Td>
                     <Td>{formatTimestamp(hub.metadata?.creation_timestamp)}</Td>
                   </Tr>
                 ))}
