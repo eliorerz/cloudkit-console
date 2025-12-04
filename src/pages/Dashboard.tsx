@@ -628,13 +628,6 @@ const Dashboard: React.FC = () => {
                         <Spinner size="md" />
                       </div>
                     ) : (() => {
-                      // TEMPORARY: Show all VMs for debugging
-                      console.log('Dashboard - Total VMs:', vms.length)
-                      console.log('Dashboard - Username:', username)
-                      vms.forEach((vm) => {
-                        console.log('VM:', vm.id, 'name:', vm.metadata?.name, 'creators:', vm.metadata?.creators)
-                      })
-
                       // Filter VMs by logged-in user
                       const userVMs = username
                         ? vms.filter((vm) => {
@@ -643,12 +636,7 @@ const Dashboard: React.FC = () => {
                           })
                         : []
 
-                      console.log('Filtered userVMs:', userVMs.length)
-
-                      // TEMPORARY: Show all VMs instead of filtered
-                      const displayVMs = vms
-
-                      return displayVMs.length === 0 ? (
+                      return userVMs.length === 0 ? (
                         <EmptyState>
                           <EmptyStateBody>
                             <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
@@ -658,7 +646,7 @@ const Dashboard: React.FC = () => {
                         </EmptyState>
                       ) : (
                         <div>
-                          {displayVMs
+                          {userVMs
                             .sort((a, b) => {
                               const aTime = a.metadata?.creation_timestamp || ''
                               const bTime = b.metadata?.creation_timestamp || ''
@@ -698,7 +686,7 @@ const Dashboard: React.FC = () => {
                               </div>
                             </div>
                           ))}
-                          {displayVMs.length > 3 && (
+                          {userVMs.length > 3 && (
                             <div style={{ padding: '0.75rem', borderTop: '1px solid #d2d2d2' }}>
                               <Button
                                 variant="link"
@@ -706,7 +694,7 @@ const Dashboard: React.FC = () => {
                                 onClick={() => navigate('/virtual-machines')}
                                 style={{ padding: 0, fontSize: '0.875rem' }}
                               >
-                                {t('dashboard:actions.viewAllVMs', { count: displayVMs.length })}
+                                {t('dashboard:actions.viewAllVMs', { count: userVMs.length })}
                               </Button>
                             </div>
                           )}
