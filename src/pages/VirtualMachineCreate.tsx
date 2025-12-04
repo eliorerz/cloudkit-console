@@ -104,6 +104,7 @@ const VirtualMachineCreate: React.FC = () => {
   const [vmImageSource, setVmImageSource] = useState('')
   const [sshPublicKey, setSshPublicKey] = useState('')
   const [cloudInitFilename, setCloudInitFilename] = useState('')
+  const [cloudInitContent, setCloudInitContent] = useState('')
   const [runStrategyOpen, setRunStrategyOpen] = useState(false)
   const [selectedSeries, setSelectedSeries] = useState<'standard' | 'highPerformance'>('standard')
 
@@ -214,13 +215,19 @@ const VirtualMachineCreate: React.FC = () => {
               value = `${vmDiskGi}Gi`
             } else if (param.name === 'vm_image_source') {
               value = vmImageSource
+            } else if (param.name === 'ssh_public_key' && sshPublicKey) {
+              // Use user-provided SSH key
+              value = sshPublicKey
+            } else if (param.name === 'cloud_init_user_data' && cloudInitContent) {
+              // Use user-provided cloud-init content
+              value = cloudInitContent
             } else {
               // Use template default for other parameters
               value = param.default.value
             }
             shouldInclude = true
           } else if (param.name === 'ssh_public_key' && sshPublicKey) {
-            // Always include SSH key if provided
+            // Always include SSH key if provided (non-customize mode)
             value = sshPublicKey
             shouldInclude = true
           }
@@ -333,14 +340,22 @@ const VirtualMachineCreate: React.FC = () => {
                   <FileUpload
                     id="cloud-init-file"
                     type="text"
-                    value={cloudInitFilename}
+                    value={cloudInitContent}
                     filename={cloudInitFilename}
                     filenamePlaceholder="Drag and drop a file or upload one"
                     onFileInputChange={(_event, file) => {
                       setCloudInitFilename(file.name)
+                      // Read file content
+                      const reader = new FileReader()
+                      reader.onload = (e) => {
+                        const content = e.target?.result as string
+                        setCloudInitContent(content || '')
+                      }
+                      reader.readAsText(file)
                     }}
                     onClearClick={() => {
                       setCloudInitFilename('')
+                      setCloudInitContent('')
                     }}
                     browseButtonText="Upload"
                     hideDefaultPreview
