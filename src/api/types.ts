@@ -129,9 +129,16 @@ export interface Hub {
   id: string
   metadata?: {
     creation_timestamp?: string
+    name?: string
+    creators?: string[]
+    tenants?: string[]
+    finalizers?: string[]
   }
   kubeconfig?: string
   namespace?: string
+  ip?: string
+  pull_secret?: string
+  ssh_public_key?: string
 }
 
 export interface VirtualMachine {
