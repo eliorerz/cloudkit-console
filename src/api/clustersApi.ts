@@ -263,3 +263,83 @@ export const getClusterPassword = async (id: string): Promise<string> => {
     throw error
   }
 }
+
+// ============================================
+// Cluster Scaling
+// ============================================
+
+export const scaleCluster = async (
+  id: string,
+  nodeSetName: string,
+  newSize: number,
+  hostClass: string
+): Promise<Cluster> => {
+  try {
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/private/v1/clusters/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        spec: {
+          node_sets: {
+            [nodeSetName]: {
+              host_class: hostClass,
+              size: newSize,
+            },
+          },
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to scale cluster: ${response.status} ${response.statusText}: ${errorText}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error(`Failed to scale cluster ${id}:`, error)
+    throw error
+  }
+}
+
+// ============================================
+// Delete Cluster
+// ============================================
+
+export const deleteCluster = async (id: string): Promise<void> => {
+  try {
+    const baseUrl = await getApiBaseUrl()
+    const userManager = getUserManager()
+    const user = await userManager.getUser()
+
+    if (!user?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${baseUrl}/api/private/v1/clusters/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${user.access_token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to delete cluster: ${response.status} ${response.statusText}: ${errorText}`)
+    }
+  } catch (error) {
+    console.error(`Failed to delete cluster ${id}:`, error)
+    throw error
+  }
+}

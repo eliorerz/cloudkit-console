@@ -23,13 +23,20 @@ import {
   Card,
   CardBody,
   Badge,
+  Modal,
+  ModalVariant,
+  Form,
+  FormGroup,
+  TextInput,
 } from '@patternfly/react-core'
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table'
 import { CubesIcon, EllipsisVIcon, FilterIcon } from '@patternfly/react-icons'
 import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/layouts/AppLayout'
-import { listClusters } from '../api/clustersApi'
+import { listClusters, scaleCluster, deleteCluster } from '../api/clustersApi'
 import { Cluster, ClusterState } from '../api/types'
+import { getHost } from '../api/hosts'
+import { getHostClassById, getHostClasses } from '../api/host-classes'
 
 const Clusters: React.FC = () => {
   const { t } = useTranslation(['clusters', 'common'])
@@ -38,6 +45,21 @@ const Clusters: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
+
+  // Scale modal state
+  const [isScaleModalOpen, setIsScaleModalOpen] = useState(false)
+  const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null)
+  const [scaleSize, setScaleSize] = useState('')
+  const [scalingSizeError, setScalingSizeError] = useState('')
+  const [isScaling, setIsScaling] = useState(false)
+  const [hostClassesData, setHostClassesData] = useState<Record<string, any>>({})
+  const [staticHostClasses, setStaticHostClasses] = useState<Record<string, any>>({})
+
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [clusterToDelete, setClusterToDelete] = useState<Cluster | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
 
   // Search and filter state
   const [searchValue, setSearchValue] = useState('')
@@ -116,7 +138,8 @@ const Clusters: React.FC = () => {
     if (!nodeSets) return 0
 
     return Object.values(nodeSets).reduce((total, nodeSet) => {
-      return total + (nodeSet.size || 0)
+      // Count actual hosts in the array, not the size property
+      return total + (nodeSet.hosts?.length || 0)
     }, 0)
   }
 
@@ -222,6 +245,129 @@ const Clusters: React.FC = () => {
       setSelectedVersions(selectedVersions.filter(v => v !== version))
     } else {
       setSelectedVersions([...selectedVersions, version])
+    }
+  }
+
+  const openScaleModal = async (cluster: Cluster) => {
+    setSelectedCluster(cluster)
+
+    // Load host classes data
+    const staticClasses = await getHostClasses()
+    setStaticHostClasses(staticClasses)
+
+    // Load hosts data for this cluster
+    const hostClassesMap: Record<string, any> = {}
+
+    if (cluster.status?.node_sets) {
+      for (const [, nodeSet] of Object.entries(cluster.status.node_sets)) {
+        if (nodeSet.hosts) {
+          for (const hostId of nodeSet.hosts) {
+            try {
+              const host = await getHost(hostId)
+              if (host.spec?.class) {
+                const hostClass = await getHostClassById(host.spec.class)
+                hostClassesMap[host.spec.class] = hostClass
+              }
+            } catch (err) {
+              console.error('Failed to load host:', err)
+            }
+          }
+        }
+      }
+    }
+
+    setHostClassesData(hostClassesMap)
+
+    // Set initial size
+    if (cluster.status?.node_sets && Object.keys(cluster.status.node_sets).length > 0) {
+      const firstNodeSet = Object.values(cluster.status.node_sets)[0]
+      setScaleSize(String(firstNodeSet.size || 1))
+    }
+
+    setScalingSizeError('')
+    setIsScaleModalOpen(true)
+  }
+
+  const handleScaleCluster = async () => {
+    if (!selectedCluster) return
+
+    const newSize = parseInt(scaleSize, 10)
+    if (isNaN(newSize) || newSize < 1) {
+      setScalingSizeError('Size must be a number greater than or equal to 1')
+      return
+    }
+
+    const nodeSets = selectedCluster.status?.node_sets || selectedCluster.spec?.node_sets
+    if (!nodeSets || Object.keys(nodeSets).length === 0) {
+      setScalingSizeError('No node sets found')
+      return
+    }
+
+    const nodeSetName = Object.keys(nodeSets)[0]
+    const nodeSet = nodeSets[nodeSetName]
+    const currentSize = nodeSet.size || 1
+    const hostClass = nodeSet.host_class || ''
+
+    if (!hostClass) {
+      setScalingSizeError('Host class not found for node set')
+      return
+    }
+
+    if (newSize === currentSize) {
+      setScalingSizeError('The new size is the same as the current size')
+      return
+    }
+
+    try {
+      setIsScaling(true)
+      setScalingSizeError('')
+
+      await scaleCluster(selectedCluster.id, nodeSetName, newSize, hostClass)
+
+      setIsScaleModalOpen(false)
+      setScaleSize('')
+      setSelectedCluster(null)
+
+      // Reload clusters list
+      loadClusters()
+    } catch (err: any) {
+      console.error('Failed to scale cluster:', err)
+      setScalingSizeError(err.message || 'Failed to scale cluster')
+    } finally {
+      setIsScaling(false)
+    }
+  }
+
+  const openDeleteModal = (cluster: Cluster) => {
+    setClusterToDelete(cluster)
+    setDeleteConfirmation('')
+    setIsDeleteModalOpen(true)
+  }
+
+  const handleDeleteCluster = async () => {
+    if (!clusterToDelete) return
+
+    const clusterName = clusterToDelete.metadata?.name || clusterToDelete.id.substring(0, 12)
+    if (deleteConfirmation !== clusterName) {
+      return
+    }
+
+    try {
+      setIsDeleting(true)
+
+      await deleteCluster(clusterToDelete.id)
+
+      setIsDeleteModalOpen(false)
+      setClusterToDelete(null)
+      setDeleteConfirmation('')
+
+      // Reload clusters list
+      loadClusters()
+    } catch (err: any) {
+      console.error('Failed to delete cluster:', err)
+      setError(err.message || 'Failed to delete cluster')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -460,10 +606,19 @@ const Clusters: React.FC = () => {
                           <DropdownItem onClick={() => navigate(`/admin/clusters/${cluster.id}`)}>
                             {t('clusters:list.actions.viewDetails')}
                           </DropdownItem>
-                          <DropdownItem onClick={() => navigate(`/admin/clusters/${cluster.id}`)}>
+                          <DropdownItem onClick={() => {
+                            setOpenActionMenuId(null)
+                            openScaleModal(cluster)
+                          }}>
                             Scale Cluster
                           </DropdownItem>
-                          <DropdownItem>
+                          <DropdownItem
+                            onClick={() => {
+                              setOpenActionMenuId(null)
+                              openDeleteModal(cluster)
+                            }}
+                            style={{ color: 'var(--pf-v5-global--danger-color--100)' }}
+                          >
                             {t('clusters:list.actions.delete')}
                           </DropdownItem>
                         </DropdownList>
@@ -496,6 +651,237 @@ const Clusters: React.FC = () => {
           )}
         </Card>
       </PageSection>
+
+      <Modal
+        variant={ModalVariant.small}
+        title={`Scale cluster ${selectedCluster?.metadata?.name || ''}`}
+        isOpen={isScaleModalOpen}
+        onClose={() => {
+          setIsScaleModalOpen(false)
+          setScaleSize('')
+          setScalingSizeError('')
+          setSelectedCluster(null)
+        }}
+      >
+        <div style={{ padding: '0' }}>
+          <div style={{
+            fontSize: '1.25rem',
+            fontWeight: 600,
+            padding: '1.5rem 1.5rem 1rem 1.5rem',
+            color: '#151515'
+          }}>
+            Scale cluster {selectedCluster?.metadata?.name || ''}
+          </div>
+          {selectedCluster?.status?.node_sets && Object.keys(selectedCluster.status.node_sets).length > 0 && (() => {
+            const nodeSet = Object.values(selectedCluster.status.node_sets)[0]
+            const hostClassId = nodeSet.host_class
+            const fulfillmentClass = hostClassId ? hostClassesData[hostClassId] : null
+            const className = fulfillmentClass?.metadata?.name
+            const staticClass = className ? staticHostClasses[className] : null
+
+            return (
+              <>
+                <div style={{
+                  padding: '1rem',
+                  margin: '0 1.5rem 1rem 1.5rem',
+                  backgroundColor: '#f0f0f0',
+                  border: '1px solid #d2d2d2',
+                  borderRadius: '3px'
+                }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6a6e73', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Current cluster size
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#151515' }}>
+                    {nodeSet.size || 1} nodes
+                  </div>
+                </div>
+
+                {staticClass && (
+                  <div style={{ margin: '0 1.5rem 1.5rem 1.5rem' }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', color: '#151515' }}>
+                      Node specifications
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'auto 1fr',
+                      gap: '0.5rem 1rem',
+                      fontSize: '0.875rem'
+                    }}>
+                      <div style={{ color: '#6a6e73' }}>Host Class:</div>
+                      <div style={{ fontWeight: 500 }}>
+                        {staticClass.name}
+                        {staticClass.description && (
+                          <div style={{ fontSize: '0.8125rem', color: '#6a6e73', marginTop: '0.125rem' }}>
+                            {staticClass.description}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ color: '#6a6e73' }}>CPU Type:</div>
+                      <div>{staticClass.cpu?.type || '-'}</div>
+
+                      <div style={{ color: '#6a6e73' }}>CPU Cores:</div>
+                      <div>{staticClass.cpu ? (staticClass.cpu.cores * staticClass.cpu.sockets) : '-'}</div>
+
+                      <div style={{ color: '#6a6e73' }}>RAM Size:</div>
+                      <div>{staticClass.ram?.size || '-'}</div>
+
+                      <div style={{ color: '#6a6e73' }}>GPU Model:</div>
+                      <div>
+                        {staticClass.gpu?.model ? (
+                          <Label color="purple" style={{ fontSize: '0.875rem' }}>
+                            {staticClass.gpu.model}
+                          </Label>
+                        ) : '-'}
+                      </div>
+
+                      <div style={{ color: '#6a6e73' }}>GPU Count:</div>
+                      <div>{staticClass.gpu?.count || '-'}</div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
+
+          <Form style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+            <FormGroup label="New cluster size" isRequired fieldId="scale-size">
+              <TextInput
+                isRequired
+                type="number"
+                id="scale-size"
+                name="scale-size"
+                value={scaleSize}
+                onChange={(_event, value) => {
+                  setScaleSize(value)
+                  setScalingSizeError('')
+                }}
+                validated={scalingSizeError ? 'error' : 'default'}
+                min={1}
+                placeholder="Enter number of nodes"
+              />
+              {scalingSizeError && (
+                <div style={{ marginTop: '0.5rem', color: '#c9190b', fontSize: '0.875rem' }}>
+                  {scalingSizeError}
+                </div>
+              )}
+              {!scalingSizeError && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6a6e73' }}>
+                  Enter a value between 1 and the maximum available capacity
+                </div>
+              )}
+            </FormGroup>
+
+            <div style={{
+              marginTop: '1.5rem',
+              paddingTop: '1rem',
+              borderTop: '1px solid #d2d2d2',
+              display: 'flex',
+              gap: '0.5rem',
+              justifyContent: 'flex-start'
+            }}>
+              <Button
+                variant="primary"
+                onClick={handleScaleCluster}
+                isDisabled={isScaling || !scaleSize}
+                isLoading={isScaling}
+              >
+                {isScaling ? 'Scaling cluster...' : 'Scale cluster'}
+              </Button>
+              <Button
+                variant="link"
+                onClick={() => {
+                  setIsScaleModalOpen(false)
+                  setScaleSize('')
+                  setScalingSizeError('')
+                  setSelectedCluster(null)
+                }}
+                isDisabled={isScaling}
+              >
+                Cancel
+              </Button>
+            </div>
+          </Form>
+        </div>
+      </Modal>
+
+      <Modal
+        variant={ModalVariant.small}
+        title="Delete cluster"
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setClusterToDelete(null)
+          setDeleteConfirmation('')
+        }}
+      >
+        <div style={{ padding: '0' }}>
+          <div style={{
+            fontSize: '1rem',
+            padding: '1.5rem 1.5rem 1rem 1.5rem',
+            color: '#151515'
+          }}>
+            <Alert
+              variant="danger"
+              title="Warning"
+              isInline
+              style={{ marginBottom: '1rem' }}
+            >
+              This action cannot be undone. This will permanently delete the cluster and all associated resources.
+            </Alert>
+            <p style={{ marginBottom: '1rem' }}>
+              Please type <strong>{clusterToDelete?.metadata?.name || clusterToDelete?.id.substring(0, 12)}</strong> to confirm deletion.
+            </p>
+          </div>
+
+          <Form style={{ padding: '0 1.5rem 1.5rem 1.5rem' }}>
+            <FormGroup label="Cluster name" isRequired fieldId="delete-confirmation">
+              <TextInput
+                isRequired
+                type="text"
+                id="delete-confirmation"
+                name="delete-confirmation"
+                value={deleteConfirmation}
+                onChange={(_event, value) => setDeleteConfirmation(value)}
+                placeholder={clusterToDelete?.metadata?.name || clusterToDelete?.id.substring(0, 12)}
+              />
+            </FormGroup>
+
+            <div style={{
+              marginTop: '1.5rem',
+              paddingTop: '1rem',
+              borderTop: '1px solid #d2d2d2',
+              display: 'flex',
+              gap: '0.5rem',
+              justifyContent: 'flex-start'
+            }}>
+              <Button
+                variant="danger"
+                onClick={handleDeleteCluster}
+                isDisabled={
+                  isDeleting ||
+                  !deleteConfirmation ||
+                  deleteConfirmation !== (clusterToDelete?.metadata?.name || clusterToDelete?.id.substring(0, 12))
+                }
+                isLoading={isDeleting}
+              >
+                {isDeleting ? 'Deleting cluster...' : 'Delete cluster'}
+              </Button>
+              <Button
+                variant="link"
+                onClick={() => {
+                  setIsDeleteModalOpen(false)
+                  setClusterToDelete(null)
+                  setDeleteConfirmation('')
+                }}
+                isDisabled={isDeleting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </Form>
+        </div>
+      </Modal>
     </AppLayout>
   )
 }
