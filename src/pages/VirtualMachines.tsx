@@ -40,10 +40,8 @@ import {
 } from '@patternfly/react-table'
 import { VirtualMachineIcon, SearchIcon, EllipsisVIcon, ThIcon, ListIcon, PlayIcon, PowerOffIcon, RedoIcon, TrashIcon, FilterIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
-import { getVirtualMachines, deleteVirtualMachine, createVirtualMachine } from '../api/vms'
-import { getTemplates } from '../api/templates'
-import { VirtualMachine, Template } from '../api/types'
-import { CreateVMWizard } from '../components/wizards/CreateVMWizard'
+import { getVirtualMachines, deleteVirtualMachine } from '../api/vms'
+import { VirtualMachine } from '../api/types'
 
 type ViewType = 'cards' | 'table'
 
@@ -61,10 +59,6 @@ const VirtualMachines: React.FC = () => {
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
   const [viewType, setViewType] = useState<ViewType>('cards')
   const [showOnlyMyVMs, setShowOnlyMyVMs] = useState(false)
-
-  // Create VM wizard
-  const [wizardOpen, setWizardOpen] = useState(false)
-  const [templates, setTemplates] = useState<Template[]>([])
 
   // Sorting
   const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined)
@@ -100,19 +94,6 @@ const VirtualMachines: React.FC = () => {
     return () => clearInterval(interval)
   }, [isInitialLoad])
 
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const response = await getTemplates()
-        setTemplates(response.items || [])
-      } catch (error) {
-        console.error('Error fetching templates:', error)
-        setTemplates([])
-      }
-    }
-
-    fetchTemplates()
-  }, [])
 
   const getStateBadge = (state?: string) => {
     if (!state) return <Label color="grey">{t('common:status.unknown')}</Label>
@@ -163,34 +144,7 @@ const VirtualMachines: React.FC = () => {
   }
 
   const handleCreateVMClick = () => {
-    setWizardOpen(true)
-  }
-
-  const handleCreateVM = async (vmId: string, templateId: string, parameters: Record<string, any>) => {
-    console.log('Creating VM with name:', vmId)
-    console.log('Creating VM with parameters:', JSON.stringify(parameters, null, 2))
-
-    // Filter out empty/null/undefined values
-    const filteredParameters: Record<string, any> = {}
-    for (const [key, value] of Object.entries(parameters)) {
-      if (value !== undefined && value !== null && value !== '') {
-        filteredParameters[key] = value
-      }
-    }
-
-    const newVm = await createVirtualMachine({
-      metadata: {
-        name: vmId,
-      },
-      spec: {
-        template: templateId,
-        template_parameters: Object.keys(filteredParameters).length > 0 ? filteredParameters : undefined,
-      },
-    })
-    setVms([...vms, newVm])
-    // Refresh the VM list to show the new VM
-    const response = await getVirtualMachines()
-    setVms(response.items || [])
+    navigate('/templates')
   }
 
   const handleRowClick = (vm: VirtualMachine) => {
@@ -631,13 +585,6 @@ const VirtualMachines: React.FC = () => {
           </Button>
         </ModalFooter>
       </Modal>
-
-      <CreateVMWizard
-        isOpen={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        onCreate={handleCreateVM}
-        templates={templates}
-      />
     </AppLayout>
   )
 }
