@@ -1,14 +1,17 @@
 import { apiClient } from './client'
 import { VirtualMachine, ListResponse } from './types'
+import { deduplicateRequest } from '../utils/requestDeduplication'
 
 export const getVirtualMachines = async (): Promise<ListResponse<VirtualMachine>> => {
-  try {
-    const response = await apiClient.get<ListResponse<VirtualMachine>>('/virtual_machines')
-    return response
-  } catch (error) {
-    console.error('Failed to fetch virtual machines:', error)
-    throw error
-  }
+  return deduplicateRequest('virtual-machines-list', async () => {
+    try {
+      const response = await apiClient.get<ListResponse<VirtualMachine>>('/virtual_machines')
+      return response
+    } catch (error) {
+      console.error('Failed to fetch virtual machines:', error)
+      throw error
+    }
+  })
 }
 
 export const getVirtualMachine = async (id: string): Promise<VirtualMachine> => {

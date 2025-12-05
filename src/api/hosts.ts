@@ -1,6 +1,7 @@
 import { Host, ListResponse } from './types'
 import { getUserManager } from '../auth/oidcConfig'
 import { getConfig } from './config'
+import { deduplicateRequest } from '../utils/requestDeduplication'
 
 // Helper to get API base URL from centralized config
 const getApiBaseUrl = async (): Promise<string> => {
@@ -16,6 +17,8 @@ export const getHosts = async (options?: {
   limit?: number
   filter?: string
 }): Promise<ListResponse<Host>> => {
+  const key = `hosts-${JSON.stringify(options || {})}`
+  return deduplicateRequest(key, async () => {
   try {
     const baseUrl = await getApiBaseUrl()
     const userManager = getUserManager()
@@ -52,6 +55,7 @@ export const getHosts = async (options?: {
     console.error('Failed to fetch hosts:', error)
     throw error
   }
+  })
 }
 
 export const getHost = async (id: string): Promise<Host> => {

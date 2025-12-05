@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios'
 import { getConfig } from './config'
+import { retryWithBackoff } from '../utils/retryWithBackoff'
 
 // Get fulfillment API URL from centralized config
 const getFulfillmentApiUrl = async (): Promise<string> => {
@@ -75,41 +76,51 @@ class APIClient {
   }
 
   async get<T>(endpoint: string): Promise<T> {
-    const response = await this.client.get<T>(endpoint, {
-      validateStatus: (status) => status >= 200 && status < 300,
-      headers: {
-        'Accept': 'application/json',
-      },
+    return retryWithBackoff(async () => {
+      const response = await this.client.get<T>(endpoint, {
+        validateStatus: (status) => status >= 200 && status < 300,
+        headers: {
+          'Accept': 'application/json',
+        },
+      })
+
+      // Validate that we got JSON, not HTML
+      const contentType = response.headers['content-type']
+      if (contentType && !contentType.includes('application/json')) {
+        console.error(`Expected JSON but received ${contentType}`)
+        throw new Error(`API returned ${contentType} instead of JSON`)
+      }
+
+      return response.data
     })
-
-    // Validate that we got JSON, not HTML
-    const contentType = response.headers['content-type']
-    if (contentType && !contentType.includes('application/json')) {
-      console.error(`Expected JSON but received ${contentType}`)
-      throw new Error(`API returned ${contentType} instead of JSON`)
-    }
-
-    return response.data
   }
 
   async post<T>(endpoint: string, data?: unknown): Promise<T> {
-    const response = await this.client.post<T>(endpoint, data)
-    return response.data
+    return retryWithBackoff(async () => {
+      const response = await this.client.post<T>(endpoint, data)
+      return response.data
+    }, { maxRetries: 2 }) // Fewer retries for mutations
   }
 
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
-    const response = await this.client.put<T>(endpoint, data)
-    return response.data
+    return retryWithBackoff(async () => {
+      const response = await this.client.put<T>(endpoint, data)
+      return response.data
+    }, { maxRetries: 2 })
   }
 
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {
-    const response = await this.client.patch<T>(endpoint, data)
-    return response.data
+    return retryWithBackoff(async () => {
+      const response = await this.client.patch<T>(endpoint, data)
+      return response.data
+    }, { maxRetries: 2 })
   }
 
   async delete<T>(endpoint: string): Promise<T> {
-    const response = await this.client.delete<T>(endpoint)
-    return response.data
+    return retryWithBackoff(async () => {
+      const response = await this.client.delete<T>(endpoint)
+      return response.data
+    }, { maxRetries: 2 })
   }
 }
 

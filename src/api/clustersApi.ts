@@ -6,6 +6,7 @@
 import { Cluster, ClusterTemplate, ListResponse } from './types'
 import { getUserManager } from '../auth/oidcConfig'
 import { getConfig } from './config'
+import { deduplicateRequest } from '../utils/requestDeduplication'
 
 // Helper to get API base URL from centralized config
 const getApiBaseUrl = async (): Promise<string> => {
@@ -26,6 +27,8 @@ export const listClusterTemplates = async (options?: {
   filter?: string
   order?: string
 }): Promise<ListResponse<ClusterTemplate>> => {
+  const key = `cluster-templates-${JSON.stringify(options || {})}`
+  return deduplicateRequest(key, async () => {
   try {
     const baseUrl = await getApiBaseUrl()
     const userManager = getUserManager()
@@ -63,6 +66,7 @@ export const listClusterTemplates = async (options?: {
     console.error('Failed to list cluster templates:', error)
     throw error
   }
+  })
 }
 
 // ============================================
@@ -75,6 +79,8 @@ export const listClusters = async (options?: {
   filter?: string
   order?: string
 }): Promise<ListResponse<Cluster>> => {
+  const key = `clusters-${JSON.stringify(options || {})}`
+  return deduplicateRequest(key, async () => {
   try {
     const baseUrl = await getApiBaseUrl()
     const userManager = getUserManager()
@@ -112,6 +118,7 @@ export const listClusters = async (options?: {
     console.error('Failed to list clusters:', error)
     throw error
   }
+  })
 }
 
 export const getCluster = async (id: string): Promise<Cluster> => {
