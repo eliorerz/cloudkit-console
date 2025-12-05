@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -57,10 +57,8 @@ const Dashboard: React.FC = () => {
   const [clustersProgressing, setClustersProgressing] = useState(0)
   const [clustersError, setClustersError] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [vmsFetched, setVmsFetched] = useState(false)
   const [loadingClusters, setLoadingClusters] = useState(true)
-  const [isFirstClusterLoad, setIsFirstClusterLoad] = useState(true)
   const [templates, setTemplates] = useState<Template[]>([])
   const [templatesLoading, setTemplatesLoading] = useState(true)
   const [clusterTemplatesCount, setClusterTemplatesCount] = useState(0)
@@ -69,7 +67,11 @@ const Dashboard: React.FC = () => {
   const [hostsAssigned, setHostsAssigned] = useState(0)
   const [hostsUnassigned, setHostsUnassigned] = useState(0)
   const [loadingHosts, setLoadingHosts] = useState(true)
-  const [isFirstHostsLoad, setIsFirstHostsLoad] = useState(true)
+
+  // Use refs for tracking initial loads to avoid stale closures in intervals
+  const isInitialMetricsLoad = useRef(true)
+  const isFirstClusterLoad = useRef(true)
+  const isFirstHostsLoad = useRef(true)
 
   useEffect(() => {
     let isActive = true
@@ -77,16 +79,24 @@ const Dashboard: React.FC = () => {
     const fetchMetrics = async () => {
       if (!isActive) return
 
-      if (isInitialLoad) {
+      // Only show loading spinner on first load
+      if (isInitialMetricsLoad.current) {
         setLoading(true)
       }
-      const data = await getDashboardMetrics()
 
-      if (isActive) {
-        setMetrics(data)
-        if (isInitialLoad) {
+      try {
+        const data = await getDashboardMetrics()
+
+        if (isActive) {
+          setMetrics(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch metrics:', error)
+        // Don't clear existing data on error - keep showing previous data
+      } finally {
+        if (isActive && isInitialMetricsLoad.current) {
           setLoading(false)
-          setIsInitialLoad(false)
+          isInitialMetricsLoad.current = false
         }
       }
     }
@@ -99,7 +109,7 @@ const Dashboard: React.FC = () => {
       isActive = false
       clearInterval(interval)
     }
-  }, [])  // Removed isInitialLoad and role from deps
+  }, [])
 
   // Fetch templates
   useEffect(() => {
@@ -109,7 +119,7 @@ const Dashboard: React.FC = () => {
         setTemplates(response.items || [])
       } catch (error) {
         console.error('Failed to fetch templates:', error)
-        setTemplates([])
+        // Don't clear existing data on error - keep showing previous data
       } finally {
         setTemplatesLoading(false)
       }
@@ -226,7 +236,7 @@ const Dashboard: React.FC = () => {
       if (!isActive) return
 
       // Only show loading spinner on first load, not on auto-refresh
-      if (isFirstClusterLoad) {
+      if (isFirstClusterLoad.current) {
         setLoadingClusters(true)
       }
       try {
@@ -235,10 +245,7 @@ const Dashboard: React.FC = () => {
 
         if (!isActive) return
 
-        setClusters(clusterItems)
-        setClustersTotal(response.total || 0)
-
-        // Calculate status counts
+        // Calculate status counts before updating state
         let ready = 0
         let progressing = 0
         let error = 0
@@ -252,23 +259,21 @@ const Dashboard: React.FC = () => {
             error++
           }
         })
+
+        // Batch all state updates together to prevent flickering
+        setClusters(clusterItems)
+        setClustersTotal(response.total || 0)
         setClustersReady(ready)
         setClustersProgressing(progressing)
         setClustersError(error)
       } catch (error) {
         console.error('Failed to fetch clusters:', error)
-        if (isActive) {
-          setClusters([])
-          setClustersTotal(0)
-          setClustersReady(0)
-          setClustersProgressing(0)
-          setClustersError(0)
-        }
+        // Don't clear existing data on error - keep showing previous data
       } finally {
         if (isActive) {
           setLoadingClusters(false)
-          if (isFirstClusterLoad) {
-            setIsFirstClusterLoad(false)
+          if (isFirstClusterLoad.current) {
+            isFirstClusterLoad.current = false
           }
         }
       }
@@ -297,7 +302,7 @@ const Dashboard: React.FC = () => {
       if (!isActive) return
 
       // Only show loading spinner on first load, not on auto-refresh
-      if (isFirstHostsLoad) {
+      if (isFirstHostsLoad.current) {
         setLoadingHosts(true)
       }
       try {
@@ -323,16 +328,12 @@ const Dashboard: React.FC = () => {
         setHostsUnassigned(unassigned)
       } catch (error) {
         console.error('Failed to fetch hosts:', error)
-        if (isActive) {
-          setHostsTotal(0)
-          setHostsAssigned(0)
-          setHostsUnassigned(0)
-        }
+        // Don't clear existing data on error - keep showing previous data
       } finally {
         if (isActive) {
           setLoadingHosts(false)
-          if (isFirstHostsLoad) {
-            setIsFirstHostsLoad(false)
+          if (isFirstHostsLoad.current) {
+            isFirstHostsLoad.current = false
           }
         }
       }
@@ -409,6 +410,31 @@ const Dashboard: React.FC = () => {
     }
   }
 
+  // Memoize sorted clusters to prevent flickering on refresh
+  const sortedClusters = useMemo(() => {
+    return [...clusters].sort((a, b) => {
+      const aTime = a.metadata?.creation_timestamp || ''
+      const bTime = b.metadata?.creation_timestamp || ''
+      return bTime.localeCompare(aTime) // Sort descending (newest first)
+    })
+  }, [clusters])
+
+  // Memoize sorted VMs to prevent flickering on refresh
+  const userVMs = useMemo(() => {
+    if (!username) return []
+    return vms.filter((vm) => {
+      const creators = vm.metadata?.creators || []
+      return creators.includes(username)
+    })
+  }, [vms, username])
+
+  const sortedUserVMs = useMemo(() => {
+    return [...userVMs].sort((a, b) => {
+      const aTime = a.metadata?.creation_timestamp || ''
+      const bTime = b.metadata?.creation_timestamp || ''
+      return bTime.localeCompare(aTime) // Sort descending (newest first)
+    })
+  }, [userVMs])
 
   return (
     <AppLayout>
@@ -599,12 +625,7 @@ const Dashboard: React.FC = () => {
                       </EmptyState>
                     ) : (
                       <div>
-                        {clusters
-                          .sort((a, b) => {
-                            const aTime = a.metadata?.creation_timestamp || ''
-                            const bTime = b.metadata?.creation_timestamp || ''
-                            return bTime.localeCompare(aTime) // Sort descending (newest first)
-                          })
+                        {sortedClusters
                           .slice(0, 3)
                           .map((cluster, index, array) => (
                             <div
@@ -684,33 +705,19 @@ const Dashboard: React.FC = () => {
                       <div style={{ textAlign: 'center', padding: '2rem 0' }}>
                         <Spinner size="md" />
                       </div>
-                    ) : (() => {
-                      // Filter VMs by logged-in user
-                      const userVMs = username
-                        ? vms.filter((vm) => {
-                            const creators = vm.metadata?.creators || []
-                            return creators.includes(username)
-                          })
-                        : []
-
-                      return userVMs.length === 0 ? (
-                        <EmptyState>
-                          <EmptyStateBody>
-                            <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                              {t('dashboard:empty.noVMs')}
-                            </div>
-                          </EmptyStateBody>
-                        </EmptyState>
-                      ) : (
-                        <div>
-                          {userVMs
-                            .sort((a, b) => {
-                              const aTime = a.metadata?.creation_timestamp || ''
-                              const bTime = b.metadata?.creation_timestamp || ''
-                              return bTime.localeCompare(aTime) // Sort descending (newest first)
-                            })
-                            .slice(0, 3)
-                            .map((vm, index, array) => (
+                    ) : userVMs.length === 0 ? (
+                      <EmptyState>
+                        <EmptyStateBody>
+                          <div style={{ color: '#6a6e73', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                            {t('dashboard:empty.noVMs')}
+                          </div>
+                        </EmptyStateBody>
+                      </EmptyState>
+                    ) : (
+                      <div>
+                        {sortedUserVMs
+                          .slice(0, 3)
+                          .map((vm, index, array) => (
                             <div
                               key={vm.id}
                               onClick={() => navigate(`/virtual-machines/${vm.id}`)}
@@ -756,8 +763,7 @@ const Dashboard: React.FC = () => {
                             </div>
                           )}
                         </div>
-                      )
-                    })()}
+                      )}
                   </CardBody>
                 </Card>
               )}
