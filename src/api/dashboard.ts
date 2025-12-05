@@ -1,8 +1,10 @@
 import { apiClient } from './client'
 import { getHubs } from './hubs'
 import { Template, VirtualMachine, DashboardMetrics, ListResponse } from './types'
+import { deduplicateRequest } from '../utils/requestDeduplication'
 
 export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
+  return deduplicateRequest('dashboard-metrics', async () => {
   try {
     const templatesResp = await apiClient.get<ListResponse<Template>>('/virtual_machine_templates')
 
@@ -78,4 +80,5 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       resources: { cpuUtilization: 0, memoryUtilization: 0, storageUtilization: 0 },
     }
   }
+  })
 }

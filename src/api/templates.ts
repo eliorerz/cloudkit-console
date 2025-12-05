@@ -1,14 +1,17 @@
 import { apiClient } from './client'
 import { Template, ListResponse } from './types'
+import { deduplicateRequest } from '../utils/requestDeduplication'
 
 export const getTemplates = async (): Promise<ListResponse<Template>> => {
-  try {
-    const response = await apiClient.get<ListResponse<Template>>('/virtual_machine_templates')
-    return response
-  } catch (error) {
-    console.error('Failed to fetch templates:', error)
-    throw error
-  }
+  return deduplicateRequest('templates-list', async () => {
+    try {
+      const response = await apiClient.get<ListResponse<Template>>('/virtual_machine_templates')
+      return response
+    } catch (error) {
+      console.error('Failed to fetch templates:', error)
+      throw error
+    }
+  })
 }
 
 export const getTemplate = async (id: string): Promise<Template> => {

@@ -10,6 +10,7 @@ import enVirtualMachines from './locales/en/virtualMachines.json'
 import enClusters from './locales/en/clusters.json'
 import enSettings from './locales/en/settings.json'
 import enTemplates from './locales/en/templates.json'
+import enVmCreate from './locales/en/vmCreate.json'
 
 import zhCommon from './locales/zh/common.json'
 import zhNavigation from './locales/zh/navigation.json'
@@ -19,6 +20,7 @@ import zhVirtualMachines from './locales/zh/virtualMachines.json'
 import zhClusters from './locales/zh/clusters.json'
 import zhSettings from './locales/zh/settings.json'
 import zhTemplates from './locales/zh/templates.json'
+import zhVmCreate from './locales/zh/vmCreate.json'
 
 import zhTWCommon from './locales/zh-TW/common.json'
 import zhTWNavigation from './locales/zh-TW/navigation.json'
@@ -28,6 +30,7 @@ import zhTWVirtualMachines from './locales/zh-TW/virtualMachines.json'
 import zhTWClusters from './locales/zh-TW/clusters.json'
 import zhTWSettings from './locales/zh-TW/settings.json'
 import zhTWTemplates from './locales/zh-TW/templates.json'
+import zhTWVmCreate from './locales/zh-TW/vmCreate.json'
 
 i18n
   .use(LanguageDetector)
@@ -43,6 +46,7 @@ i18n
         clusters: enClusters,
         settings: enSettings,
         templates: enTemplates,
+        vmCreate: enVmCreate,
       },
       zh: {
         common: zhCommon,
@@ -53,6 +57,7 @@ i18n
         clusters: zhClusters,
         settings: zhSettings,
         templates: zhTemplates,
+        vmCreate: zhVmCreate,
       },
       'zh-TW': {
         common: zhTWCommon,
@@ -63,6 +68,7 @@ i18n
         clusters: zhTWClusters,
         settings: zhTWSettings,
         templates: zhTWTemplates,
+        vmCreate: zhTWVmCreate,
       },
     },
     fallbackLng: 'en',
