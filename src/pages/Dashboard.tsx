@@ -72,16 +72,22 @@ const Dashboard: React.FC = () => {
   const [isFirstHostsLoad, setIsFirstHostsLoad] = useState(true)
 
   useEffect(() => {
+    let isActive = true
+
     const fetchMetrics = async () => {
+      if (!isActive) return
+
       if (isInitialLoad) {
         setLoading(true)
       }
       const data = await getDashboardMetrics()
 
-      setMetrics(data)
-      if (isInitialLoad) {
-        setLoading(false)
-        setIsInitialLoad(false)
+      if (isActive) {
+        setMetrics(data)
+        if (isInitialLoad) {
+          setLoading(false)
+          setIsInitialLoad(false)
+        }
       }
     }
 
@@ -89,8 +95,11 @@ const Dashboard: React.FC = () => {
 
     // Refresh metrics every 30 seconds
     const interval = setInterval(fetchMetrics, 30000)
-    return () => clearInterval(interval)
-  }, [isInitialLoad, role])
+    return () => {
+      isActive = false
+      clearInterval(interval)
+    }
+  }, [])  // Removed isInitialLoad and role from deps
 
   // Fetch templates
   useEffect(() => {
@@ -141,24 +150,34 @@ const Dashboard: React.FC = () => {
 
     let retryCount = 0
     const maxRetries = 10
+    let isActive = true
+    let fastRetryInterval: NodeJS.Timeout | null = null
+    let slowPollInterval: NodeJS.Timeout | null = null
 
     const fetchVMs = async () => {
+      if (!isActive) return
+
       try {
         const response = await getVirtualMachines()
 
         // Validate response is a proper list response, not HTML
         if (response && typeof response === 'object' && 'items' in response) {
-          setVms(response.items || [])
-          setVmsFetched(true)
+          if (isActive) {
+            setVms(response.items || [])
+            setVmsFetched(true)
+            // Clear fast retry interval once we have data
+            if (fastRetryInterval) {
+              clearInterval(fastRetryInterval)
+              fastRetryInterval = null
+            }
+          }
         } else {
           console.error('✗ Invalid VM response (possibly HTML)')
           retryCount++
-          // Don't set vmsFetched - keep showing spinner
         }
       } catch (error) {
         console.error('Failed to fetch VMs:', error)
         retryCount++
-        // Don't set vmsFetched - keep showing spinner to retry
       }
     }
 
@@ -166,24 +185,34 @@ const Dashboard: React.FC = () => {
     fetchVMs()
 
     // Fast retry every 2 seconds until we get valid data (max 10 attempts = 20 seconds)
-    // Then slow polling every 30 seconds
-    const fastRetryInterval = setInterval(() => {
-      if (!vmsFetched && retryCount < maxRetries) {
+    fastRetryInterval = setInterval(() => {
+      if (retryCount < maxRetries && !vmsFetched) {
         fetchVMs()
+      } else if (retryCount >= maxRetries) {
+        // Stop retrying after max attempts
+        if (fastRetryInterval) {
+          clearInterval(fastRetryInterval)
+          fastRetryInterval = null
+        }
       }
     }, 2000)
 
-    const slowPollInterval = setInterval(() => {
-      if (vmsFetched) {
-        fetchVMs()
+    // Slow polling every 30 seconds ONLY after we have data
+    // Wait 30 seconds before starting slow poll
+    setTimeout(() => {
+      if (isActive) {
+        slowPollInterval = setInterval(() => {
+          fetchVMs()
+        }, 30000)
       }
     }, 30000)
 
     return () => {
-      clearInterval(fastRetryInterval)
-      clearInterval(slowPollInterval)
+      isActive = false
+      if (fastRetryInterval) clearInterval(fastRetryInterval)
+      if (slowPollInterval) clearInterval(slowPollInterval)
     }
-  }, [authLoading, username, token, vmsFetched])
+  }, [authLoading, username, token])  // Removed vmsFetched from deps
 
   // Fetch clusters for admin users
   useEffect(() => {
@@ -191,7 +220,11 @@ const Dashboard: React.FC = () => {
       return
     }
 
+    let isActive = true
+
     const fetchClusters = async () => {
+      if (!isActive) return
+
       // Only show loading spinner on first load, not on auto-refresh
       if (isFirstClusterLoad) {
         setLoadingClusters(true)
@@ -199,6 +232,9 @@ const Dashboard: React.FC = () => {
       try {
         const response = await listClusters()
         const clusterItems = response.items || []
+
+        if (!isActive) return
+
         setClusters(clusterItems)
         setClustersTotal(response.total || 0)
 
@@ -221,15 +257,19 @@ const Dashboard: React.FC = () => {
         setClustersError(error)
       } catch (error) {
         console.error('Failed to fetch clusters:', error)
-        setClusters([])
-        setClustersTotal(0)
-        setClustersReady(0)
-        setClustersProgressing(0)
-        setClustersError(0)
+        if (isActive) {
+          setClusters([])
+          setClustersTotal(0)
+          setClustersReady(0)
+          setClustersProgressing(0)
+          setClustersError(0)
+        }
       } finally {
-        setLoadingClusters(false)
-        if (isFirstClusterLoad) {
-          setIsFirstClusterLoad(false)
+        if (isActive) {
+          setLoadingClusters(false)
+          if (isFirstClusterLoad) {
+            setIsFirstClusterLoad(false)
+          }
         }
       }
     }
@@ -238,8 +278,11 @@ const Dashboard: React.FC = () => {
 
     // Refresh clusters every 30 seconds
     const interval = setInterval(fetchClusters, 30000)
-    return () => clearInterval(interval)
-  }, [role, isFirstClusterLoad])
+    return () => {
+      isActive = false
+      clearInterval(interval)
+    }
+  }, [role])  // Removed isFirstClusterLoad from deps
 
   // Fetch bare metal hosts for admin users
   useEffect(() => {
@@ -248,7 +291,11 @@ const Dashboard: React.FC = () => {
       return
     }
 
+    let isActive = true
+
     const fetchHosts = async () => {
+      if (!isActive) return
+
       // Only show loading spinner on first load, not on auto-refresh
       if (isFirstHostsLoad) {
         setLoadingHosts(true)
@@ -256,6 +303,9 @@ const Dashboard: React.FC = () => {
       try {
         const response = await getHosts()
         const hostItems = response.items || []
+
+        if (!isActive) return
+
         setHostsTotal(response.total || 0)
 
         // Calculate assigned vs unassigned hosts
@@ -273,13 +323,17 @@ const Dashboard: React.FC = () => {
         setHostsUnassigned(unassigned)
       } catch (error) {
         console.error('Failed to fetch hosts:', error)
-        setHostsTotal(0)
-        setHostsAssigned(0)
-        setHostsUnassigned(0)
+        if (isActive) {
+          setHostsTotal(0)
+          setHostsAssigned(0)
+          setHostsUnassigned(0)
+        }
       } finally {
-        setLoadingHosts(false)
-        if (isFirstHostsLoad) {
-          setIsFirstHostsLoad(false)
+        if (isActive) {
+          setLoadingHosts(false)
+          if (isFirstHostsLoad) {
+            setIsFirstHostsLoad(false)
+          }
         }
       }
     }
@@ -288,8 +342,11 @@ const Dashboard: React.FC = () => {
 
     // Refresh hosts every 30 seconds
     const interval = setInterval(fetchHosts, 30000)
-    return () => clearInterval(interval)
-  }, [role, isFirstHostsLoad])
+    return () => {
+      isActive = false
+      clearInterval(interval)
+    }
+  }, [role])  // Removed isFirstHostsLoad from deps
 
   // Helper to format VM state
   const formatState = (state?: string): string => {

@@ -1,12 +1,9 @@
 import axios, { AxiosInstance } from 'axios'
+import { getConfig } from './config'
 
-// Get fulfillment API URL from runtime config
+// Get fulfillment API URL from centralized config
 const getFulfillmentApiUrl = async (): Promise<string> => {
-  const response = await fetch('/api/config')
-  if (!response.ok) {
-    throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`)
-  }
-  const config = await response.json()
+  const config = await getConfig()
   if (!config.fulfillmentApiUrl) {
     throw new Error('fulfillmentApiUrl not found in configuration')
   }
@@ -41,6 +38,14 @@ class APIClient {
     )
   }
 
+  /**
+   * Public method to pre-initialize the API client.
+   * Call this once on app startup to avoid lazy initialization on first request.
+   */
+  async initialize(): Promise<void> {
+    return this.ensureInitialized()
+  }
+
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) {
       return
@@ -56,9 +61,9 @@ class APIClient {
         this.baseURL = await getFulfillmentApiUrl()
         this.client.defaults.baseURL = `${this.baseURL}/api/fulfillment/v1`
         this.initialized = true
-        console.log('API client initialized with baseURL:', this.client.defaults.baseURL)
+        console.log('✓ API client initialized with baseURL:', this.client.defaults.baseURL)
       } catch (error) {
-        console.error('Failed to initialize API client:', error)
+        console.error('✗ Failed to initialize API client:', error)
         // Reset state to allow retry on next request
         this.initPromise = null
         this.initialized = false
