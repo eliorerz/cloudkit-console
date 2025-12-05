@@ -17,6 +17,10 @@ import {
   GridItem,
   EmptyState,
   EmptyStateBody,
+  Alert,
+  AlertGroup,
+  AlertVariant,
+  AlertActionCloseButton,
 } from '@patternfly/react-core'
 import {
   LayerGroupIcon,
@@ -67,14 +71,25 @@ const Dashboard: React.FC = () => {
   const [hostsAssigned, setHostsAssigned] = useState(0)
   const [hostsUnassigned, setHostsUnassigned] = useState(0)
   const [loadingHosts, setLoadingHosts] = useState(true)
+  const [alerts, setAlerts] = useState<Array<{ key: number; title: string; variant: AlertVariant }>>([])
 
   // Use refs for tracking initial loads to avoid stale closures in intervals
   const isInitialMetricsLoad = useRef(true)
   const isFirstClusterLoad = useRef(true)
   const isFirstHostsLoad = useRef(true)
 
+  // Helper function to add error/success alerts
+  const addAlert = (title: string, variant: AlertVariant = AlertVariant.danger) => {
+    const key = Date.now()
+    setAlerts((prevAlerts) => [...prevAlerts, { key, title, variant }])
+    setTimeout(() => {
+      setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.key !== key))
+    }, 5000) // Show for 5 seconds
+  }
+
   useEffect(() => {
     let isActive = true
+    const abortController = new AbortController()
 
     const fetchMetrics = async () => {
       if (!isActive) return
@@ -90,8 +105,12 @@ const Dashboard: React.FC = () => {
         if (isActive) {
           setMetrics(data)
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch metrics:', error)
+        if (isActive && !isInitialMetricsLoad.current) {
+          addAlert('Failed to fetch dashboard metrics. Showing cached data.')
+        }
         // Don't clear existing data on error - keep showing previous data
       } finally {
         if (isActive && isInitialMetricsLoad.current) {
@@ -107,6 +126,7 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(fetchMetrics, 30000)
     return () => {
       isActive = false
+      abortController.abort()
       clearInterval(interval)
     }
   }, [])
@@ -117,8 +137,9 @@ const Dashboard: React.FC = () => {
       try {
         const response = await getTemplates()
         setTemplates(response.items || [])
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch templates:', error)
+        addAlert('Failed to load VM templates')
         // Don't clear existing data on error - keep showing previous data
       } finally {
         setTemplatesLoading(false)
@@ -139,8 +160,9 @@ const Dashboard: React.FC = () => {
       try {
         const response = await listClusterTemplates()
         setClusterTemplatesCount(response.total || 0)
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch cluster templates:', error)
+        addAlert('Failed to load cluster templates')
         setClusterTemplatesCount(0)
       } finally {
         setClusterTemplatesLoading(false)
@@ -158,11 +180,10 @@ const Dashboard: React.FC = () => {
       return
     }
 
-    let retryCount = 0
-    const maxRetries = 10
     let isActive = true
-    let fastRetryInterval: NodeJS.Timeout | null = null
-    let slowPollInterval: NodeJS.Timeout | null = null
+    const abortController = new AbortController()
+    let retryCount = 0
+    const maxRetries = 3 // Reduced from 10
 
     const fetchVMs = async () => {
       if (!isActive) return
@@ -175,54 +196,40 @@ const Dashboard: React.FC = () => {
           if (isActive) {
             setVms(response.items || [])
             setVmsFetched(true)
-            // Clear fast retry interval once we have data
-            if (fastRetryInterval) {
-              clearInterval(fastRetryInterval)
-              fastRetryInterval = null
-            }
+            retryCount = 0 // Reset retry count on success
           }
         } else {
           console.error('✗ Invalid VM response (possibly HTML)')
           retryCount++
+          if (retryCount >= maxRetries && isActive) {
+            addAlert('Failed to load virtual machines after multiple attempts')
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch VMs:', error)
         retryCount++
+        if (retryCount >= maxRetries && isActive && vmsFetched) {
+          // Only show error if we previously had data
+          addAlert('Failed to refresh virtual machines. Showing cached data.')
+        } else if (retryCount >= maxRetries && isActive && !vmsFetched) {
+          addAlert('Failed to load virtual machines')
+        }
       }
     }
 
     // Initial fetch
     fetchVMs()
 
-    // Fast retry every 2 seconds until we get valid data (max 10 attempts = 20 seconds)
-    fastRetryInterval = setInterval(() => {
-      if (retryCount < maxRetries && !vmsFetched) {
-        fetchVMs()
-      } else if (retryCount >= maxRetries) {
-        // Stop retrying after max attempts
-        if (fastRetryInterval) {
-          clearInterval(fastRetryInterval)
-          fastRetryInterval = null
-        }
-      }
-    }, 2000)
-
-    // Slow polling every 30 seconds ONLY after we have data
-    // Wait 30 seconds before starting slow poll
-    setTimeout(() => {
-      if (isActive) {
-        slowPollInterval = setInterval(() => {
-          fetchVMs()
-        }, 30000)
-      }
-    }, 30000)
+    // Single polling interval every 30 seconds
+    const pollInterval = setInterval(fetchVMs, 30000)
 
     return () => {
       isActive = false
-      if (fastRetryInterval) clearInterval(fastRetryInterval)
-      if (slowPollInterval) clearInterval(slowPollInterval)
+      abortController.abort()
+      clearInterval(pollInterval)
     }
-  }, [authLoading, username, token])  // Removed vmsFetched from deps
+  }, [authLoading, username, token])
 
   // Fetch clusters for admin users
   useEffect(() => {
@@ -231,6 +238,7 @@ const Dashboard: React.FC = () => {
     }
 
     let isActive = true
+    const abortController = new AbortController()
 
     const fetchClusters = async () => {
       if (!isActive) return
@@ -266,8 +274,12 @@ const Dashboard: React.FC = () => {
         setClustersReady(ready)
         setClustersProgressing(progressing)
         setClustersError(error)
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch clusters:', error)
+        if (isActive && !isFirstClusterLoad.current) {
+          addAlert('Failed to refresh clusters. Showing cached data.')
+        }
         // Don't clear existing data on error - keep showing previous data
       } finally {
         if (isActive) {
@@ -285,9 +297,10 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(fetchClusters, 30000)
     return () => {
       isActive = false
+      abortController.abort()
       clearInterval(interval)
     }
-  }, [role])  // Removed isFirstClusterLoad from deps
+  }, [role])
 
   // Fetch bare metal hosts for admin users
   useEffect(() => {
@@ -297,6 +310,7 @@ const Dashboard: React.FC = () => {
     }
 
     let isActive = true
+    const abortController = new AbortController()
 
     const fetchHosts = async () => {
       if (!isActive) return
@@ -326,8 +340,12 @@ const Dashboard: React.FC = () => {
         })
         setHostsAssigned(assigned)
         setHostsUnassigned(unassigned)
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch hosts:', error)
+        if (isActive && !isFirstHostsLoad.current) {
+          addAlert('Failed to refresh bare metal hosts. Showing cached data.')
+        }
         // Don't clear existing data on error - keep showing previous data
       } finally {
         if (isActive) {
@@ -345,9 +363,10 @@ const Dashboard: React.FC = () => {
     const interval = setInterval(fetchHosts, 30000)
     return () => {
       isActive = false
+      abortController.abort()
       clearInterval(interval)
     }
-  }, [role])  // Removed isFirstHostsLoad from deps
+  }, [role])
 
   // Helper to format VM state
   const formatState = (state?: string): string => {
@@ -438,6 +457,21 @@ const Dashboard: React.FC = () => {
 
   return (
     <AppLayout>
+      <AlertGroup isToast isLiveRegion>
+        {alerts.map((alert) => (
+          <Alert
+            key={alert.key}
+            variant={alert.variant}
+            title={alert.title}
+            timeout={5000}
+            actionClose={
+              <AlertActionCloseButton
+                onClose={() => setAlerts((prev) => prev.filter((a) => a.key !== alert.key))}
+              />
+            }
+          />
+        ))}
+      </AlertGroup>
       <PageSection>
         <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
           {t('dashboard:title')}
@@ -504,10 +538,18 @@ const Dashboard: React.FC = () => {
                   </Flex>
                 </CardTitle>
                 <CardBody>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.hubs.total}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                    {t('dashboard:metrics.hubs.description')}
-                  </div>
+                  {loading ? (
+                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                      <Spinner size="md" />
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.hubs.total}</div>
+                      <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                        {t('dashboard:metrics.hubs.description')}
+                      </div>
+                    </>
+                  )}
                 </CardBody>
               </Card>
             </GalleryItem>
@@ -529,10 +571,18 @@ const Dashboard: React.FC = () => {
                   </Flex>
                 </CardTitle>
                 <CardBody>
-                  <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{clustersTotal}</div>
-                  <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                    {clustersReady} {t('dashboard:metrics.clusters.ready')} · {clustersProgressing} {t('dashboard:metrics.clusters.progressing')} · {clustersError} {t('dashboard:metrics.clusters.error')}
-                  </div>
+                  {loadingClusters ? (
+                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                      <Spinner size="md" />
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{clustersTotal}</div>
+                      <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                        {clustersReady} {t('dashboard:metrics.clusters.ready')} · {clustersProgressing} {t('dashboard:metrics.clusters.progressing')} · {clustersError} {t('dashboard:metrics.clusters.error')}
+                      </div>
+                    </>
+                  )}
                 </CardBody>
               </Card>
             </GalleryItem>
@@ -586,10 +636,18 @@ const Dashboard: React.FC = () => {
                 </Flex>
               </CardTitle>
               <CardBody>
-                <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.vms.total}</div>
-                <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
-                  {metrics.vms.running} {t('dashboard:metrics.vms.running')} · {metrics.vms.stopped} {t('dashboard:metrics.vms.stopped')} · {metrics.vms.error} {t('dashboard:metrics.vms.error')}
-                </div>
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                    <Spinner size="md" />
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{metrics.vms.total}</div>
+                    <div style={{ fontSize: '0.875rem', color: '#6a6e73', marginTop: '0.5rem' }}>
+                      {metrics.vms.running} {t('dashboard:metrics.vms.running')} · {metrics.vms.stopped} {t('dashboard:metrics.vms.stopped')} · {metrics.vms.error} {t('dashboard:metrics.vms.error')}
+                    </div>
+                  </>
+                )}
               </CardBody>
             </Card>
           </GalleryItem>
