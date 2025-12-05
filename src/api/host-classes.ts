@@ -1,3 +1,5 @@
+import { getConfig } from './config'
+
 export interface CPUSpec {
   type: string
   cores: number
@@ -44,13 +46,9 @@ export async function getHostClasses(): Promise<HostClassesResponse> {
   return response.json()
 }
 
-// Helper to get API base URL
+// Helper to get API base URL from centralized config
 const getApiBaseUrl = async (): Promise<string> => {
-  const response = await fetch('/api/config')
-  if (!response.ok) {
-    throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`)
-  }
-  const config = await response.json()
+  const config = await getConfig()
   if (!config.fulfillmentApiUrl) {
     throw new Error('fulfillmentApiUrl not found in configuration')
   }

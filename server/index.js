@@ -25,6 +25,7 @@ const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'innabox';
 const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID || 'cloudkit-console';
 const NAMESPACE = process.env.NAMESPACE || 'innabox-devel';
 const GENERIC_TEMPLATE_ID = process.env.GENERIC_TEMPLATE_ID || 'cloudkit.templates.ocp_virt_vm';
+const REACT_STRICT_MODE = process.env.REACT_STRICT_MODE === 'true';
 
 // Middleware
 app.use(express.json());
@@ -199,7 +200,27 @@ app.get('*', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+
+  // Read index.html and inject runtime configuration
+  const indexPath = path.join(__dirname, '../dist/index.html');
+  fs.readFile(indexPath, 'utf8', (err, html) => {
+    if (err) {
+      console.error('Error reading index.html:', err);
+      return res.status(500).send('Internal Server Error');
+    }
+
+    // Inject runtime config as inline script before the main app script
+    const configScript = `
+    <script>
+      window.__CLOUDKIT_CONFIG__ = {
+        strictMode: ${REACT_STRICT_MODE}
+      };
+    </script>`;
+
+    // Insert config script right before </head>
+    const modifiedHtml = html.replace('</head>', `${configScript}\n  </head>`);
+    res.send(modifiedHtml);
+  });
 });
 
 app.listen(PORT, () => {

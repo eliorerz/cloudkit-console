@@ -1,4 +1,5 @@
 import { UserManager, WebStorageStateStore, Log } from 'oidc-client-ts'
+import { getConfig, type AppConfig } from '../api/config'
 
 // Enable OIDC client logging in development
 if (import.meta.env.DEV) {
@@ -6,22 +7,13 @@ if (import.meta.env.DEV) {
   Log.setLevel(Log.DEBUG)
 }
 
-// Runtime configuration - will be loaded from server
-interface RuntimeConfig {
-  keycloakUrl: string
-  keycloakRealm: string
-  oidcClientId: string
-  fulfillmentApiUrl: string
-  namespace: string
-}
-
 // Runtime configuration - MUST be loaded before use
-let runtimeConfig: RuntimeConfig | null = null
+let runtimeConfig: AppConfig | null = null
 
 const CONSOLE_URL = window.location.origin
 
-// Load configuration from server at runtime
-export async function loadConfig(): Promise<RuntimeConfig> {
+// Load configuration from centralized config service
+export async function loadConfig(): Promise<AppConfig> {
   // If already loaded, return it (idempotent)
   if (runtimeConfig) {
     console.log('Config already loaded, returning cached config')
@@ -29,11 +21,7 @@ export async function loadConfig(): Promise<RuntimeConfig> {
   }
 
   try {
-    const response = await fetch('/api/config')
-    if (!response.ok) {
-      throw new Error(`Failed to fetch config: ${response.status} ${response.statusText}`)
-    }
-    const config = await response.json()
+    const config = await getConfig()
 
     // Validate required fields
     if (!config.keycloakUrl || !config.keycloakRealm || !config.oidcClientId) {
@@ -44,7 +32,7 @@ export async function loadConfig(): Promise<RuntimeConfig> {
     console.log('Loaded runtime config:', config)
     return config
   } catch (error) {
-    const errorMsg = `FATAL: Failed to load runtime configuration from /api/config. Ensure cloudkit-console-config ConfigMap is properly configured. Error: ${error}`
+    const errorMsg = `FATAL: Failed to load runtime configuration. Ensure cloudkit-console-config ConfigMap is properly configured. Error: ${error}`
     console.error(errorMsg)
     throw new Error(errorMsg)
   }

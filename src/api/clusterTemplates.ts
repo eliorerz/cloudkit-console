@@ -5,6 +5,7 @@
 
 import { ClusterTemplate } from './types'
 import { listClusterTemplates as listClusterTemplatesFromAPI } from './clustersApi'
+import { getConfig } from './config'
 
 // Helper function to extract version from template
 function extractVersion(template: any): string {
@@ -158,7 +159,7 @@ export async function getClusterTemplate(id: string): Promise<ClusterTemplate | 
  * Create a new cluster template in the fulfillment service
  */
 export async function createClusterTemplate(template: Partial<ClusterTemplate>): Promise<ClusterTemplate> {
-  const config = await fetch('/api/config').then(res => res.json())
+  const config = await getConfig()
   const apiBaseUrl = config.fulfillmentApiUrl
 
   const response = await fetch(`${apiBaseUrl}/api/fulfillment/v1/cluster_templates`, {

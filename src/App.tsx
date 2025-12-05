@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { apiClient } from './api/client'
 import './i18n'
 import Login from './pages/Login'
 import { OIDCCallback } from './pages/OIDCCallback'
@@ -22,8 +24,35 @@ import ClusterCreate from './pages/ClusterCreate'
 import Monitoring from './pages/Monitoring'
 import Settings from './pages/Settings'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import { Spinner } from '@patternfly/react-core'
 
 function App() {
+  const [apiReady, setApiReady] = useState(false)
+
+  // Pre-initialize API client on app startup to prevent duplicate config fetches
+  useEffect(() => {
+    const initializeAPI = async () => {
+      try {
+        await apiClient.initialize()
+        setApiReady(true)
+      } catch (error) {
+        console.error('Failed to initialize API client:', error)
+        // Still set ready to allow app to load and show error states
+        setApiReady(true)
+      }
+    }
+
+    initializeAPI()
+  }, [])
+
+  if (!apiReady) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spinner size="xl" />
+      </div>
+    )
+  }
+
   return (
     <ThemeProvider>
       <AuthProvider>

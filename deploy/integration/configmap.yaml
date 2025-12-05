@@ -19,3 +19,8 @@ data:
 
   # Server Configuration
   PORT: "8080"
+
+  # React Configuration
+  # Set to "true" to enable React StrictMode (development mode with double-invocation of effects)
+  # Set to "false" to disable StrictMode (production mode with single invocation)
+  REACT_STRICT_MODE: "false"
