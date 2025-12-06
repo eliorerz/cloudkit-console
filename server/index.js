@@ -1,0 +1,228 @@
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 8080;
+
+// Validate required environment variables
+if (!process.env.FULFILLMENT_API_URL) {
+  console.error('ERROR: FULFILLMENT_API_URL environment variable is not set in ConfigMap');
+  process.exit(1);
+}
+if (!process.env.KEYCLOAK_URL) {
+  console.error('ERROR: KEYCLOAK_URL environment variable is not set in ConfigMap');
+  process.exit(1);
+}
+
+const FULFILLMENT_API = process.env.FULFILLMENT_API_URL;
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL;
+const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'innabox';
+const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID || 'cloudkit-console';
+const NAMESPACE = process.env.NAMESPACE || 'innabox-devel';
+const GENERIC_TEMPLATE_ID = process.env.GENERIC_TEMPLATE_ID || 'cloudkit.templates.ocp_virt_vm';
+const REACT_STRICT_MODE = process.env.REACT_STRICT_MODE === 'true';
+
+// Middleware
+app.use(express.json());
+
+// Configuration endpoint - provides runtime config to frontend
+// This allows the frontend to discover API URLs without hardcoding
+app.get('/api/config', (req, res) => {
+  res.json({
+    keycloakUrl: KEYCLOAK_URL,
+    keycloakRealm: KEYCLOAK_REALM,
+    oidcClientId: OIDC_CLIENT_ID,
+    fulfillmentApiUrl: FULFILLMENT_API,
+    namespace: NAMESPACE,
+    genericTemplateId: GENERIC_TEMPLATE_ID
+  });
+});
+
+// OS Images catalog endpoint
+app.get('/api/os-images', (req, res) => {
+  const osImagesPath = path.join(__dirname, '../config/os-images.json');
+
+  try {
+    // Check if file exists (mounted from ConfigMap in production)
+    if (fs.existsSync(osImagesPath)) {
+      const osImagesData = fs.readFileSync(osImagesPath, 'utf8');
+      res.json(JSON.parse(osImagesData));
+    } else {
+      // Fallback data for local development
+      res.json({
+        images: [
+          {
+            os: "fedora",
+            displayName: "Fedora",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fedora/fedora-original.svg",
+            repository: "quay.io/containerdisks/fedora",
+            versions: ["43", "42", "41"],
+            osType: "linux"
+          },
+          {
+            os: "centos-stream",
+            displayName: "CentOS Stream",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/centos/centos-original.svg",
+            repository: "quay.io/containerdisks/centos-stream",
+            versions: ["10", "9"],
+            osType: "linux"
+          },
+          {
+            os: "ubuntu",
+            displayName: "Ubuntu",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ubuntu/ubuntu-original.svg",
+            repository: "quay.io/containerdisks/ubuntu",
+            versions: ["25.04", "24.04"],
+            osType: "linux"
+          },
+          {
+            os: "debian",
+            displayName: "Debian",
+            icon: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/debian/debian-original.svg",
+            repository: "quay.io/containerdisks/debian",
+            versions: ["13", "12", "11"],
+            osType: "linux"
+          }
+        ]
+      });
+    }
+  } catch (error) {
+    console.error('Error reading OS images config:', error);
+    res.status(500).json({ error: 'Failed to load OS images catalog' });
+  }
+});
+
+// Host Classes catalog endpoint
+app.get('/api/host-classes', (req, res) => {
+  const hostClassesPath = path.join(__dirname, '../config/host-classes.json');
+
+  try {
+    // Check if file exists (mounted from ConfigMap in production)
+    if (fs.existsSync(hostClassesPath)) {
+      const hostClassesData = fs.readFileSync(hostClassesPath, 'utf8');
+      res.json(JSON.parse(hostClassesData));
+    } else {
+      // Fallback data for local development
+      res.json({
+        "fc430": {
+          "name": "FC430",
+          "description": "Cisco UCS C240 M4",
+          "category": "Compute Optimized",
+          "cpu": {
+            "type": "Intel Xeon E5-2680 v4",
+            "cores": 28,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "256GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "SSD",
+            "size": "2x 480GB",
+            "interface": "SATA"
+          },
+          "gpu": null
+        },
+        "fc640": {
+          "name": "FC640",
+          "description": "Dell PowerEdge R640",
+          "category": "Balanced",
+          "cpu": {
+            "type": "Intel Xeon Gold 6238R",
+            "cores": 56,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "384GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "NVMe SSD",
+            "size": "4x 960GB",
+            "interface": "PCIe"
+          },
+          "gpu": null
+        },
+        "fc740": {
+          "name": "FC740",
+          "description": "HPE ProLiant DL380 Gen10",
+          "category": "Storage Optimized",
+          "cpu": {
+            "type": "Intel Xeon Gold 6248R",
+            "cores": 48,
+            "sockets": 2,
+            "threadsPerCore": 2
+          },
+          "ram": {
+            "size": "512GB",
+            "type": "DDR4"
+          },
+          "disk": {
+            "type": "NVMe SSD",
+            "size": "8x 1.6TB",
+            "interface": "PCIe"
+          },
+          "gpu": null
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error reading host classes config:', error);
+    res.status(500).json({ error: 'Failed to load host classes catalog' });
+  }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// Serve static files from the dist directory with caching for assets
+app.use(express.static(path.join(__dirname, '../dist'), {
+  setHeaders: (res, path) => {
+    // Cache assets (JS, CSS, images) for 1 year since they have content hashes
+    if (path.match(/\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  }
+}));
+
+// SPA fallback - serve index.html for all other routes with no-cache
+app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  // Read index.html and inject runtime configuration
+  const indexPath = path.join(__dirname, '../dist/index.html');
+  fs.readFile(indexPath, 'utf8', (err, html) => {
+    if (err) {
+      console.error('Error reading index.html:', err);
+      return res.status(500).send('Internal Server Error');
+    }
+
+    // Inject runtime config as inline script before the main app script
+    const configScript = `
+    <script>
+      window.__CLOUDKIT_CONFIG__ = {
+        strictMode: ${REACT_STRICT_MODE}
+      };
+    </script>`;
+
+    // Insert config script right before </head>
+    const modifiedHtml = html.replace('</head>', `${configScript}\n  </head>`);
+    res.send(modifiedHtml);
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`CloudKit Console server listening on port ${PORT}`);
+});
