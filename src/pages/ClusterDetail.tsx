@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   PageSection,
   Title,
@@ -53,6 +54,7 @@ const mockNetworking: Record<string, any> = {
 }
 
 const ClusterDetail: React.FC = () => {
+  const { t } = useTranslation(['clusters', 'navigation'])
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [cluster, setCluster] = useState<Cluster | null>(null)
@@ -381,7 +383,7 @@ const ClusterDetail: React.FC = () => {
       <PageSection variant="default">
         <Breadcrumb>
           <BreadcrumbItem to="/admin/clusters" onClick={(e) => { e.preventDefault(); navigate('/admin/clusters'); }}>
-            Clusters
+            {t('clusters:detail.breadcrumb')}
           </BreadcrumbItem>
           <BreadcrumbItem isActive>{cluster.id.substring(0, 8)}</BreadcrumbItem>
         </Breadcrumb>
@@ -412,14 +414,14 @@ const ClusterDetail: React.FC = () => {
                   onClick={downloadKubeconfig}
                   icon={<DownloadIcon />}
                 >
-                  Download Kubeconfig
+                  {t('clusters:detail.actions.downloadKubeconfig')}
                 </DropdownItem>
                 <DropdownItem
                   key="scale-cluster"
                   onClick={openScaleModal}
                   icon={<PlusCircleIcon />}
                 >
-                  Scale Cluster
+                  {t('clusters:detail.actions.scaleCluster')}
                 </DropdownItem>
                 <DropdownItem
                   key="delete"
@@ -427,7 +429,7 @@ const ClusterDetail: React.FC = () => {
                   icon={<TrashIcon />}
                   style={{ color: 'var(--pf-v5-global--danger-color--100)' }}
                 >
-                  Delete
+                  {t('clusters:detail.actions.delete')}
                 </DropdownItem>
               </DropdownList>
             </Dropdown>
@@ -438,7 +440,7 @@ const ClusterDetail: React.FC = () => {
       <PageSection>
         <Tabs activeKey={activeTabKey} onSelect={(_, key) => setActiveTabKey(key)}>
           {/* Overview Tab */}
-          <Tab eventKey={0} title={<TabTitleText>Overview</TabTitleText>}>
+          <Tab eventKey={0} title={<TabTitleText>{t('clusters:detail.tabs.overview')}</TabTitleText>}>
             <Card>
               <CardBody>
                 {!loadingPassword && !password && cluster.status?.state !== ClusterState.READY && (
@@ -568,7 +570,7 @@ const ClusterDetail: React.FC = () => {
           </Tab>
 
           {/* Nodes Tab */}
-          <Tab eventKey={1} title={<TabTitleText>Nodes</TabTitleText>}>
+          <Tab eventKey={1} title={<TabTitleText>{t('clusters:detail.tabs.nodes')}</TabTitleText>}>
             <Card>
               <CardBody>
                 <h3>Hosts</h3>
@@ -681,7 +683,7 @@ const ClusterDetail: React.FC = () => {
           </Tab>
 
           {/* Conditions Tab */}
-          <Tab eventKey={2} title={<TabTitleText>Conditions</TabTitleText>}>
+          <Tab eventKey={2} title={<TabTitleText>{t('clusters:detail.tabs.conditions')}</TabTitleText>}>
             <Card>
               <CardBody>
                 {cluster.status?.conditions && cluster.status.conditions.length > 0 ? (
@@ -724,7 +726,7 @@ const ClusterDetail: React.FC = () => {
           </Tab>
 
           {/* Networking Tab (Mock) */}
-          <Tab eventKey={3} title={<TabTitleText>Networking (Mock)</TabTitleText>}>
+          <Tab eventKey={3} title={<TabTitleText>{t('clusters:detail.tabs.networking')}</TabTitleText>}>
             <Card>
               <CardBody>
                 <DescriptionList isHorizontal>

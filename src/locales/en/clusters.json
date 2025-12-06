@@ -27,12 +27,62 @@
       "delete": "Delete"
     }
   },
+  "detail": {
+    "tabs": {
+      "overview": "Overview",
+      "nodes": "Nodes",
+      "conditions": "Conditions",
+      "networking": "Networking"
+    },
+    "actions": {
+      "downloadKubeconfig": "Download Kubeconfig",
+      "scaleCluster": "Scale Cluster",
+      "delete": "Delete"
+    },
+    "breadcrumb": "Clusters"
+  },
   "catalog": {
-    "title": "Cluster Catalog",
-    "description": "Browse and deploy OpenShift clusters from pre-configured templates",
-    "createTemplate": "Create Cluster Template",
-    "noTemplates": "No cluster templates available",
-    "selectTemplate": "Select a template to create a cluster"
+    "title": "Cluster Templates",
+    "subtitle": "Select a pre-configured cluster template to deploy",
+    "createTemplate": "Create Template",
+    "searchPlaceholder": "Search templates by name, description, or tags...",
+    "loading": "Loading cluster templates...",
+    "noTemplates": "No templates found matching your filters",
+    "filters": {
+      "title": "Filters",
+      "hardware": "Hardware",
+      "gpuRequired": "GPU required",
+      "armBased": "ARM-based nodes",
+      "x86": "x86 architecture",
+      "templateType": "Template Type",
+      "includeAdvanced": "Include advanced templates",
+      "version": "Version"
+    },
+    "configuration": {
+      "title": "Configuration",
+      "nodes": "Nodes",
+      "cpu": "CPU",
+      "memory": "Memory",
+      "disk": "Disk",
+      "gpu": "GPU",
+      "openshift": "OpenShift"
+    },
+    "detail": {
+      "title": "Cluster Configuration",
+      "totalWorkers": "Total Workers",
+      "openshiftVersion": "OpenShift Version",
+      "workerNodes": "Worker Nodes",
+      "hostClass": "Host Class",
+      "category": "Category",
+      "type": "Type",
+      "cores": "Cores",
+      "totalRam": "Total RAM",
+      "storage": "Storage",
+      "gpuModel": "Model",
+      "gpuCount": "Count",
+      "gpuMemory": "Memory per GPU",
+      "createCluster": "Create Cluster from Template"
+    }
   },
   "create": {
     "title": "Create Cluster from Template",

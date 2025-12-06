@@ -13,17 +13,19 @@ import {
   FlexItem,
 } from '@patternfly/react-core'
 import { BuildingIcon, UsersIcon } from '@patternfly/react-icons'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import AppLayout from '../components/layouts/AppLayout'
 
 const Organizations: React.FC = () => {
+  const { t } = useTranslation(['organizations'])
   const { organizations, role, username } = useAuth()
 
   return (
     <AppLayout>
       <PageSection>
         <Title headingLevel="h2" size="xl" style={{ marginBottom: '1.5rem' }}>
-          Organizations
+          {t('organizations:title')}
         </Title>
 
         <Card>
@@ -33,7 +35,7 @@ const Organizations: React.FC = () => {
                 <BuildingIcon style={{ marginRight: '0.5rem', color: '#06c' }} />
               </FlexItem>
               <FlexItem>
-                Your Organizations
+                {t('organizations:yourOrganizations.title')}
               </FlexItem>
             </Flex>
           </CardTitle>
@@ -42,16 +44,16 @@ const Organizations: React.FC = () => {
               <EmptyState>
                 <UsersIcon style={{ fontSize: '3rem', color: '#6a6e73', marginBottom: '1rem' }} />
                 <Title headingLevel="h4" size="lg">
-                  No Organizations
+                  {t('organizations:yourOrganizations.noOrganizations')}
                 </Title>
                 <EmptyStateBody>
-                  You are not assigned to any organizations. Please contact your administrator.
+                  {t('organizations:yourOrganizations.noOrganizationsDescription')}
                 </EmptyStateBody>
               </EmptyState>
             ) : (
               <>
                 <p style={{ marginBottom: '1rem', color: '#6a6e73' }}>
-                  You have access to the following organizations:
+                  {t('organizations:yourOrganizations.description')}
                 </p>
                 <List isPlain>
                   {organizations.map((org) => (
@@ -65,7 +67,7 @@ const Organizations: React.FC = () => {
                         </FlexItem>
                         {role === 'fulfillment-admin' && org === '/admins' && (
                           <FlexItem>
-                            <Label color="purple">Administrator</Label>
+                            <Label color="purple">{t('organizations:yourOrganizations.administrator')}</Label>
                           </FlexItem>
                         )}
                       </Flex>
@@ -84,20 +86,20 @@ const Organizations: React.FC = () => {
                 <UsersIcon style={{ marginRight: '0.5rem', color: '#3e8635' }} />
               </FlexItem>
               <FlexItem>
-                User Information
+                {t('organizations:userInformation.title')}
               </FlexItem>
             </Flex>
           </CardTitle>
           <CardBody>
             <List isPlain>
               <ListItem>
-                <strong>Username:</strong> {username || 'N/A'}
+                <strong>{t('organizations:userInformation.username')}:</strong> {username || 'N/A'}
               </ListItem>
               <ListItem>
-                <strong>Role:</strong> {role || 'N/A'}
+                <strong>{t('organizations:userInformation.role')}:</strong> {role || 'N/A'}
               </ListItem>
               <ListItem>
-                <strong>Organization Count:</strong> {organizations.length}
+                <strong>{t('organizations:userInformation.organizationCount')}:</strong> {organizations.length}
               </ListItem>
             </List>
           </CardBody>
@@ -105,16 +107,15 @@ const Organizations: React.FC = () => {
 
         {role === 'fulfillment-admin' && (
           <Card style={{ marginTop: '1.5rem' }}>
-            <CardTitle>Organization Management</CardTitle>
+            <CardTitle>{t('organizations:management.title')}</CardTitle>
             <CardBody>
               <EmptyState>
                 <BuildingIcon style={{ fontSize: '3rem', color: '#6a6e73', marginBottom: '1rem' }} />
                 <Title headingLevel="h4" size="lg">
-                  Coming Soon
+                  {t('organizations:management.comingSoon')}
                 </Title>
                 <EmptyStateBody>
-                  Organization management features will be available once the backend API is implemented.
-                  This will allow administrators to create, update, and manage organizations.
+                  {t('organizations:management.comingSoonDescription')}
                 </EmptyStateBody>
               </EmptyState>
             </CardBody>

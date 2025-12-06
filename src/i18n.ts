@@ -11,6 +11,9 @@ import enClusters from './locales/en/clusters.json'
 import enSettings from './locales/en/settings.json'
 import enTemplates from './locales/en/templates.json'
 import enVmCreate from './locales/en/vmCreate.json'
+import enHubs from './locales/en/hubs.json'
+import enOrganizations from './locales/en/organizations.json'
+import enBareMetalHosts from './locales/en/bareMetalHosts.json'
 
 import zhCommon from './locales/zh/common.json'
 import zhNavigation from './locales/zh/navigation.json'
@@ -21,6 +24,9 @@ import zhClusters from './locales/zh/clusters.json'
 import zhSettings from './locales/zh/settings.json'
 import zhTemplates from './locales/zh/templates.json'
 import zhVmCreate from './locales/zh/vmCreate.json'
+import zhHubs from './locales/zh/hubs.json'
+import zhOrganizations from './locales/zh/organizations.json'
+import zhBareMetalHosts from './locales/zh/bareMetalHosts.json'
 
 import zhTWCommon from './locales/zh-TW/common.json'
 import zhTWNavigation from './locales/zh-TW/navigation.json'
@@ -31,6 +37,9 @@ import zhTWClusters from './locales/zh-TW/clusters.json'
 import zhTWSettings from './locales/zh-TW/settings.json'
 import zhTWTemplates from './locales/zh-TW/templates.json'
 import zhTWVmCreate from './locales/zh-TW/vmCreate.json'
+import zhTWHubs from './locales/zh-TW/hubs.json'
+import zhTWOrganizations from './locales/zh-TW/organizations.json'
+import zhTWBareMetalHosts from './locales/zh-TW/bareMetalHosts.json'
 
 i18n
   .use(LanguageDetector)
@@ -47,6 +56,9 @@ i18n
         settings: enSettings,
         templates: enTemplates,
         vmCreate: enVmCreate,
+        hubs: enHubs,
+        organizations: enOrganizations,
+        bareMetalHosts: enBareMetalHosts,
       },
       zh: {
         common: zhCommon,
@@ -58,6 +70,9 @@ i18n
         settings: zhSettings,
         templates: zhTemplates,
         vmCreate: zhVmCreate,
+        hubs: zhHubs,
+        organizations: zhOrganizations,
+        bareMetalHosts: zhBareMetalHosts,
       },
       'zh-TW': {
         common: zhTWCommon,
@@ -69,6 +84,9 @@ i18n
         settings: zhTWSettings,
         templates: zhTWTemplates,
         vmCreate: zhTWVmCreate,
+        hubs: zhTWHubs,
+        organizations: zhTWOrganizations,
+        bareMetalHosts: zhTWBareMetalHosts,
       },
     },
     fallbackLng: 'en',

@@ -28,11 +28,47 @@
     }
   },
   "catalog": {
-    "title": "集群目录",
-    "description": "浏览并从预配置模板部署 OpenShift 集群",
-    "createTemplate": "创建集群模板",
-    "noTemplates": "暂无集群模板",
-    "selectTemplate": "选择模板以创建集群"
+    "title": "集群模板",
+    "subtitle": "选择预配置的集群模板进行部署",
+    "createTemplate": "创建模板",
+    "searchPlaceholder": "按名称、描述或标签搜索模板...",
+    "loading": "正在加载集群模板...",
+    "noTemplates": "未找到与您的筛选条件匹配的模板",
+    "filters": {
+      "title": "筛选器",
+      "hardware": "硬件",
+      "gpuRequired": "需要 GPU",
+      "armBased": "基于 ARM 的节点",
+      "x86": "x86 架构",
+      "templateType": "模板类型",
+      "includeAdvanced": "包含高级模板",
+      "version": "版本"
+    },
+    "configuration": {
+      "title": "配置",
+      "nodes": "节点",
+      "cpu": "CPU",
+      "memory": "内存",
+      "disk": "磁盘",
+      "gpu": "GPU",
+      "openshift": "OpenShift"
+    },
+    "detail": {
+      "title": "集群配置",
+      "totalWorkers": "工作节点总数",
+      "openshiftVersion": "OpenShift 版本",
+      "workerNodes": "工作节点",
+      "hostClass": "主机类",
+      "category": "类别",
+      "type": "类型",
+      "cores": "核心",
+      "totalRam": "总内存",
+      "storage": "存储",
+      "gpuModel": "型号",
+      "gpuCount": "数量",
+      "gpuMemory": "每个 GPU 的内存",
+      "createCluster": "从模板创建集群"
+    }
   },
   "create": {
     "title": "从模板创建集群",
