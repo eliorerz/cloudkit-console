@@ -41,6 +41,32 @@ import zhTWHubs from './locales/zh-TW/hubs.json'
 import zhTWOrganizations from './locales/zh-TW/organizations.json'
 import zhTWBareMetalHosts from './locales/zh-TW/bareMetalHosts.json'
 
+import esCommon from './locales/es/common.json'
+import esNavigation from './locales/es/navigation.json'
+import esDashboard from './locales/es/dashboard.json'
+import esMonitoring from './locales/es/monitoring.json'
+import esVirtualMachines from './locales/es/virtualMachines.json'
+import esClusters from './locales/es/clusters.json'
+import esSettings from './locales/es/settings.json'
+import esTemplates from './locales/es/templates.json'
+import esVmCreate from './locales/es/vmCreate.json'
+import esHubs from './locales/es/hubs.json'
+import esOrganizations from './locales/es/organizations.json'
+import esBareMetalHosts from './locales/es/bareMetalHosts.json'
+
+import ptBRCommon from './locales/pt-BR/common.json'
+import ptBRNavigation from './locales/pt-BR/navigation.json'
+import ptBRDashboard from './locales/pt-BR/dashboard.json'
+import ptBRMonitoring from './locales/pt-BR/monitoring.json'
+import ptBRVirtualMachines from './locales/pt-BR/virtualMachines.json'
+import ptBRClusters from './locales/pt-BR/clusters.json'
+import ptBRSettings from './locales/pt-BR/settings.json'
+import ptBRTemplates from './locales/pt-BR/templates.json'
+import ptBRVmCreate from './locales/pt-BR/vmCreate.json'
+import ptBRHubs from './locales/pt-BR/hubs.json'
+import ptBROrganizations from './locales/pt-BR/organizations.json'
+import ptBRBareMetalHosts from './locales/pt-BR/bareMetalHosts.json'
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -87,6 +113,34 @@ i18n
         hubs: zhTWHubs,
         organizations: zhTWOrganizations,
         bareMetalHosts: zhTWBareMetalHosts,
+      },
+      es: {
+        common: esCommon,
+        navigation: esNavigation,
+        dashboard: esDashboard,
+        monitoring: esMonitoring,
+        virtualMachines: esVirtualMachines,
+        clusters: esClusters,
+        settings: esSettings,
+        templates: esTemplates,
+        vmCreate: esVmCreate,
+        hubs: esHubs,
+        organizations: esOrganizations,
+        bareMetalHosts: esBareMetalHosts,
+      },
+      'pt-BR': {
+        common: ptBRCommon,
+        navigation: ptBRNavigation,
+        dashboard: ptBRDashboard,
+        monitoring: ptBRMonitoring,
+        virtualMachines: ptBRVirtualMachines,
+        clusters: ptBRClusters,
+        settings: ptBRSettings,
+        templates: ptBRTemplates,
+        vmCreate: ptBRVmCreate,
+        hubs: ptBRHubs,
+        organizations: ptBROrganizations,
+        bareMetalHosts: ptBRBareMetalHosts,
       },
     },
     fallbackLng: 'en',

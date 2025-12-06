@@ -35,6 +35,8 @@
   "language": {
     "en": "English (US)",
     "zh": "中文 - Chinese (Simplified)",
-    "zh-TW": "中文 - Chinese (Traditional)"
+    "zh-TW": "中文 - Chinese (Traditional)",
+    "es": "Español (Latinoamérica)",
+    "pt-BR": "Português (Brasil)"
   }
 }

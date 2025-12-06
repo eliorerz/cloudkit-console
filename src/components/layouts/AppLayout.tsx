@@ -55,6 +55,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const getLanguageCode = (): string => {
     if (i18n.language === 'zh') return 'ZH'
     if (i18n.language === 'zh-TW') return 'TW'
+    if (i18n.language === 'es') return 'ES'
+    if (i18n.language === 'pt-BR') return 'PT'
     return 'EN'
   }
 
@@ -310,6 +312,18 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     onClick={() => changeLanguage('zh-TW')}
                   >
                     {t('navigation:language.zh-TW')}
+                  </DropdownItem>
+                  <DropdownItem
+                    key="es"
+                    onClick={() => changeLanguage('es')}
+                  >
+                    {t('navigation:language.es')}
+                  </DropdownItem>
+                  <DropdownItem
+                    key="pt-br"
+                    onClick={() => changeLanguage('pt-BR')}
+                  >
+                    {t('navigation:language.pt-BR')}
                   </DropdownItem>
                 </DropdownList>
               </Dropdown>
