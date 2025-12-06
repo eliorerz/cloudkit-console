@@ -28,6 +28,7 @@ import {
   Td,
 } from '@patternfly/react-table'
 import { ServerIcon, SearchIcon, EllipsisVIcon } from '@patternfly/react-icons'
+import { useTranslation } from 'react-i18next'
 import AppLayout from '../components/layouts/AppLayout'
 import { getHosts } from '../api/hosts'
 import { Host, Cluster } from '../api/types'
@@ -35,6 +36,7 @@ import { listClusters } from '../api/clustersApi'
 
 const BareMetalHosts: React.FC = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation(['bareMetalHosts'])
   const [hosts, setHosts] = useState<Host[]>([])
   const [loading, setLoading] = useState(true)
   const [searchValue, setSearchValue] = useState('')
@@ -90,14 +92,14 @@ const BareMetalHosts: React.FC = () => {
   }, [isInitialLoad])
 
   const getPowerStateBadge = (powerState?: string) => {
-    if (!powerState) return <Label color="grey">Unknown</Label>
+    if (!powerState) return <Label color="grey">{t('bareMetalHosts:powerState.unknown')}</Label>
 
     const normalizedState = powerState.toUpperCase()
 
     if (normalizedState.includes('ON') || normalizedState.includes('RUNNING')) {
-      return <Label color="green">On</Label>
+      return <Label color="green">{t('bareMetalHosts:powerState.on')}</Label>
     } else if (normalizedState.includes('OFF')) {
-      return <Label color="red">Off</Label>
+      return <Label color="red">{t('bareMetalHosts:powerState.off')}</Label>
     }
 
     return <Label color="grey">{powerState}</Label>
@@ -170,7 +172,7 @@ const BareMetalHosts: React.FC = () => {
       <PageSection>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <Title headingLevel="h1" size="2xl">
-            Bare Metal Hosts
+            {t('bareMetalHosts:title')}
           </Title>
         </div>
 
@@ -179,7 +181,7 @@ const BareMetalHosts: React.FC = () => {
             <ToolbarContent>
               <ToolbarItem>
                 <SearchInput
-                  placeholder="Search by name or host pool"
+                  placeholder={t('bareMetalHosts:search.placeholder')}
                   value={searchValue}
                   onChange={(_event, value) => setSearchValue(value)}
                   onClear={() => setSearchValue('')}
@@ -193,7 +195,7 @@ const BareMetalHosts: React.FC = () => {
             {loading ? (
               <div style={{ textAlign: 'center', padding: '2rem' }}>
                 <Spinner size="xl" />
-                <p style={{ marginTop: '1rem', color: '#6a6e73' }}>Loading bare metal hosts...</p>
+                <p style={{ marginTop: '1rem', color: '#6a6e73' }}>{t('bareMetalHosts:loading')}</p>
               </div>
             ) : filteredHosts.length === 0 ? (
               <EmptyState>
@@ -201,12 +203,12 @@ const BareMetalHosts: React.FC = () => {
                   {hosts.length === 0 ? <ServerIcon /> : <SearchIcon />}
                 </div>
                 <Title headingLevel="h4" size="lg">
-                  {hosts.length === 0 ? "No bare metal hosts" : "No results found"}
+                  {hosts.length === 0 ? t('bareMetalHosts:empty.noHosts') : t('bareMetalHosts:empty.noResults')}
                 </Title>
                 <EmptyStateBody>
                   {hosts.length === 0
-                    ? "There are no bare metal hosts to display."
-                    : "No hosts match your search criteria. Try adjusting your filters."}
+                    ? t('bareMetalHosts:empty.noHostsDescription')
+                    : t('bareMetalHosts:empty.noResultsDescription')}
                 </EmptyStateBody>
               </EmptyState>
             ) : (
@@ -214,22 +216,22 @@ const BareMetalHosts: React.FC = () => {
                 <Thead>
                   <Tr>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 0 }}>
-                      Name
+                      {t('bareMetalHosts:columns.name')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 1 }}>
-                      Power State
+                      {t('bareMetalHosts:columns.powerState')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 2 }}>
-                      Rack
+                      {t('bareMetalHosts:columns.rack')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
-                      Boot IP
+                      {t('bareMetalHosts:columns.bootIP')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
-                      Cluster
+                      {t('bareMetalHosts:columns.cluster')}
                     </Th>
                     <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 5 }}>
-                      Created
+                      {t('bareMetalHosts:columns.created')}
                     </Th>
                     <Th></Th>
                   </Tr>
@@ -269,14 +271,14 @@ const BareMetalHosts: React.FC = () => {
                         >
                           <DropdownList>
                             <DropdownItem key="details">
-                              View Details
+                              {t('bareMetalHosts:actions.viewDetails')}
                             </DropdownItem>
                             <DropdownItem key="power">
-                              Power Options
+                              {t('bareMetalHosts:actions.powerOptions')}
                             </DropdownItem>
                             {host.spec?.bcm_link && (
                               <DropdownItem key="bcm" onClick={() => window.open(host.spec?.bcm_link, '_blank')}>
-                                Open BCM Link
+                                {t('bareMetalHosts:actions.openBcmLink')}
                               </DropdownItem>
                             )}
                           </DropdownList>

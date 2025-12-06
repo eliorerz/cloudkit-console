@@ -24,6 +24,7 @@ import {
   Button,
 } from '@patternfly/react-core'
 import { ServerIcon, ExternalLinkAltIcon } from '@patternfly/react-icons'
+import { useTranslation } from 'react-i18next'
 import yaml from 'js-yaml'
 import AppLayout from '../components/layouts/AppLayout'
 import { getHost } from '../api/hosts'
@@ -33,6 +34,7 @@ import { getHostClasses, getHostClassById, HostClass } from '../api/host-classes
 const HostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation(['bareMetalHosts'])
   const [host, setHost] = useState<Host | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -152,7 +154,7 @@ const HostDetail: React.FC = () => {
       <PageSection>
         <Breadcrumb style={{ marginBottom: '1rem' }}>
           <BreadcrumbItem to="/bare-metal-hosts" onClick={(e) => { e.preventDefault(); navigate('/bare-metal-hosts') }}>
-            Bare Metal Hosts
+            {t('bareMetalHosts:detail.breadcrumb')}
           </BreadcrumbItem>
           <BreadcrumbItem isActive>{host.metadata?.name || host.id}</BreadcrumbItem>
         </Breadcrumb>
@@ -180,7 +182,7 @@ const HostDetail: React.FC = () => {
                 activeKey={activeTabKey}
                 onSelect={(_event, tabIndex) => setActiveTabKey(tabIndex)}
               >
-                <Tab eventKey={0} title={<TabTitleText>Details</TabTitleText>}>
+                <Tab eventKey={0} title={<TabTitleText>{t('bareMetalHosts:detail.tabs.details')}</TabTitleText>}>
                   <CardBody>
                     {/* General Host Information */}
                     <DescriptionList isHorizontal columnModifier={{ default: '2Col' }}>
@@ -326,7 +328,7 @@ const HostDetail: React.FC = () => {
                   </CardBody>
                 </Tab>
 
-                <Tab eventKey={1} title={<TabTitleText>Hardware</TabTitleText>}>
+                <Tab eventKey={1} title={<TabTitleText>{t('bareMetalHosts:detail.tabs.hardware')}</TabTitleText>}>
                   <CardBody>
                     {hostClass ? (
                       <DescriptionList isHorizontal columnModifier={{ default: '2Col' }}>
@@ -502,7 +504,7 @@ const HostDetail: React.FC = () => {
                   </CardBody>
                 </Tab>
 
-                <Tab eventKey={2} title={<TabTitleText>Networking</TabTitleText>}>
+                <Tab eventKey={2} title={<TabTitleText>{t('bareMetalHosts:detail.tabs.networking')}</TabTitleText>}>
                   <CardBody>
                     <DescriptionList isHorizontal columnModifier={{ default: '2Col' }}>
                       <DescriptionListGroup>
@@ -530,7 +532,7 @@ const HostDetail: React.FC = () => {
                   </CardBody>
                 </Tab>
 
-                <Tab eventKey={3} title={<TabTitleText>YAML</TabTitleText>}>
+                <Tab eventKey={3} title={<TabTitleText>{t('bareMetalHosts:detail.tabs.yaml')}</TabTitleText>}>
                   <CardBody>
                     <pre style={{
                       background: '#f5f5f5',

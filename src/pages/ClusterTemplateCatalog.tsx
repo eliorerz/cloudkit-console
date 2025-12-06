@@ -25,6 +25,7 @@ import {
   SearchInput,
 } from '@patternfly/react-core'
 import { ServerIcon, OpenshiftIcon, CubeIcon } from '@patternfly/react-icons'
+import { useTranslation } from 'react-i18next'
 import AppLayout from '../components/layouts/AppLayout'
 import { getClusterTemplates } from '../api/clusterTemplates'
 import { ClusterTemplate } from '../api/types'
@@ -69,6 +70,7 @@ const getIcon = (iconType?: string) => {
 
 const ClusterTemplateCatalog: React.FC = () => {
   const navigate = useNavigate()
+  const { t } = useTranslation(['clusters'])
   const [selectedTemplate, setSelectedTemplate] = useState<ClusterTemplate | null>(null)
   const [templates, setTemplates] = useState<ClusterTemplate[]>([])
   const [loading, setLoading] = useState(true)
@@ -406,29 +408,29 @@ const ClusterTemplateCatalog: React.FC = () => {
   const filterPanel = (
     <SidebarPanel variant="sticky" style={{ backgroundColor: '#f5f5f5', padding: '1.5rem', minWidth: '280px' }}>
       <Title headingLevel="h3" size="md" style={{ marginBottom: '1.5rem' }}>
-        Filters
+        {t('clusters:catalog.filters.title')}
       </Title>
 
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '0.75rem', fontWeight: 600, fontSize: '0.875rem' }}>
-          Hardware
+          {t('clusters:catalog.filters.hardware')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <Checkbox
             id="gpu-required"
-            label="GPU required"
+            label={t('clusters:catalog.filters.gpuRequired')}
             isChecked={gpuRequired}
             onChange={(_event, checked) => setGpuRequired(checked)}
           />
           <Checkbox
             id="arm-based"
-            label="ARM-based nodes"
+            label={t('clusters:catalog.filters.armBased')}
             isChecked={armBased}
             onChange={(_event, checked) => setArmBased(checked)}
           />
           <Checkbox
             id="x86-arch"
-            label="x86 architecture"
+            label={t('clusters:catalog.filters.x86')}
             isChecked={x86Arch}
             onChange={(_event, checked) => setX86Arch(checked)}
           />
@@ -439,11 +441,11 @@ const ClusterTemplateCatalog: React.FC = () => {
 
       <div style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '0.75rem', fontWeight: 600, fontSize: '0.875rem' }}>
-          Template Type
+          {t('clusters:catalog.filters.templateType')}
         </div>
         <Checkbox
           id="advanced-templates"
-          label="Include advanced templates"
+          label={t('clusters:catalog.filters.includeAdvanced')}
           isChecked={includeAdvanced}
           onChange={(_event, checked) => setIncludeAdvanced(checked)}
         />
@@ -453,7 +455,7 @@ const ClusterTemplateCatalog: React.FC = () => {
 
       <div>
         <div style={{ marginBottom: '0.75rem', fontWeight: 600, fontSize: '0.875rem' }}>
-          Version
+          {t('clusters:catalog.filters.version')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <Checkbox
@@ -505,18 +507,18 @@ const ClusterTemplateCatalog: React.FC = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div>
                   <Title headingLevel="h1" size="2xl" style={{ marginBottom: '0.5rem' }}>
-                    Cluster Templates
+                    {t('clusters:catalog.title')}
                   </Title>
                   <p style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                    Select a pre-configured cluster template to deploy
+                    {t('clusters:catalog.subtitle')}
                   </p>
                 </div>
                 <Button variant="primary" onClick={() => navigate('/admin/cluster-catalog/create')}>
-                  Create Template
+                  {t('clusters:catalog.createTemplate')}
                 </Button>
               </div>
               <SearchInput
-                placeholder="Search templates by name, description, or tags..."
+                placeholder={t('clusters:catalog.searchPlaceholder')}
                 value={searchValue}
                 onChange={(_event, value) => setSearchValue(value)}
                 onClear={() => setSearchValue('')}
@@ -528,7 +530,7 @@ const ClusterTemplateCatalog: React.FC = () => {
               <div style={{ textAlign: 'center', padding: '3rem' }}>
                 <Spinner size="xl" />
                 <p style={{ marginTop: '1rem', color: 'var(--pf-v6-global--Color--200)' }}>
-                  Loading cluster templates...
+                  {t('clusters:catalog.loading')}
                 </p>
               </div>
             ) : (
@@ -576,7 +578,7 @@ const ClusterTemplateCatalog: React.FC = () => {
 
                     <div style={{ marginBottom: '1rem' }}>
                       <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#000000', marginBottom: '0.5rem' }}>
-                        Configuration
+                        {t('clusters:catalog.configuration.title')}
                       </div>
                       <ul style={{
                         margin: 0,
@@ -586,23 +588,23 @@ const ClusterTemplateCatalog: React.FC = () => {
                         color: 'var(--pf-v6-global--Color--200)',
                         lineHeight: '1.6',
                       }}>
-                        <li><strong>Nodes:</strong> {template.nodeCount}</li>
+                        <li><strong>{t('clusters:catalog.configuration.nodes')}:</strong> {template.nodeCount}</li>
                         {template.node_sets && Object.values(template.node_sets).map((nodeSet, idx) => {
                           const hostClassId = nodeSet.host_class || ''
                           const hostClassInfo = hostClasses[hostClassId]
                           if (!hostClassInfo) return null
                           return (
                             <React.Fragment key={idx}>
-                              <li><strong>CPU:</strong> {hostClassInfo.cpu.type}</li>
-                              <li><strong>Memory:</strong> {hostClassInfo.ram.size}{hostClassInfo.ram.type ? ` - ${hostClassInfo.ram.type}` : ''}</li>
-                              <li><strong>Disk:</strong> {hostClassInfo.disk.size} - {hostClassInfo.disk.type}</li>
+                              <li><strong>{t('clusters:catalog.configuration.cpu')}:</strong> {hostClassInfo.cpu.type}</li>
+                              <li><strong>{t('clusters:catalog.configuration.memory')}:</strong> {hostClassInfo.ram.size}{hostClassInfo.ram.type ? ` - ${hostClassInfo.ram.type}` : ''}</li>
+                              <li><strong>{t('clusters:catalog.configuration.disk')}:</strong> {hostClassInfo.disk.size} - {hostClassInfo.disk.type}</li>
                               {hostClassInfo.gpu && (
-                                <li><strong>GPU:</strong> {hostClassInfo.gpu.model} {hostClassInfo.gpu.memory} x {hostClassInfo.gpu.count}</li>
+                                <li><strong>{t('clusters:catalog.configuration.gpu')}:</strong> {hostClassInfo.gpu.model} {hostClassInfo.gpu.memory} x {hostClassInfo.gpu.count}</li>
                               )}
                             </React.Fragment>
                           )
                         }).filter(Boolean)[0]}
-                        <li><strong>OpenShift:</strong> {template.version}</li>
+                        <li><strong>{t('clusters:catalog.configuration.openshift')}:</strong> {template.version}</li>
                       </ul>
                     </div>
                   </CardBody>

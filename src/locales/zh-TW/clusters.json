@@ -2,11 +2,47 @@
   "title": "託管叢集",
   "createButton": "建立叢集",
   "catalog": {
-    "title": "叢集目錄",
-    "description": "瀏覽並從預先組態的範本部署 OpenShift 叢集",
-    "createTemplate": "建立叢集範本",
-    "noTemplates": "暫無叢集範本",
-    "selectTemplate": "選擇範本以建立叢集"
+    "title": "叢集範本",
+    "subtitle": "選擇預先組態的叢集範本進行部署",
+    "createTemplate": "建立範本",
+    "searchPlaceholder": "按名稱、描述或標籤搜尋範本...",
+    "loading": "正在載入叢集範本...",
+    "noTemplates": "未找到與您的篩選條件符合的範本",
+    "filters": {
+      "title": "篩選器",
+      "hardware": "硬體",
+      "gpuRequired": "需要 GPU",
+      "armBased": "基於 ARM 的節點",
+      "x86": "x86 架構",
+      "templateType": "範本類型",
+      "includeAdvanced": "包含進階範本",
+      "version": "版本"
+    },
+    "configuration": {
+      "title": "組態",
+      "nodes": "節點",
+      "cpu": "CPU",
+      "memory": "記憶體",
+      "disk": "磁碟",
+      "gpu": "GPU",
+      "openshift": "OpenShift"
+    },
+    "detail": {
+      "title": "叢集組態",
+      "totalWorkers": "工作節點總數",
+      "openshiftVersion": "OpenShift 版本",
+      "workerNodes": "工作節點",
+      "hostClass": "主機類別",
+      "category": "類別",
+      "type": "類型",
+      "cores": "核心",
+      "totalRam": "總記憶體",
+      "storage": "儲存",
+      "gpuModel": "型號",
+      "gpuCount": "數量",
+      "gpuMemory": "每個 GPU 的記憶體",
+      "createCluster": "從範本建立叢集"
+    }
   },
   "create": {
     "title": "從範本建立叢集",
