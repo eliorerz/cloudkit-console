@@ -202,22 +202,142 @@ The OSAC UI pod needs network access to:
 
 ## Health Checks
 
-The deployment includes health checks:
+The application provides two types of health check endpoints:
+
+### Basic Health Check
+
+For Kubernetes liveness and readiness probes:
 
 ```yaml
 livenessProbe:
   httpGet:
-    path: /
+    path: /health
     port: 8080
   initialDelaySeconds: 30
   periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
 
 readinessProbe:
   httpGet:
-    path: /
+    path: /health
     port: 8080
   initialDelaySeconds: 5
   periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
+```
+
+The basic `/health` endpoint returns:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-12-08T20:12:42.028Z"
+}
+```
+
+### Deep Health Check
+
+For comprehensive dependency validation:
+
+```bash
+# Test deep health check
+curl -k https://osac-ui.<namespace>.<domain>/health?deep=true
+```
+
+Returns:
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "fulfillment_api": {
+      "status": "healthy",
+      "response_time_ms": 275,
+      "http_status": 401
+    },
+    "keycloak": {
+      "status": "healthy",
+      "response_time_ms": 139,
+      "http_status": 200
+    }
+  },
+  "timestamp": "2025-12-08T20:12:42.028Z"
+}
+```
+
+The deep health check validates:
+- Fulfillment API reachability and response time
+- Keycloak OIDC endpoint availability
+- Returns HTTP 200 if healthy, 503 if degraded
+
+## Monitoring
+
+### Prometheus Metrics
+
+The application exposes Prometheus-compatible metrics at `/metrics`:
+
+```bash
+# Configure Prometheus scraping
+kubectl annotate pod <pod-name> \
+  prometheus.io/scrape="true" \
+  prometheus.io/port="8080" \
+  prometheus.io/path="/metrics"
+```
+
+**ServiceMonitor for Prometheus Operator:**
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: osac-ui
+  namespace: <your-namespace>
+spec:
+  selector:
+    matchLabels:
+      app: osac-ui
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+```
+
+**Available Metrics:**
+- `osac_ui_uptime_seconds` - Application uptime
+- `osac_ui_requests_total` - Total HTTP requests
+- `osac_ui_requests_success` - Successful requests (2xx)
+- `osac_ui_requests_client_error` - Client errors (4xx)
+- `osac_ui_requests_server_error` - Server errors (5xx)
+- `osac_ui_response_time_avg_ms` - Average response time
+- `osac_ui_response_time_p95_ms` - 95th percentile response time
+- `osac_ui_response_time_p99_ms` - 99th percentile response time
+- `osac_ui_memory_usage_mb` - Memory usage
+- `osac_ui_memory_total_mb` - Total memory
+
+### Logging
+
+The application outputs structured JSON logs to stdout:
+
+```bash
+# View logs
+kubectl logs -f deployment/osac-ui -n <your-namespace>
+
+# Query structured logs with jq
+kubectl logs deployment/osac-ui -n <your-namespace> | jq '. | select(.level == "error")'
+```
+
+**Log Aggregation with Fluentd/ELK:**
+
+The JSON format integrates seamlessly with log aggregation systems:
+```json
+{
+  "level": "info",
+  "message": "HTTP Request",
+  "method": "GET",
+  "path": "/api/config",
+  "status": 200,
+  "duration": "5ms",
+  "timestamp": "2025-12-08T20:10:01.000Z"
+}
 ```
 
 ## Scaling
