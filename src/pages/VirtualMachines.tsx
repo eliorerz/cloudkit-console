@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
@@ -22,11 +22,12 @@ import {
 } from '@patternfly/react-core'
 import { VirtualMachineIcon, SearchIcon, FilterIcon, ThIcon, ListIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
-import { getVirtualMachines, deleteVirtualMachine } from '../api/vms'
 import { VirtualMachine } from '../types'
 import { VMCard } from '../components/virtual-machines/VMCard'
 import { VMTable } from '../components/virtual-machines/VMTable'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
+import { getVirtualMachines, deleteVirtualMachine } from '../api/vms'
+import { useConfirmDialog } from '../hooks/useConfirmDialog'
 
 type ViewType = 'cards' | 'table'
 
@@ -34,13 +35,14 @@ const VirtualMachines: React.FC = () => {
   const { t } = useTranslation(['virtualMachines', 'common'])
   const navigate = useNavigate()
   const { username } = useAuth()
+
+  // State management
   const [vms, setVms] = useState<VirtualMachine[]>([])
   const [loading, setLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const deleteDialog = useConfirmDialog<VirtualMachine>()
+
   const [searchValue, setSearchValue] = useState('')
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [vmToDelete, setVmToDelete] = useState<VirtualMachine | null>(null)
-  const [deleting, setDeleting] = useState(false)
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null)
   const [viewType, setViewType] = useState<ViewType>('cards')
   const [showOnlyMyVMs, setShowOnlyMyVMs] = useState(false)
@@ -53,31 +55,25 @@ const VirtualMachines: React.FC = () => {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(10)
 
-  useEffect(() => {
-    const fetchVMs = async () => {
-      if (isInitialLoad) {
-        setLoading(true)
-      }
-      try {
-        const response = await getVirtualMachines()
-        setVms(response.items || [])
-      } catch (error) {
-        console.error('Error fetching VMs:', error)
-        setVms([])
-      } finally {
-        if (isInitialLoad) {
-          setLoading(false)
-          setIsInitialLoad(false)
-        }
-      }
+  // Fetch VMs
+  const fetchVMs = useCallback(async () => {
+    try {
+      const response = await getVirtualMachines()
+      setVms(response.items || [])
+    } catch (error) {
+      console.error('Error fetching VMs:', error)
+      setVms([])
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
+  // Auto-refresh VMs every 30 seconds
+  useEffect(() => {
     fetchVMs()
-
-    // Auto-refresh every 30 seconds
     const interval = setInterval(fetchVMs, 30000)
     return () => clearInterval(interval)
-  }, [isInitialLoad])
+  }, [fetchVMs])
 
   // Reset pagination when search or filter changes
   useEffect(() => {
@@ -85,25 +81,23 @@ const VirtualMachines: React.FC = () => {
   }, [searchValue, showOnlyMyVMs])
 
   const handleDeleteClick = (vm: VirtualMachine) => {
-    setVmToDelete(vm)
-    setDeleteModalOpen(true)
+    deleteDialog.open(vm)
     setOpenActionMenuId(null)
   }
 
   const handleDeleteConfirm = async () => {
-    if (!vmToDelete) return
+    if (!deleteDialog.item) return
 
     try {
-      setDeleting(true)
-      await deleteVirtualMachine(vmToDelete.id)
-      setVms(vms.filter(v => v.id !== vmToDelete.id))
-      setDeleteModalOpen(false)
-      setVmToDelete(null)
+      setIsDeleting(true)
+      await deleteVirtualMachine(deleteDialog.item.id)
+      setVms(prevVms => prevVms.filter(vm => vm.id !== deleteDialog.item!.id))
+      deleteDialog.close()
     } catch (error) {
       console.error('Error deleting VM:', error)
       alert('Failed to delete virtual machine')
     } finally {
-      setDeleting(false)
+      setIsDeleting(false)
     }
   }
 
@@ -314,15 +308,15 @@ const VirtualMachines: React.FC = () => {
       </PageSection>
 
       <ConfirmDialog
-        isOpen={deleteModalOpen}
+        isOpen={deleteDialog.isOpen}
         title={t('virtualMachines:delete')}
-        message={t('virtualMachines:list.deleteConfirm', { name: vmToDelete?.id })}
-        confirmLabel={deleting ? t('virtualMachines:list.deleting') : t('common:actions.delete')}
+        message={t('virtualMachines:list.deleteConfirm', { name: deleteDialog.item?.id })}
+        confirmLabel={isDeleting ? t('virtualMachines:list.deleting') : t('common:actions.delete')}
         cancelLabel={t('common:actions.cancel')}
         variant="danger"
-        isLoading={deleting}
+        isLoading={isDeleting}
         onConfirm={handleDeleteConfirm}
-        onCancel={() => setDeleteModalOpen(false)}
+        onCancel={deleteDialog.close}
       />
     </AppLayout>
   )
