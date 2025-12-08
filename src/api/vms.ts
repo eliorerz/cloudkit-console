@@ -1,6 +1,7 @@
 import { apiClient } from './client'
 import { VirtualMachine, ListResponse } from './types'
 import { deduplicateRequest } from '../utils/requestDeduplication'
+import { logger } from '@/utils/logger'
 
 export const getVirtualMachines = async (): Promise<ListResponse<VirtualMachine>> => {
   return deduplicateRequest('virtual-machines-list', async () => {
@@ -8,7 +9,7 @@ export const getVirtualMachines = async (): Promise<ListResponse<VirtualMachine>
       const response = await apiClient.get<ListResponse<VirtualMachine>>('/virtual_machines')
       return response
     } catch (error) {
-      console.error('Failed to fetch virtual machines:', error)
+      logger.error('Failed to fetch virtual machines', error)
       throw error
     }
   })
@@ -20,7 +21,7 @@ export const getVirtualMachine = async (id: string): Promise<VirtualMachine> => 
     const response = await apiClient.get<VirtualMachine>(`/virtual_machines/${id}`)
     return response
   } catch (error) {
-    console.error(`Failed to fetch virtual machine ${id}:`, error)
+    logger.error(`Failed to fetch virtual machine ${id}`, error)
     throw error
   }
 }
@@ -32,7 +33,7 @@ export const createVirtualMachine = async (vm: Partial<VirtualMachine>): Promise
     const response = await apiClient.post<VirtualMachine>('/virtual_machines', vm)
     return response
   } catch (error) {
-    console.error('Failed to create virtual machine:', error)
+    logger.error('Failed to create virtual machine', error)
     throw error
   }
 }
@@ -41,7 +42,7 @@ export const deleteVirtualMachine = async (id: string): Promise<void> => {
   try {
     await apiClient.delete(`/virtual_machines/${id}`)
   } catch (error) {
-    console.error(`Failed to delete virtual machine ${id}:`, error)
+    logger.error(`Failed to delete virtual machine ${id}`, error)
     throw error
   }
 }
@@ -53,7 +54,7 @@ export const updateVirtualMachine = async (vm: VirtualMachine): Promise<VirtualM
     const response = await apiClient.put<VirtualMachine>(`/virtual_machines/${vm.id}`, vm)
     return response
   } catch (error) {
-    console.error(`Failed to update virtual machine ${vm.id}:`, error)
+    logger.error(`Failed to update virtual machine ${vm.id}`, error)
     throw error
   }
 }

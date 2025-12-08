@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next'
 import AppLayout from '../components/layouts/AppLayout'
 import { getClusterTemplates } from '../api/clusterTemplates'
 import { ClusterTemplate } from '../api/types'
+import { logger } from '@/utils/logger'
 
 interface HostClassInfo {
   name: string
@@ -93,7 +94,7 @@ const ClusterTemplateCatalog: React.FC = () => {
         const data = await getClusterTemplates()
         setTemplates(data)
       } catch (error) {
-        console.error('Error fetching cluster templates:', error)
+        logger.error('Error fetching cluster templates', error)
       } finally {
         setLoading(false)
       }
@@ -110,7 +111,7 @@ const ClusterTemplateCatalog: React.FC = () => {
         const data = await response.json()
         setHostClasses(data)
       } catch (error) {
-        console.error('Error fetching host classes:', error)
+        logger.error('Error fetching host classes', error)
       }
     }
 

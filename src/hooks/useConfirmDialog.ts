@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { logger } from '@/utils/logger'
 
 interface ConfirmDialogState<T = unknown> {
   isOpen: boolean
@@ -59,7 +60,7 @@ export function useConfirmDialog<T = unknown>(): UseConfirmDialogReturn<T> {
         await handler(state.item)
         close()
       } catch (error) {
-        console.error('Confirm action failed:', error)
+        logger.error('Confirm action failed', error)
         setState(prev => ({ ...prev, isLoading: false }))
         throw error
       }

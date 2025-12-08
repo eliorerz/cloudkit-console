@@ -17,6 +17,7 @@ import { PlusIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { getHubs } from '../api/hubs'
 import { Hub } from '../api/types'
+import { logger } from '@/utils/logger'
 
 const Hubs = () => {
   const { t } = useTranslation(['hubs', 'common'])
@@ -49,7 +50,7 @@ const Hubs = () => {
       const response = await getHubs()
       setHubs(response.items || [])
     } catch (err) {
-      console.error('Failed to load hubs:', err)
+      logger.error('Failed to load hubs', err)
       setError('Failed to load hubs')
     } finally {
       setIsLoading(false)

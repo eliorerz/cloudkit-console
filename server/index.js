@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { logger } from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,11 +12,11 @@ const PORT = process.env.PORT || 8080;
 
 // Validate required environment variables
 if (!process.env.FULFILLMENT_API_URL) {
-  console.error('ERROR: FULFILLMENT_API_URL environment variable is not set in ConfigMap');
+  logger.error('FULFILLMENT_API_URL environment variable is not set in ConfigMap');
   process.exit(1);
 }
 if (!process.env.KEYCLOAK_URL) {
-  console.error('ERROR: KEYCLOAK_URL environment variable is not set in ConfigMap');
+  logger.error('KEYCLOAK_URL environment variable is not set in ConfigMap');
   process.exit(1);
 }
 
@@ -130,7 +131,7 @@ app.get('/api/os-images', (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error reading OS images config:', error);
+    logger.error('Error reading OS images config', error);
     res.status(500).json({ error: 'Failed to load OS images catalog' });
   }
 });
@@ -213,7 +214,7 @@ app.get('/api/host-classes', (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error reading host classes config:', error);
+    logger.error('Error reading host classes config', error);
     res.status(500).json({ error: 'Failed to load host classes catalog' });
   }
 });
@@ -243,7 +244,7 @@ app.get('*', (req, res) => {
   const indexPath = path.join(__dirname, '../dist/index.html');
   fs.readFile(indexPath, 'utf8', (err, html) => {
     if (err) {
-      console.error('Error reading index.html:', err);
+      logger.error('Error reading index.html', err);
       return res.status(500).send('Internal Server Error');
     }
 
@@ -262,5 +263,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`OSAC UI server listening on port ${PORT}`);
+  logger.info(`OSAC UI server listening on port ${PORT}`);
 });

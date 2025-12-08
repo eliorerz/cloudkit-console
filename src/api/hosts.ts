@@ -2,6 +2,7 @@ import { Host, ListResponse } from './types'
 import { getUserManager } from '../auth/oidcConfig'
 import { getConfig } from './config'
 import { deduplicateRequest } from '../utils/requestDeduplication'
+import { logger } from '@/utils/logger'
 
 // Helper to get API base URL from centralized config
 const getApiBaseUrl = async (): Promise<string> => {
@@ -52,7 +53,7 @@ export const getHosts = async (options?: {
       size: data.size || 0,
     }
   } catch (error) {
-    console.error('Failed to fetch hosts:', error)
+    logger.error('Failed to fetch hosts', error)
     throw error
   }
   })
@@ -80,7 +81,7 @@ export const getHost = async (id: string): Promise<Host> => {
 
     return await response.json()
   } catch (error) {
-    console.error(`Failed to fetch host ${id}:`, error)
+    logger.error(`Failed to fetch host ${id}`, error)
     throw error
   }
 }
@@ -106,7 +107,7 @@ export const deleteHost = async (id: string): Promise<void> => {
       throw new Error(`Failed to delete host ${id}: ${response.status} ${response.statusText}`)
     }
   } catch (error) {
-    console.error(`Failed to delete host ${id}:`, error)
+    logger.error(`Failed to delete host ${id}`, error)
     throw error
   }
 }
@@ -137,7 +138,7 @@ export const updateHost = async (host: Host): Promise<Host> => {
 
     return await response.json()
   } catch (error) {
-    console.error(`Failed to update host ${host.id}:`, error)
+    logger.error(`Failed to update host ${host.id}`, error)
     throw error
   }
 }

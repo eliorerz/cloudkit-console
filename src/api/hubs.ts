@@ -1,6 +1,7 @@
 import { Hub, ListResponse } from './types'
 import { getUserManager } from '../auth/oidcConfig'
 import { getConfig } from './config'
+import { logger } from '@/utils/logger'
 
 // Helper to get API base URL from centralized config
 const getApiBaseUrl = async (): Promise<string> => {
@@ -38,7 +39,7 @@ export const getHubs = async (): Promise<ListResponse<Hub>> => {
       size: data.size || 0,
     }
   } catch (error) {
-    console.error('Failed to fetch hubs:', error)
+    logger.error('Failed to fetch hubs', error)
     throw error
   }
 }
@@ -66,7 +67,7 @@ export const getHub = async (id: string): Promise<Hub> => {
     const data = await response.json()
     return data.object || data
   } catch (error) {
-    console.error(`Failed to fetch hub ${id}:`, error)
+    logger.error(`Failed to fetch hub ${id}`, error)
     throw error
   }
 }
@@ -98,7 +99,7 @@ export const createHub = async (hub: Partial<Hub>): Promise<Hub> => {
     const data = await response.json()
     return data.object || data
   } catch (error) {
-    console.error('Failed to create hub:', error)
+    logger.error('Failed to create hub', error)
     throw error
   }
 }
@@ -130,7 +131,7 @@ export const updateHub = async (id: string, hub: Partial<Hub>): Promise<Hub> => 
     const data = await response.json()
     return data.object || data
   } catch (error) {
-    console.error(`Failed to update hub ${id}:`, error)
+    logger.error(`Failed to update hub ${id}`, error)
     throw error
   }
 }
@@ -156,7 +157,7 @@ export const deleteHub = async (id: string): Promise<void> => {
       throw new Error(`Failed to delete hub ${id}: ${response.status} ${response.statusText}`)
     }
   } catch (error) {
-    console.error(`Failed to delete hub ${id}:`, error)
+    logger.error(`Failed to delete hub ${id}`, error)
     throw error
   }
 }

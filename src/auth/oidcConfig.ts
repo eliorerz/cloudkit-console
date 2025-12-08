@@ -1,5 +1,6 @@
 import { UserManager, WebStorageStateStore, Log } from 'oidc-client-ts'
 import { getConfig, type AppConfig } from '../api/config'
+import { logger } from '@/utils/logger'
 
 // Enable OIDC client logging in development
 if (import.meta.env.DEV) {
@@ -16,7 +17,7 @@ const CONSOLE_URL = window.location.origin
 export async function loadConfig(): Promise<AppConfig> {
   // If already loaded, return it (idempotent)
   if (runtimeConfig) {
-    console.log('Config already loaded, returning cached config')
+    logger.info('Config already loaded, returning cached config')
     return runtimeConfig
   }
 
@@ -29,11 +30,11 @@ export async function loadConfig(): Promise<AppConfig> {
     }
 
     runtimeConfig = config
-    console.log('Loaded runtime config:', config)
+    logger.info('Loaded runtime config', { config })
     return config
   } catch (error) {
     const errorMsg = `FATAL: Failed to load runtime configuration. Ensure osac-ui-config ConfigMap is properly configured. Error: ${error}`
-    console.error(errorMsg)
+    logger.error(errorMsg, error)
     throw new Error(errorMsg)
   }
 }
@@ -85,15 +86,15 @@ export function getUserManager() {
 
     // Setup event handlers when creating the instance
     userManagerInstance.events.addAccessTokenExpiring(() => {
-      console.log('Access token expiring...')
+      logger.info('Access token expiring...')
     })
 
     userManagerInstance.events.addAccessTokenExpired(() => {
-      console.log('Access token expired')
+      logger.info('Access token expired')
     })
 
     userManagerInstance.events.addSilentRenewError((error) => {
-      console.error('Silent renew error:', error)
+      logger.error('Silent renew error', error)
     })
   }
   return userManagerInstance

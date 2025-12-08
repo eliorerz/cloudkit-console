@@ -2,6 +2,7 @@ import { apiClient } from './client'
 import { getHubs } from './hubs'
 import { Template, VirtualMachine, DashboardMetrics, ListResponse } from './types'
 import { deduplicateRequest } from '../utils/requestDeduplication'
+import { logger } from '@/utils/logger'
 
 export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
   return deduplicateRequest('dashboard-metrics', async () => {
@@ -14,7 +15,7 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       const hubsResp = await getHubs()
       hubsTotal = hubsResp.total || (hubsResp.items?.length ?? 0)
     } catch (error) {
-      console.log('Hubs endpoint not available:', error)
+      logger.info('Hubs endpoint not available', { error })
     }
 
     // VMs endpoint - handle separately
@@ -23,7 +24,7 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       const vmsResp = await apiClient.get<ListResponse<VirtualMachine>>('/virtual_machines')
       vms = vmsResp.items || []
     } catch (error) {
-      console.log('VMs endpoint not available')
+      logger.info('VMs endpoint not available')
     }
 
     // Calculate VM metrics using status.state
@@ -70,7 +71,7 @@ export const getDashboardMetrics = async (): Promise<DashboardMetrics> => {
       },
     }
   } catch (error) {
-    console.error('Failed to fetch dashboard metrics:', error)
+    logger.error('Failed to fetch dashboard metrics', error)
     return {
       templates: { total: 0 },
       hubs: { total: 0 },

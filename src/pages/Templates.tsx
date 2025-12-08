@@ -36,6 +36,7 @@ import { Template } from '../api/types'
 import { createVirtualMachine } from '../api/vms'
 import { getOSImages, OSImage } from '../api/os-images'
 import { getHostClasses, HostClass } from '../api/host-classes'
+import { logger } from '@/utils/logger'
 
 const Templates: React.FC = () => {
   const { t } = useTranslation(['templates', 'common'])
@@ -65,7 +66,7 @@ const Templates: React.FC = () => {
         const response = await getTemplates()
         setTemplates(response.items || [])
       } catch (error) {
-        console.error('Error fetching templates:', error)
+        logger.error('Error fetching templates', error)
         setTemplates([])
       } finally {
         setLoading(false)
@@ -81,7 +82,7 @@ const Templates: React.FC = () => {
         const response = await getOSImages()
         setOsImages(response.images || [])
       } catch (error) {
-        console.error('Error fetching OS images:', error)
+        logger.error('Error fetching OS images', error)
         setOsImages([])
       }
     }
@@ -95,7 +96,7 @@ const Templates: React.FC = () => {
         const classes = await getHostClasses()
         setHostClasses(classes || {})
       } catch (error) {
-        console.error('Error fetching host classes:', error)
+        logger.error('Error fetching host classes', error)
         setHostClasses({})
       }
     }
@@ -277,7 +278,7 @@ const Templates: React.FC = () => {
         handleCloseDrawer()
       }, 1500)
     } catch (error) {
-      console.error('Failed to create VM:', error)
+      logger.error('Failed to create VM', error)
       if (error instanceof Error) {
         setCreateError(error.message)
       } else {

@@ -12,6 +12,7 @@ import {
 import { ExclamationCircleIcon } from '@patternfly/react-icons'
 import { loadConfig, getUserManager } from '../auth/oidcConfig'
 import { useAuth } from '../hooks/useAuth'
+import { logger } from '@/utils/logger'
 
 export const OIDCCallback: React.FC = () => {
   const navigate = useNavigate()
@@ -29,12 +30,12 @@ export const OIDCCallback: React.FC = () => {
         // Get the userManager
         const userManager = getUserManager()
 
-        console.log('OIDCCallback: Starting signin callback...')
+        logger.info('OIDCCallback: Starting signin callback...')
 
         // Complete the OIDC signin process
         const user = await userManager.signinRedirectCallback()
 
-        console.log('OIDCCallback: Signin callback completed, user:', user?.profile?.preferred_username)
+        logger.info('OIDCCallback: Signin callback completed', { username: user?.profile?.preferred_username })
 
         if (!user) {
           setError('No user returned from authentication')
@@ -44,14 +45,13 @@ export const OIDCCallback: React.FC = () => {
         // Get the return URL from state or default to overview
         const url = (user.state as { returnUrl?: string })?.returnUrl || '/overview'
 
-        console.log('OIDCCallback: Target URL:', url)
-        console.log('OIDCCallback: User is expired?', user.expired)
+        logger.info('OIDCCallback: Navigation details', { targetUrl: url, expired: user.expired })
 
         // Store the target URL - the second useEffect will handle navigation
         // when isAuthenticated becomes true
         setTargetUrl(url)
       } catch (err) {
-        console.error('OIDC callback error:', err)
+        logger.error('OIDC callback error', err)
         setError(err instanceof Error ? err.message : 'An error occurred during login')
       }
     }
@@ -61,9 +61,9 @@ export const OIDCCallback: React.FC = () => {
 
   // Navigate once authentication state is updated
   useEffect(() => {
-    console.log('OIDCCallback: Navigation check - targetUrl:', targetUrl, 'isAuthenticated:', isAuthenticated)
+    logger.info('OIDCCallback: Navigation check', { targetUrl, isAuthenticated })
     if (targetUrl && isAuthenticated) {
-      console.log('OIDCCallback: Auth state updated, navigating to:', targetUrl)
+      logger.info('OIDCCallback: Auth state updated, navigating', { targetUrl })
       navigate(targetUrl, { replace: true })
     }
   }, [targetUrl, isAuthenticated, navigate])

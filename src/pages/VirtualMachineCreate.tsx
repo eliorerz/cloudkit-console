@@ -31,6 +31,7 @@ import AppLayout from '../components/layouts/AppLayout'
 import { getTemplates } from '../api/templates'
 import { createVirtualMachine } from '../api/vms'
 import { Template } from '../api/types'
+import { logger } from '@/utils/logger'
 
 // Machine size presets - moved to component to access t()
 const getMachineSizeTiers = (t: (key: string) => string) => ({
@@ -138,7 +139,7 @@ const VirtualMachineCreate: React.FC = () => {
         setVmImageSource(String(imageParam.default.value))
       }
     } catch (err: unknown) {
-      console.error('Failed to load template:', err)
+      logger.error('Failed to load template', err)
       const error = err as { message?: string }
       setError(error.message || 'Failed to load template')
     } finally {
@@ -256,7 +257,7 @@ const VirtualMachineCreate: React.FC = () => {
 
       navigate('/virtual-machines')
     } catch (err: unknown) {
-      console.error('Failed to create VM:', err)
+      logger.error('Failed to create VM', err)
       const error = err as { message?: string }
       setError(error.message || 'Failed to create VM')
     } finally {

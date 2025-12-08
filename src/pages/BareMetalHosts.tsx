@@ -33,6 +33,7 @@ import AppLayout from '../components/layouts/AppLayout'
 import { getHosts } from '../api/hosts'
 import { Host, Cluster } from '../api/types'
 import { listClusters } from '../api/clustersApi'
+import { logger } from '@/utils/logger'
 
 const BareMetalHosts: React.FC = () => {
   const navigate = useNavigate()
@@ -74,7 +75,7 @@ const BareMetalHosts: React.FC = () => {
         })
         setClusterNames(nameMap)
       } catch (error) {
-        console.error('Error fetching hosts:', error)
+        logger.error('Error fetching hosts', error)
         setHosts([])
       } finally {
         if (isInitialLoad) {

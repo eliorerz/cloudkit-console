@@ -41,6 +41,7 @@ import AppLayout from '../components/layouts/AppLayout'
 import { getTemplates, deleteTemplate, createTemplate } from '../api/templates'
 import { Template, TemplateParameter } from '../api/types'
 import { CreateTemplateWizard } from '../components/wizards/CreateTemplateWizard'
+import { logger } from '@/utils/logger'
 
 const AdminTemplates: React.FC = () => {
   const [templates, setTemplates] = useState<Template[]>([])
@@ -81,7 +82,7 @@ const AdminTemplates: React.FC = () => {
         const response = await getTemplates()
         setTemplates(response.items || [])
       } catch (error) {
-        console.error('Error fetching templates:', error)
+        logger.error('Error fetching templates', error)
         setTemplates([])
       } finally {
         setLoading(false)
@@ -141,7 +142,7 @@ const AdminTemplates: React.FC = () => {
       setIsDeleteModalOpen(false)
       setTemplateToDelete(null)
     } catch (error) {
-      console.error('Failed to delete template:', error)
+      logger.error('Failed to delete template', error)
       setDeleteError(error instanceof Error ? error.message : 'Failed to delete template')
     } finally {
       setIsDeleting(false)
@@ -266,7 +267,7 @@ const AdminTemplates: React.FC = () => {
         closeUploadModal()
       }, 1500)
     } catch (error) {
-      console.error('Failed to upload template:', error)
+      logger.error('Failed to upload template', error)
       if (error instanceof SyntaxError) {
         setUploadError('Invalid JSON format: ' + error.message)
       } else if (error instanceof Error) {

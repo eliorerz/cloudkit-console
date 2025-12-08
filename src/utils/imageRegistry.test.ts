@@ -54,33 +54,17 @@ describe('imageRegistry', () => {
         statusText: 'Not Found'
       })
 
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       const result = await fetchAllOSImages()
 
       expect(result).toEqual([])
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to fetch OS images catalog:',
-        'Not Found'
-      )
-
-      consoleError.mockRestore()
     })
 
     it('should return empty array on network error', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
 
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
       const result = await fetchAllOSImages()
 
       expect(result).toEqual([])
-      expect(consoleError).toHaveBeenCalledWith(
-        'Error fetching OS images:',
-        expect.any(Error)
-      )
-
-      consoleError.mockRestore()
     })
 
     it('should handle empty images array in response', async () => {

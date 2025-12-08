@@ -32,6 +32,7 @@ import { listClusterTemplates, createCluster } from '../api/clustersApi'
 import { ClusterTemplate, Tenant } from '../api/types'
 import { listTenants } from '../api/tenants'
 import { formatDescriptionText } from '../utils/formatText'
+import { logger } from '@/utils/logger'
 
 interface HostClassInfo {
   name: string
@@ -89,7 +90,7 @@ const ClusterCreate: React.FC = () => {
       const response = await listTenants()
       setTenants(response.items || [])
     } catch (err) {
-      console.error('Failed to load tenants:', err)
+      logger.error('Failed to load tenants', err)
       // Non-critical, just log the error
     } finally {
       setLoadingTenants(false)
@@ -102,7 +103,7 @@ const ClusterCreate: React.FC = () => {
       const data = await response.json()
       setHostClasses(data)
     } catch (err) {
-      console.error('Failed to load host classes:', err)
+      logger.error('Failed to load host classes', err)
       // Non-critical, just log the error
     }
   }
@@ -140,7 +141,7 @@ const ClusterCreate: React.FC = () => {
       }
       setParameters(initialParams)
     } catch (err: unknown) {
-      console.error('Failed to load template:', err)
+      logger.error('Failed to load template', err)
       const error = err as { message?: string }
       setError(error.message || 'Failed to load template')
     } finally {
@@ -252,13 +253,13 @@ const ClusterCreate: React.FC = () => {
           const value = param.name === 'pull_secret' ? pullSecret : parameters[param.name]
           if (value !== undefined && value !== '') {
             const wrapped = wrapParameterValue(param.type || 'string', value)
-            console.log(`Wrapping parameter ${param.name} (type: ${param.type}):`, { value, wrapped })
+            logger.debug(`Wrapping parameter ${param.name} (type: ${param.type})`, { value, wrapped })
             wrappedParameters[param.name] = wrapped
           }
         })
       }
 
-      console.log('Wrapped parameters:', wrappedParameters)
+      logger.debug('Wrapped parameters', wrappedParameters)
 
       // Build cluster spec with optional tenants
       const metadata: Record<string, unknown> = {
@@ -283,7 +284,7 @@ const ClusterCreate: React.FC = () => {
       // Redirect to cluster detail page
       navigate(`/admin/clusters/${newCluster.id}`)
     } catch (err: unknown) {
-      console.error('Failed to create cluster:', err)
+      logger.error('Failed to create cluster', err)
       setError((err as { message?: string })?.message || 'Failed to create cluster')
     } finally {
       setCreating(false)

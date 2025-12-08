@@ -42,6 +42,7 @@ import { Cluster, ClusterState, Host } from '../api/types'
 import { getUserManager } from '../auth/oidcConfig'
 import { getHost } from '../api/hosts'
 import { getHostClassById, getHostClasses, FulfillmentHostClass, HostClass } from '../api/host-classes'
+import { logger } from '@/utils/logger'
 
 // Mock networking data for demo
 const mockNetworking: Record<string, unknown> = {
@@ -91,7 +92,7 @@ const ClusterDetail: React.FC = () => {
       navigator.clipboard.writeText(password).then(() => {
         addAlert('Password copied to clipboard')
       }).catch((err) => {
-        console.error('Failed to copy password:', err)
+        logger.error('Failed to copy password', err)
         addAlert('Failed to copy password')
       })
     }
@@ -117,7 +118,7 @@ const ClusterDetail: React.FC = () => {
 
       addAlert('Kubeconfig downloaded successfully')
     } catch (err: unknown) {
-      console.error('Failed to download kubeconfig:', err)
+      logger.error('Failed to download kubeconfig', err)
       addAlert('Failed to download kubeconfig')
     }
   }
@@ -147,7 +148,7 @@ const ClusterDetail: React.FC = () => {
         navigate('/admin/clusters')
       }, 1500)
     } catch (err: unknown) {
-      console.error('Failed to delete cluster:', err)
+      logger.error('Failed to delete cluster', err)
       addAlert('Failed to delete cluster')
       setIsDeleting(false)
     }
@@ -206,7 +207,7 @@ const ClusterDetail: React.FC = () => {
 
       loadCluster()
     } catch (err: unknown) {
-      console.error('Failed to scale cluster:', err)
+      logger.error('Failed to scale cluster', err)
       setScalingSizeError((err as { message?: string })?.message || 'Failed to scale cluster')
     } finally {
       setIsScaling(false)
@@ -221,7 +222,7 @@ const ClusterDetail: React.FC = () => {
       const admin = roles?.includes('fulfillment-admin') || false
       setUsingPrivateApi(admin)
     } catch (err) {
-      console.error('Failed to check admin status:', err)
+      logger.error('Failed to check admin status', err)
     }
   }
 
@@ -242,7 +243,7 @@ const ClusterDetail: React.FC = () => {
         loadHostsData(clusterData)
       }
     } catch (err: unknown) {
-      console.error('Failed to load cluster:', err)
+      logger.error('Failed to load cluster', err)
       const error = err as { message?: string }
       if (!isBackgroundRefresh) {
         setError((error as { message?: string })?.message || 'Failed to load cluster')
@@ -262,7 +263,7 @@ const ClusterDetail: React.FC = () => {
       const pwd = await getClusterPassword(id)
       setPassword(pwd)
     } catch (err: unknown) {
-      console.error('Failed to load password:', err)
+      logger.error('Failed to load password', err)
     } finally {
       setLoadingPassword(false)
     }
@@ -318,7 +319,7 @@ const ClusterDetail: React.FC = () => {
       setHostsData(hostsMap)
       setHostClassesData(hostClassesMap)
     } catch (err: unknown) {
-      console.error('Failed to load hosts data:', err)
+      logger.error('Failed to load hosts data', err)
     } finally {
       setLoadingHosts(false)
     }

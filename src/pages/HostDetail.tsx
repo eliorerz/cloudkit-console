@@ -30,6 +30,7 @@ import AppLayout from '../components/layouts/AppLayout'
 import { getHost } from '../api/hosts'
 import { Host } from '../api/types'
 import { getHostClasses, getHostClassById, HostClass } from '../api/host-classes'
+import { logger } from '@/utils/logger'
 
 const HostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -70,11 +71,11 @@ const HostDetail: React.FC = () => {
             if (className && hostClassesData[className]) {
               setHostClass(hostClassesData[className])
             } else {
-              console.warn(`Host class name "${className}" not found in static catalog`)
+              logger.warn(`Host class name "${className}" not found in static catalog`)
               setHostClass(null)
             }
           } catch (err) {
-            console.error('Error fetching host class from fulfillment API:', err)
+            logger.error('Error fetching host class from fulfillment API', err)
             setHostClass(null)
           }
         } else {
@@ -83,7 +84,7 @@ const HostDetail: React.FC = () => {
 
         setError(null)
       } catch (err) {
-        console.error('Error fetching host:', err)
+        logger.error('Error fetching host', err)
         setError('Failed to load host details')
       } finally {
         // Update loading state and mark first load complete

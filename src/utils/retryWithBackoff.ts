@@ -3,6 +3,8 @@
  * Retries failed API requests with increasing delays
  */
 
+import { logger } from '@/utils/logger'
+
 export interface RetryOptions {
   maxRetries?: number
   initialDelay?: number
@@ -60,7 +62,7 @@ export async function retryWithBackoff<T>(
       const jitter = Math.random() * delay * 0.3 // ±30% jitter
       const finalDelay = delay + jitter
 
-      console.log(`Retry attempt ${attempt + 1}/${opts.maxRetries} after ${Math.round(finalDelay)}ms`)
+      logger.info(`Retry attempt ${attempt + 1}/${opts.maxRetries} after ${Math.round(finalDelay)}ms`)
 
       await new Promise(resolve => setTimeout(resolve, finalDelay))
     }

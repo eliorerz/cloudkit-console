@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios'
 import { getConfig } from './config'
 import { retryWithBackoff } from '../utils/retryWithBackoff'
+import { logger } from '@/utils/logger'
 
 // Get fulfillment API URL from centralized config
 const getFulfillmentApiUrl = async (): Promise<string> => {
@@ -62,9 +63,9 @@ class APIClient {
         this.baseURL = await getFulfillmentApiUrl()
         this.client.defaults.baseURL = `${this.baseURL}/api/fulfillment/v1`
         this.initialized = true
-        console.log('✓ API client initialized with baseURL:', this.client.defaults.baseURL)
+        logger.info('API client initialized with baseURL', { baseURL: this.client.defaults.baseURL })
       } catch (error) {
-        console.error('✗ Failed to initialize API client:', error)
+        logger.error('Failed to initialize API client', error)
         // Reset state to allow retry on next request
         this.initPromise = null
         this.initialized = false
@@ -87,7 +88,7 @@ class APIClient {
       // Validate that we got JSON, not HTML
       const contentType = response.headers['content-type']
       if (contentType && !contentType.includes('application/json')) {
-        console.error(`Expected JSON but received ${contentType}`)
+        logger.error('Expected JSON but received different content type', undefined, { contentType })
         throw new Error(`API returned ${contentType} instead of JSON`)
       }
 

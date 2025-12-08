@@ -6,6 +6,7 @@
 import { ClusterTemplate } from './types'
 import { listClusterTemplates as listClusterTemplatesFromAPI } from './clustersApi'
 import { getConfig } from './config'
+import { logger } from '@/utils/logger'
 
 interface RawTemplate {
   id?: string
@@ -153,7 +154,7 @@ export async function getClusterTemplates(): Promise<ClusterTemplate[]> {
 
     return templates
   } catch (error) {
-    console.error('Error loading cluster templates from API:', error)
+    logger.error('Error loading cluster templates from API', error)
     return []
   }
 }

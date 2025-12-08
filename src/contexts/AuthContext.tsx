@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react'
 import { User } from 'oidc-client-ts'
 import { loadConfig, getUserManager } from '../auth/oidcConfig'
+import { logger } from '@/utils/logger'
 
 let userManager: ReturnType<typeof getUserManager> | null = null
 
@@ -31,7 +32,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Listen for user loaded events (after login/silent renew)
     const handleUserLoaded = (loadedUser: User) => {
-      console.log('User loaded event fired')
+      logger.info('User loaded event fired')
       setUser(loadedUser)
       setIsAuthenticated(true)
       setIsLoading(false)
@@ -39,14 +40,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Listen for user unloaded events (after logout)
     const handleUserUnloaded = () => {
-      console.log('User unloaded event fired')
+      logger.info('User unloaded event fired')
       setUser(null)
       setIsAuthenticated(false)
     }
 
     // Listen for silent renew errors
     const handleSilentRenewError = (error: Error) => {
-      console.error('Silent renew error:', error)
+      logger.error('Silent renew error', error)
       // Don't automatically logout on silent renew error
       // User can still use the app until token expires
     }
@@ -75,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setIsAuthenticated(false)
         }
       } catch (error) {
-        console.error('Auth initialization error:', error)
+        logger.error('Auth initialization error', error)
         setIsAuthenticated(false)
       } finally {
         setIsLoading(false)
@@ -104,7 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async () => {
     if (!userManager) {
-      console.error('UserManager not initialized')
+      logger.error('UserManager not initialized')
       throw new Error('Authentication not ready')
     }
 
@@ -119,14 +120,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         state: { returnUrl }
       })
     } catch (error) {
-      console.error('Login error:', error)
+      logger.error('Login error', error)
       throw error
     }
   }
 
   const logout = async () => {
     if (!userManager) {
-      console.error('UserManager not initialized')
+      logger.error('UserManager not initialized')
       return
     }
 
@@ -136,7 +137,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Redirect to Keycloak logout page
       await userManager.signoutRedirect()
     } catch (error) {
-      console.error('Logout error:', error)
+      logger.error('Logout error', error)
       // Even if redirect fails, clear local state
       localStorage.removeItem('osac_ui_token')
       setUser(null)

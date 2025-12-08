@@ -37,6 +37,7 @@ import AppLayout from '../components/layouts/AppLayout'
 import { getVirtualMachine } from '../api/vms'
 import { VirtualMachine } from '../api/types'
 import { fetchAllOSImages, OSImage } from '../utils/imageRegistry'
+import { logger } from '@/utils/logger'
 
 const VirtualMachineDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -57,7 +58,7 @@ const VirtualMachineDetail: React.FC = () => {
         setVm(data)
         setError(null)
       } catch (err) {
-        console.error('Error fetching VM:', err)
+        logger.error('Error fetching VM', err)
         setError('Failed to load virtual machine details')
       } finally {
         setLoading(false)
@@ -75,7 +76,7 @@ const VirtualMachineDetail: React.FC = () => {
           setAvailableOSImages(images)
         })
         .catch((error) => {
-          console.error('Failed to fetch OS images:', error)
+          logger.error('Failed to fetch OS images', error)
         })
     }
   }, [availableOSImages.length])

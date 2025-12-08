@@ -28,6 +28,7 @@ import { VMTable } from '../components/virtual-machines/VMTable'
 import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { getVirtualMachines, deleteVirtualMachine } from '../api/vms'
 import { useConfirmDialog } from '../hooks/useConfirmDialog'
+import { logger } from '@/utils/logger'
 
 type ViewType = 'cards' | 'table'
 
@@ -61,7 +62,7 @@ const VirtualMachines: React.FC = () => {
       const response = await getVirtualMachines()
       setVms(response.items || [])
     } catch (error) {
-      console.error('Error fetching VMs:', error)
+      logger.error('Error fetching VMs', error)
       setVms([])
     } finally {
       setLoading(false)
@@ -94,7 +95,7 @@ const VirtualMachines: React.FC = () => {
       setVms(prevVms => prevVms.filter(vm => vm.id !== deleteDialog.item!.id))
       deleteDialog.close()
     } catch (error) {
-      console.error('Error deleting VM:', error)
+      logger.error('Error deleting VM', error)
       alert('Failed to delete virtual machine')
     } finally {
       setIsDeleting(false)

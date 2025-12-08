@@ -40,6 +40,7 @@ import {
   ActionsColumn,
 } from '@patternfly/react-table'
 import { TemplateParameter } from '../../api/types'
+import { logger } from '@/utils/logger'
 
 interface CreateTemplateWizardProps {
   isOpen: boolean
@@ -255,7 +256,7 @@ export const CreateTemplateWizard: React.FC<CreateTemplateWizardProps> = ({
 
       handleClose()
     } catch (error) {
-      console.error('Failed to create template:', error)
+      logger.error('Failed to create template', error)
       setCreationError(error instanceof Error ? error.message : 'Failed to create template')
     } finally {
       setIsCreating(false)

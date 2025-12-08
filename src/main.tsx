@@ -5,6 +5,7 @@ import '@patternfly/react-core/dist/styles/base.css'
 import '@patternfly/patternfly/patternfly.css'
 import '@patternfly/patternfly/patternfly-addons.css'
 import './styles/dark-theme.css'
+import { logger } from '@/utils/logger'
 
 // Extend Window interface for TypeScript
 declare global {
@@ -22,13 +23,13 @@ const strictMode = window.__OSAC_UI_CONFIG__?.strictMode ?? false
 const root = ReactDOM.createRoot(document.getElementById('root')!)
 
 if (strictMode) {
-  console.log('⚠️  React StrictMode enabled - effects will run twice in development')
+  logger.info('React StrictMode enabled - effects will run twice in development')
   root.render(
     <React.StrictMode>
       <App />
     </React.StrictMode>,
   )
 } else {
-  console.log('✓ React StrictMode disabled - production mode')
+  logger.info('React StrictMode disabled - production mode')
   root.render(<App />)
 }

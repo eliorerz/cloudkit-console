@@ -37,6 +37,7 @@ import { listClusters, scaleCluster, deleteCluster } from '../api/clustersApi'
 import { Cluster, ClusterState } from '../api/types'
 import { getHost } from '../api/hosts'
 import { getHostClassById, getHostClasses } from '../api/host-classes'
+import { logger } from '@/utils/logger'
 
 const Clusters: React.FC = () => {
   const { t } = useTranslation(['clusters', 'common'])
@@ -90,7 +91,7 @@ const Clusters: React.FC = () => {
       const response = await listClusters()
       setClusters(response.items || [])
     } catch (err: unknown) {
-      console.error('Failed to load clusters:', err)
+      logger.error('Failed to load clusters', err)
       setError((err as { message?: string })?.message || 'Failed to load clusters')
     } finally {
       setLoading(false)
@@ -274,7 +275,7 @@ const Clusters: React.FC = () => {
                 hostClassesMap[host.spec.class] = hostClass
               }
             } catch (err) {
-              console.error('Failed to load host:', err)
+              logger.error('Failed to load host', err)
             }
           }
         }
@@ -336,9 +337,9 @@ const Clusters: React.FC = () => {
       // Reload clusters list
       loadClusters()
     } catch (err: unknown) {
-      console.error('Failed to scale cluster:', err)
+      logger.error('Failed to scale cluster', err)
       setScalingSizeError((err as { message?: string })?.message || 'Failed to scale cluster')
-    } finally {
+    } finally{
       setIsScaling(false)
     }
   }
@@ -369,7 +370,7 @@ const Clusters: React.FC = () => {
       // Reload clusters list
       loadClusters()
     } catch (err: unknown) {
-      console.error('Failed to delete cluster:', err)
+      logger.error('Failed to delete cluster', err)
       setError((err as { message?: string })?.message || 'Failed to delete cluster')
     } finally {
       setIsDeleting(false)

@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger'
+
 export interface OSImage {
   os: string
   displayName: string
@@ -20,14 +22,14 @@ export const fetchAllOSImages = async (): Promise<OSImage[]> => {
     const response = await fetch('/api/os-images')
 
     if (!response.ok) {
-      console.error('Failed to fetch OS images catalog:', response.statusText)
+      logger.error('Failed to fetch OS images catalog', undefined, { statusText: response.statusText })
       return []
     }
 
     const data = await response.json()
     return data.images || []
   } catch (error) {
-    console.error('Error fetching OS images:', error)
+    logger.error('Error fetching OS images', error)
     return []
   }
 }

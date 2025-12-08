@@ -10,6 +10,7 @@ import { OIDCCallback } from './pages/OIDCCallback'
 import Dashboard from './pages/Dashboard'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import { Spinner } from '@patternfly/react-core'
+import { logger } from '@/utils/logger'
 
 // Lazy load route components for better code splitting
 const VirtualMachines = lazy(() => import('./pages/VirtualMachines'))
@@ -39,7 +40,7 @@ function App() {
         await apiClient.initialize()
         setApiReady(true)
       } catch (error) {
-        console.error('Failed to initialize API client:', error)
+        logger.error('Failed to initialize API client', error)
         // Still set ready to allow app to load and show error states
         setApiReady(true)
       }

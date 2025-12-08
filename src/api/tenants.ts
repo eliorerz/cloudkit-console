@@ -6,6 +6,7 @@
 import axios from 'axios'
 import { Tenant, ListResponse } from './types'
 import { getConfig } from './config'
+import { logger } from '@/utils/logger'
 
 // Helper to get API base URL from centralized config
 const getApiBaseUrl = async (): Promise<string> => {
@@ -50,7 +51,7 @@ export const listTenants = async (options?: {
       size: response.data.size || 0,
     }
   } catch (error) {
-    console.error('Failed to list tenants:', error)
+    logger.error('Failed to list tenants', error)
     throw error
   }
 }

@@ -1,6 +1,7 @@
 import { apiClient } from './client'
 import { Template, ListResponse } from './types'
 import { deduplicateRequest } from '../utils/requestDeduplication'
+import { logger } from '@/utils/logger'
 
 export const getTemplates = async (): Promise<ListResponse<Template>> => {
   return deduplicateRequest('templates-list', async () => {
@@ -8,7 +9,7 @@ export const getTemplates = async (): Promise<ListResponse<Template>> => {
       const response = await apiClient.get<ListResponse<Template>>('/virtual_machine_templates')
       return response
     } catch (error) {
-      console.error('Failed to fetch templates:', error)
+      logger.error('Failed to fetch templates', error)
       throw error
     }
   })
@@ -19,7 +20,7 @@ export const getTemplate = async (id: string): Promise<Template> => {
     const response = await apiClient.get<Template>(`/virtual_machine_templates/${id}`)
     return response
   } catch (error) {
-    console.error(`Failed to fetch template ${id}:`, error)
+    logger.error(`Failed to fetch template ${id}`, error)
     throw error
   }
 }
@@ -31,7 +32,7 @@ export const createTemplate = async (template: Partial<Template>): Promise<Templ
     const response = await apiClient.post<Template>('/virtual_machine_templates', template)
     return response
   } catch (error) {
-    console.error('Failed to create template:', error)
+    logger.error('Failed to create template', error)
     throw error
   }
 }
@@ -42,7 +43,7 @@ export const updateTemplate = async (id: string, template: Partial<Template>): P
     const response = await apiClient.patch<Template>(`/virtual_machine_templates/${id}`, { object: template })
     return response
   } catch (error) {
-    console.error(`Failed to update template ${id}:`, error)
+    logger.error(`Failed to update template ${id}`, error)
     throw error
   }
 }
@@ -51,7 +52,7 @@ export const deleteTemplate = async (id: string): Promise<void> => {
   try {
     await apiClient.delete(`/virtual_machine_templates/${id}`)
   } catch (error) {
-    console.error(`Failed to delete template ${id}:`, error)
+    logger.error(`Failed to delete template ${id}`, error)
     throw error
   }
 }

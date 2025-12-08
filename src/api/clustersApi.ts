@@ -7,6 +7,7 @@ import { Cluster, ClusterTemplate, ListResponse } from './types'
 import { getUserManager } from '../auth/oidcConfig'
 import { getConfig } from './config'
 import { deduplicateRequest } from '../utils/requestDeduplication'
+import { logger } from '@/utils/logger'
 
 // Helper to get API base URL from centralized config
 const getApiBaseUrl = async (): Promise<string> => {
@@ -63,7 +64,7 @@ export const listClusterTemplates = async (options?: {
       size: data.size || 0,
     }
   } catch (error) {
-    console.error('Failed to list cluster templates:', error)
+    logger.error('Failed to list cluster templates', error)
     throw error
   }
   })
@@ -115,7 +116,7 @@ export const listClusters = async (options?: {
       size: data.size || 0,
     }
   } catch (error) {
-    console.error('Failed to list clusters:', error)
+    logger.error('Failed to list clusters', error)
     throw error
   }
   })
@@ -143,7 +144,7 @@ export const getCluster = async (id: string): Promise<Cluster> => {
 
     return await response.json()
   } catch (error) {
-    console.error(`Failed to get cluster ${id}:`, error)
+    logger.error(`Failed to get cluster ${id}`, error)
     throw error
   }
 }
@@ -174,7 +175,7 @@ export const createCluster = async (cluster: Partial<Cluster>): Promise<Cluster>
 
     return await response.json()
   } catch (error) {
-    console.error('Failed to create cluster:', error)
+    logger.error('Failed to create cluster', error)
     throw error
   }
 }
@@ -214,7 +215,7 @@ export const getClusterKubeconfig = async (id: string): Promise<string> => {
 
     throw new Error('Invalid kubeconfig response format')
   } catch (error) {
-    console.error(`Failed to get kubeconfig for cluster ${id}:`, error)
+    logger.error(`Failed to get kubeconfig for cluster ${id}`, error)
     throw error
   }
 }
@@ -251,7 +252,7 @@ export const getClusterPassword = async (id: string): Promise<string> => {
       return encodedPassword
     }
   } catch (error) {
-    console.error(`Failed to get password for cluster ${id}:`, error)
+    logger.error(`Failed to get password for cluster ${id}`, error)
     throw error
   }
 }
@@ -300,7 +301,7 @@ export const scaleCluster = async (
 
     return await response.json()
   } catch (error) {
-    console.error(`Failed to scale cluster ${id}:`, error)
+    logger.error(`Failed to scale cluster ${id}`, error)
     throw error
   }
 }
@@ -331,7 +332,7 @@ export const deleteCluster = async (id: string): Promise<void> => {
       throw new Error(`Failed to delete cluster: ${response.status} ${response.statusText}: ${errorText}`)
     }
   } catch (error) {
-    console.error(`Failed to delete cluster ${id}:`, error)
+    logger.error(`Failed to delete cluster ${id}`, error)
     throw error
   }
 }

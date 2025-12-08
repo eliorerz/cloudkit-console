@@ -33,6 +33,7 @@ import { createClusterTemplate } from '../api/clusterTemplates'
 import { getClusterTemplates } from '../api/clusterTemplates'
 import { ClusterTemplateParameterDefinition, ClusterTemplateNodeSet } from '../api/types'
 import { PlusCircleIcon, TrashIcon } from '@patternfly/react-icons'
+import { logger } from '@/utils/logger'
 
 const PROTOBUF_TYPES = [
   'type.googleapis.com/google.protobuf.StringValue',
@@ -134,7 +135,7 @@ const CreateClusterTemplate: React.FC = () => {
           setHostClass(classes[0])
         }
       } catch (err) {
-        console.error('Failed to load host classes:', err)
+        logger.error('Failed to load host classes', err)
       }
     }
     loadHostClasses()
@@ -253,7 +254,7 @@ const CreateClusterTemplate: React.FC = () => {
       // Navigate back to catalog
       navigate('/admin/cluster-catalog')
     } catch (err: unknown) {
-      console.error('Failed to create template:', err)
+      logger.error('Failed to create template', err)
       setError((err as { message?: string })?.message || 'Failed to create cluster template')
     } finally {
       setIsCreating(false)
