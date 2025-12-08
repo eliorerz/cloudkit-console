@@ -1,4 +1,4 @@
-.PHONY: help dev build build-push deploy clean
+.PHONY: help dev build build-push deploy clean lint lint-fix
 
 # Environment selection: dev or integration
 ENV ?= dev
@@ -25,6 +25,8 @@ help:
 	@echo "  build-push - Build and push container image with unique timestamp tag"
 	@echo "  deploy     - Deploy to Kubernetes cluster (ENV=dev|integration)"
 	@echo "  clean      - Remove deployment from cluster (ENV=dev|integration)"
+	@echo "  lint       - Run ESLint to check code quality"
+	@echo "  lint-fix   - Run ESLint and auto-fix issues"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  ENV        - Target environment: dev (default) or integration"
@@ -69,3 +71,11 @@ deploy-image:
 	fi
 
 build-and-deploy-image: build-push deploy-image
+
+lint:
+	@echo "Running ESLint..."
+	npm run lint
+
+lint-fix:
+	@echo "Running ESLint with auto-fix..."
+	npx eslint . --ext ts,tsx --fix
