@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { apiClient } from './api/client'
 import './i18n'
 import Login from './pages/Login'
@@ -56,15 +57,16 @@ function App() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Router>
-        <Suspense fallback={
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <Spinner size="xl" />
-          </div>
-        }>
-        <Routes>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+          <Suspense fallback={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+              <Spinner size="xl" />
+            </div>
+          }>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/callback" element={<OIDCCallback />} />
           <Route
@@ -213,11 +215,12 @@ function App() {
           />
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
-        </Routes>
-        </Suspense>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+          </Routes>
+          </Suspense>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
 

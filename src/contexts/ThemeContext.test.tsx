@@ -64,7 +64,7 @@ describe('ThemeContext', () => {
   })
 
   it('should change theme when setTheme is called', async () => {
-    const { rerender } = render(
+    render(
       <ThemeProvider>
         <TestComponent />
       </ThemeProvider>

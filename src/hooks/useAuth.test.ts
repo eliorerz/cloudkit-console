@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { useAuth } from './useAuth'
-import { useContext } from 'react'
 
 // Simple test to verify the hook exists and can be imported
 describe('useAuth', () => {

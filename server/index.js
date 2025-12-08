@@ -27,6 +27,44 @@ const NAMESPACE = process.env.NAMESPACE || 'innabox-devel';
 const GENERIC_TEMPLATE_ID = process.env.GENERIC_TEMPLATE_ID || 'osac.templates.ocp_virt_vm';
 const REACT_STRICT_MODE = process.env.REACT_STRICT_MODE === 'true';
 
+// Security Headers Middleware
+app.use((req, res, next) => {
+  // Prevent clickjacking attacks
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // Enable HSTS (HTTP Strict Transport Security)
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+  // Control referrer information
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Disable legacy XSS protection (modern CSP is better)
+  res.setHeader('X-XSS-Protection', '0');
+
+  // Permissions Policy (formerly Feature-Policy)
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+
+  // Content Security Policy
+  // Allow inline scripts for React, allow styles from PatternFly CDN, allow images from data: and CDN
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'", // unsafe-inline needed for Vite HMR and inline configs
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net", // PatternFly uses inline styles
+    "img-src 'self' data: https://cdn.jsdelivr.net", // Allow data URIs and CDN images
+    "font-src 'self' data:", // Allow embedded fonts
+    "connect-src 'self' " + KEYCLOAK_URL + " " + FULFILLMENT_API, // Allow API connections
+    "frame-ancestors 'none'", // Equivalent to X-Frame-Options: DENY
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+  res.setHeader('Content-Security-Policy', csp);
+
+  next();
+});
+
 // Middleware
 app.use(express.json());
 
