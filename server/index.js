@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { logger } from './logger.js';
+import { metrics } from './metrics.js';
+import { checkHealth, checkBasicHealth } from './health.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,14 +71,19 @@ app.use((req, res, next) => {
 // Middleware
 app.use(express.json());
 
-// Request logging middleware
+// Request logging and metrics middleware
 app.use((req, res, next) => {
   const start = Date.now();
 
-  // Log on response finish
+  // Log and record metrics on response finish
   res.on('finish', () => {
     const duration = Date.now() - start;
     const logLevel = res.statusCode >= 400 ? 'warn' : 'debug';
+
+    // Record metrics (skip health and metrics endpoints to avoid noise)
+    if (req.path !== '/health' && req.path !== '/metrics') {
+      metrics.recordRequest(res.statusCode, duration);
+    }
 
     logger[logLevel]('HTTP Request', {
       method: req.method,
@@ -241,9 +248,44 @@ app.get('/api/host-classes', (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+// Health check endpoint - enhanced with dependency checks
+// Accepts optional ?deep=true query parameter for deep health checks
+app.get('/health', async (req, res) => {
+  const deep = req.query.deep === 'true';
+
+  if (deep) {
+    // Deep health check - verify external dependencies
+    try {
+      const healthStatus = await checkHealth(FULFILLMENT_API, KEYCLOAK_URL, KEYCLOAK_REALM);
+
+      // Return 503 if any dependency is unhealthy, 200 otherwise
+      const statusCode = healthStatus.status === 'healthy' ? 200 : 503;
+      res.status(statusCode).json(healthStatus);
+    } catch (error) {
+      logger.error('Health check failed', error);
+      res.status(503).json({
+        status: 'unhealthy',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } else {
+    // Basic health check - just verify the service is running
+    res.json(checkBasicHealth());
+  }
+});
+
+// Metrics endpoint - Prometheus-compatible metrics
+app.get('/metrics', (req, res) => {
+  const format = req.query.format || 'prometheus';
+
+  if (format === 'json') {
+    res.json(metrics.getMetrics());
+  } else {
+    // Default: Prometheus text format
+    res.set('Content-Type', 'text/plain; version=0.0.4');
+    res.send(metrics.getPrometheusMetrics());
+  }
 });
 
 // Serve static files from the dist directory with caching for assets
