@@ -1,4 +1,4 @@
-.PHONY: help dev build build-push deploy clean lint lint-fix
+.PHONY: help dev build build-push deploy clean lint lint-fix test test-ui test-coverage
 
 # Environment selection: dev or integration
 ENV ?= dev
@@ -20,13 +20,16 @@ CONTAINER_TOOL ?= $(shell which podman 2>/dev/null || which docker 2>/dev/null)
 
 help:
 	@echo "Available targets:"
-	@echo "  dev        - Run development server locally"
-	@echo "  build      - Build container image"
-	@echo "  build-push - Build and push container image with unique timestamp tag"
-	@echo "  deploy     - Deploy to Kubernetes cluster (ENV=dev|integration)"
-	@echo "  clean      - Remove deployment from cluster (ENV=dev|integration)"
-	@echo "  lint       - Run ESLint to check code quality"
-	@echo "  lint-fix   - Run ESLint and auto-fix issues"
+	@echo "  dev            - Run development server locally"
+	@echo "  build          - Build container image"
+	@echo "  build-push     - Build and push container image with unique timestamp tag"
+	@echo "  deploy         - Deploy to Kubernetes cluster (ENV=dev|integration)"
+	@echo "  clean          - Remove deployment from cluster (ENV=dev|integration)"
+	@echo "  lint           - Run ESLint to check code quality"
+	@echo "  lint-fix       - Run ESLint and auto-fix issues"
+	@echo "  test           - Run unit tests"
+	@echo "  test-ui        - Run unit tests with UI"
+	@echo "  test-coverage  - Run unit tests with coverage report"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  ENV        - Target environment: dev (default) or integration"
@@ -79,3 +82,15 @@ lint:
 lint-fix:
 	@echo "Running ESLint with auto-fix..."
 	npx eslint . --ext ts,tsx --fix
+
+test:
+	@echo "Running unit tests..."
+	npm test
+
+test-ui:
+	@echo "Running unit tests with UI..."
+	npm run test:ui
+
+test-coverage:
+	@echo "Running unit tests with coverage..."
+	npm run test:coverage
