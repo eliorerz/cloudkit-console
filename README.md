@@ -1,12 +1,12 @@
-# CloudKit Console
+# OSAC UI
 
 A modern web-based console for managing virtual machine infrastructure through the Fulfillment API, built with React and PatternFly.
 
-![CloudKit Console](./docs/images/dashboard-preview.png)
+![OSAC UI](./docs/images/dashboard-preview.png)
 
 ## Overview
 
-CloudKit Console provides a user-friendly interface for managing virtual machines, clusters, templates, and infrastructure resources. It features enterprise-grade authentication via Keycloak OIDC, role-based access control, and multi-tenant organization support.
+OSAC UI provides a user-friendly interface for managing virtual machines, clusters, templates, and infrastructure resources. It features enterprise-grade authentication via Keycloak OIDC, role-based access control, and multi-tenant organization support.
 
 ## Features
 
@@ -65,8 +65,8 @@ CloudKit Console provides a user-friendly interface for managing virtual machine
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/eliorerz/cloudkit-console.git
-   cd cloudkit-console
+   git clone https://github.com/eliorerz/osac-ui.git
+   cd osac-ui
    ```
 
 2. **Install dependencies**
@@ -82,7 +82,7 @@ CloudKit Console provides a user-friendly interface for managing virtual machine
    ```env
    VITE_API_BASE_URL=https://fulfillment-api.example.com
    VITE_OIDC_AUTHORITY=https://keycloak.example.com/realms/innabox
-   VITE_OIDC_CLIENT_ID=cloudkit-console
+   VITE_OIDC_CLIENT_ID=osac-ui
    VITE_OIDC_REDIRECT_URI=http://localhost:5173/callback
    ```
 
@@ -117,8 +117,8 @@ CloudKit Console provides a user-friendly interface for managing virtual machine
    kubectl apply -f deploy/ -n <your-namespace>
 
    # Update deployment with new image
-   kubectl set image deployment/cloudkit-console \
-     console=quay.io/eerez/cloudkit-console:$TAG \
+   kubectl set image deployment/osac-ui \
+     console=quay.io/eerez/osac-ui:$TAG \
      -n <your-namespace>
    ```
 
@@ -134,14 +134,14 @@ The deployment uses ConfigMaps for runtime configuration:
 - `FULFILLMENT_API_URL`: Backend API endpoint
 - `KEYCLOAK_URL`: Keycloak SSO server
 - `KEYCLOAK_REALM`: Keycloak realm (default: `innabox`)
-- `OIDC_CLIENT_ID`: OAuth client ID (default: `cloudkit-console`)
+- `OIDC_CLIENT_ID`: OAuth client ID (default: `osac-ui`)
 - `NAMESPACE`: Kubernetes namespace
 
 See [Deployment Guide](./docs/DEPLOYMENT.md) for detailed deployment instructions.
 
 ## Documentation
 
-- [Quick Start Guide](./docs/QUICKSTART.md) - Getting started with CloudKit Console
+- [Quick Start Guide](./docs/QUICKSTART.md) - Getting started with OSAC UI
 - [Deployment Guide](./docs/DEPLOYMENT.md) - Production deployment instructions
 - [Authentication & Authorization](./docs/AUTHENTICATION.md) - OIDC and Keycloak integration
 - [Development Notes](./CLAUDE.md) - Project-specific development guidelines
@@ -185,7 +185,7 @@ See [Deployment Guide](./docs/DEPLOYMENT.md) for detailed deployment instruction
 ## Project Structure
 
 ```
-cloudkit-console/
+osac-ui/
 ├── src/
 │   ├── api/              # API client and services
 │   ├── auth/             # OIDC configuration
@@ -223,9 +223,9 @@ These are configured via Kubernetes ConfigMap and read by the Express server:
 | `FULFILLMENT_API_URL` | Fulfillment API base URL | `https://fulfillment-api-innabox-devel.apps.ostest.test.metalkube.org` |
 | `KEYCLOAK_URL` | Keycloak server URL | `https://keycloak-innabox-devel.apps.ostest.test.metalkube.org` |
 | `KEYCLOAK_REALM` | Keycloak realm name | `innabox` |
-| `OIDC_CLIENT_ID` | OAuth client ID | `cloudkit-console` |
+| `OIDC_CLIENT_ID` | OAuth client ID | `osac-ui` |
 | `NAMESPACE` | Kubernetes namespace | `innabox-devel` |
-| `GENERIC_TEMPLATE_ID` | Generic VM template ID | `cloudkit.templates.ocp_virt_vm` |
+| `GENERIC_TEMPLATE_ID` | Generic VM template ID | `osac.templates.ocp_virt_vm` |
 
 ### Client Configuration
 The frontend retrieves runtime configuration from `/api/config` endpoint which serves the above environment variables to the browser.
@@ -248,7 +248,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## Support
 
 For issues and questions:
-- Open an issue on [GitHub](https://github.com/eliorerz/cloudkit-console/issues)
+- Open an issue on [GitHub](https://github.com/eliorerz/osac-ui/issues)
 - Check the [documentation](./docs/)
 - Contact the development team
 
