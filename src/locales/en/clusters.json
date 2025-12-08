@@ -151,7 +151,7 @@
       "details": {
         "templateId": {
           "label": "Template ID",
-          "placeholder": "e.g., cloudkit.templates.my_cluster",
+          "placeholder": "e.g., osac.templates.my_cluster",
           "helpText": "Must be in snake_case (lowercase letters, numbers, dots, and underscores only, no spaces)",
           "error": "Template ID must be in snake_case (lowercase letters, numbers, dots, and underscores only, no spaces)"
         },

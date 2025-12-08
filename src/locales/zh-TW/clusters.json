@@ -136,7 +136,7 @@
       "details": {
         "templateId": {
           "label": "範本 ID",
-          "placeholder": "例如：cloudkit.templates.my_cluster",
+          "placeholder": "例如：osac.templates.my_cluster",
           "helpText": "必須使用底線命名法（僅限小寫字母、數字、點和底線，不允許空格）",
           "error": "範本 ID 必須使用底線命名法（僅限小寫字母、數字、點和底線，不允許空格）"
         },

@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: cloudkit-console
+  name: osac-ui
   namespace: osac
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -14,12 +14,12 @@ rules:
 - apiGroups: [""]
   resources: ["serviceaccounts/token"]
   verbs: ["create"]
-  resourceNames: ["cloudkit-console"]
+  resourceNames: ["osac-ui"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: cloudkit-console-token-creator
+  name: osac-ui-token-creator
   namespace: osac
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -27,5 +27,5 @@ roleRef:
   name: token-creator
 subjects:
 - kind: ServiceAccount
-  name: cloudkit-console
+  name: osac-ui
   namespace: osac

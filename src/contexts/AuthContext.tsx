@@ -94,9 +94,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Sync access token to localStorage for API client
   useEffect(() => {
     if (user?.access_token) {
-      localStorage.setItem('cloudkit_token', user.access_token)
+      localStorage.setItem('osac_ui_token', user.access_token)
     } else {
-      localStorage.removeItem('cloudkit_token')
+      localStorage.removeItem('osac_ui_token')
     }
   }, [user])
 
@@ -130,13 +130,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       // Clear token from localStorage before logout
-      localStorage.removeItem('cloudkit_token')
+      localStorage.removeItem('osac_ui_token')
       // Redirect to Keycloak logout page
       await userManager.signoutRedirect()
     } catch (error) {
       console.error('Logout error:', error)
       // Even if redirect fails, clear local state
-      localStorage.removeItem('cloudkit_token')
+      localStorage.removeItem('osac_ui_token')
       setUser(null)
       setIsAuthenticated(false)
     }
@@ -165,7 +165,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Extract roles from different possible locations in the token
   const realmRoles = (user?.profile as any)?.realm_access?.roles || []
-  const resourceRoles = (user?.profile as any)?.resource_access?.['cloudkit-console']?.roles || []
+  const resourceRoles = (user?.profile as any)?.resource_access?.['osac-ui']?.roles || []
   const directRoles = (user?.profile as any)?.roles || []
   const allRoles = [...realmRoles, ...resourceRoles, ...directRoles]
 

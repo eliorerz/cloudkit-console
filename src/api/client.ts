@@ -29,7 +29,7 @@ class APIClient {
         // Ensure client is initialized before making requests
         await this.ensureInitialized()
 
-        const token = localStorage.getItem('cloudkit_token')
+        const token = localStorage.getItem('osac_ui_token')
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
         }

@@ -1,30 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloudkit-console
+  name: osac-ui
   namespace: osac
   labels:
-    app: cloudkit-console
+    app: osac-ui
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cloudkit-console
+      app: osac-ui
   template:
     metadata:
       labels:
-        app: cloudkit-console
+        app: osac-ui
     spec:
-      serviceAccountName: cloudkit-console
+      serviceAccountName: osac-ui
       imagePullSecrets:
       - name: quay-pull-secret
       containers:
       - name: console
-        image: quay.io/eerez/cloudkit-console:latest
+        image: quay.io/eerez/osac-ui:latest
         imagePullPolicy: Always
         envFrom:
         - configMapRef:
-            name: cloudkit-console-config
+            name: osac-ui-config
         ports:
         - containerPort: 8080
           name: http
@@ -60,7 +60,7 @@ spec:
       volumes:
       - name: os-images
         configMap:
-          name: cloudkit-os-images
+          name: osac-ui-os-images
       - name: host-classes
         configMap:
-          name: cloudkit-host-classes
+          name: osac-ui-host-classes

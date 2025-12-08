@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cloudkit-os-images
+  name: osac-ui-os-images
   namespace: osac
 data:
   os-images.json: |

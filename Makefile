@@ -3,7 +3,7 @@
 # Environment selection: dev or integration
 ENV ?= dev
 
-IMAGE_NAME ?= cloudkit-console
+IMAGE_NAME ?= osac-ui
 IMAGE_TAG ?= latest
 REGISTRY ?= quay.io/eerez
 
@@ -62,10 +62,10 @@ deploy-image:
 	$(eval LATEST_TAG := $(shell podman images $(REGISTRY)/$(IMAGE_NAME) --format "{{.Tag}}" | grep -E '^[0-9]{8}-[0-9]{6}-' | head -1))
 	@if [ -z "$(LATEST_TAG)" ]; then \
 		echo "No timestamped tag found, using latest"; \
-		kubectl set image deployment/cloudkit-console console=$(REGISTRY)/$(IMAGE_NAME):latest -n $(NAMESPACE); \
+		kubectl set image deployment/osac-ui console=$(REGISTRY)/$(IMAGE_NAME):latest -n $(NAMESPACE); \
 	else \
 		echo "Using tag: $(LATEST_TAG)"; \
-		kubectl set image deployment/cloudkit-console console=$(REGISTRY)/$(IMAGE_NAME):$(LATEST_TAG) -n $(NAMESPACE); \
+		kubectl set image deployment/osac-ui console=$(REGISTRY)/$(IMAGE_NAME):$(LATEST_TAG) -n $(NAMESPACE); \
 	fi
 
 build-and-deploy-image: build-push deploy-image

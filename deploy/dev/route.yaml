@@ -1,14 +1,14 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: cloudkit-console
+  name: osac-ui
   namespace: innabox-devel
   labels:
-    app: cloudkit-console
+    app: osac-ui
 spec:
   to:
     kind: Service
-    name: cloudkit-console
+    name: osac-ui
     weight: 100
   port:
     targetPort: http

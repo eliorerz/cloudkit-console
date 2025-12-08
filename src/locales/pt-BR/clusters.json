@@ -151,7 +151,7 @@
       "details": {
         "templateId": {
           "label": "ID do Modelo",
-          "placeholder": "ex., cloudkit.templates.meu_cluster",
+          "placeholder": "ex., osac.templates.meu_cluster",
           "helpText": "Deve estar em snake_case (letras minúsculas, números, pontos e sublinhados apenas, sem espaços)",
           "error": "O ID do modelo deve estar em snake_case (letras minúsculas, números, pontos e sublinhados apenas, sem espaços)"
         },

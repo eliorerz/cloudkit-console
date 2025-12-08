@@ -39,7 +39,7 @@ const Login: React.FC = () => {
       <div className="custom-login-header">
         <img
           src="/logo.png"
-          alt="CloudKit Logo"
+          alt="OSAC Logo"
           className="custom-logo"
         />
         <h1 className="custom-login-title">Log in to your account</h1>

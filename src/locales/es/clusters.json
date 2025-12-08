@@ -151,7 +151,7 @@
       "details": {
         "templateId": {
           "label": "ID de Plantilla",
-          "placeholder": "ej., cloudkit.templates.mi_cluster",
+          "placeholder": "ej., osac.templates.mi_cluster",
           "helpText": "Debe estar en snake_case (letras minúsculas, números, puntos y guiones bajos solamente, sin espacios)",
           "error": "El ID de plantilla debe estar en snake_case (letras minúsculas, números, puntos y guiones bajos solamente, sin espacios)"
         },

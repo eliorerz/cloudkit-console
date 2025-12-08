@@ -32,7 +32,7 @@ export async function loadConfig(): Promise<AppConfig> {
     console.log('Loaded runtime config:', config)
     return config
   } catch (error) {
-    const errorMsg = `FATAL: Failed to load runtime configuration. Ensure cloudkit-console-config ConfigMap is properly configured. Error: ${error}`
+    const errorMsg = `FATAL: Failed to load runtime configuration. Ensure osac-ui-config ConfigMap is properly configured. Error: ${error}`
     console.error(errorMsg)
     throw new Error(errorMsg)
   }

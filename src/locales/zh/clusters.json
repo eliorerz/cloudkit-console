@@ -137,7 +137,7 @@
       "details": {
         "templateId": {
           "label": "模板 ID",
-          "placeholder": "例如：cloudkit.templates.my_cluster",
+          "placeholder": "例如：osac.templates.my_cluster",
           "helpText": "必须使用下划线命名法（仅限小写字母、数字、点和下划线，不允许空格）",
           "error": "模板 ID 必须使用下划线命名法（仅限小写字母、数字、点和下划线，不允许空格）"
         },

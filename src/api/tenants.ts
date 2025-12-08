@@ -24,7 +24,7 @@ export const listTenants = async (options?: {
 }): Promise<ListResponse<Tenant>> => {
   try {
     const baseUrl = await getApiBaseUrl()
-    const token = localStorage.getItem('cloudkit_token')
+    const token = localStorage.getItem('osac_ui_token')
 
     // Build query parameters
     const params = new URLSearchParams()

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: cloudkit-console
+  name: osac-ui
   namespace: innabox-devel
   labels:
-    app: cloudkit-console
+    app: osac-ui
 spec:
   type: ClusterIP
   ports:
@@ -13,4 +13,4 @@ spec:
     protocol: TCP
     name: http
   selector:
-    app: cloudkit-console
+    app: osac-ui

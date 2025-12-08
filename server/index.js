@@ -22,9 +22,9 @@ if (!process.env.KEYCLOAK_URL) {
 const FULFILLMENT_API = process.env.FULFILLMENT_API_URL;
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL;
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'innabox';
-const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID || 'cloudkit-console';
+const OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID || 'osac-ui';
 const NAMESPACE = process.env.NAMESPACE || 'innabox-devel';
-const GENERIC_TEMPLATE_ID = process.env.GENERIC_TEMPLATE_ID || 'cloudkit.templates.ocp_virt_vm';
+const GENERIC_TEMPLATE_ID = process.env.GENERIC_TEMPLATE_ID || 'osac.templates.ocp_virt_vm';
 const REACT_STRICT_MODE = process.env.REACT_STRICT_MODE === 'true';
 
 // Middleware
@@ -212,7 +212,7 @@ app.get('*', (req, res) => {
     // Inject runtime config as inline script before the main app script
     const configScript = `
     <script>
-      window.__CLOUDKIT_CONFIG__ = {
+      window.__OSAC_UI_CONFIG__ = {
         strictMode: ${REACT_STRICT_MODE}
       };
     </script>`;
@@ -224,5 +224,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`CloudKit Console server listening on port ${PORT}`);
+  console.log(`OSAC UI server listening on port ${PORT}`);
 });

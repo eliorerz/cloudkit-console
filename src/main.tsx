@@ -9,7 +9,7 @@ import './styles/dark-theme.css'
 // Extend Window interface for TypeScript
 declare global {
   interface Window {
-    __CLOUDKIT_CONFIG__?: {
+    __OSAC_UI_CONFIG__?: {
       strictMode: boolean
     }
   }
@@ -17,7 +17,7 @@ declare global {
 
 // Get REACT_STRICT_MODE from runtime config injected by server
 // Default to false for production mode
-const strictMode = window.__CLOUDKIT_CONFIG__?.strictMode ?? false
+const strictMode = window.__OSAC_UI_CONFIG__?.strictMode ?? false
 
 const root = ReactDOM.createRoot(document.getElementById('root')!)
 

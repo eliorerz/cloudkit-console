@@ -1,15 +1,15 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: cloudkit-console
+  name: osac-ui
   namespace: osac
   labels:
-    app: cloudkit-console
+    app: osac-ui
 spec:
   host: osac-console.apps.osac.service.demo
   to:
     kind: Service
-    name: cloudkit-console
+    name: osac-ui
     weight: 100
   port:
     targetPort: http

@@ -390,7 +390,7 @@ const CreateClusterTemplate: React.FC = () => {
                     id="template-id"
                     value={templateId}
                     onChange={(_event, value) => handleTemplateIdChange(value)}
-                    placeholder="e.g., cloudkit.templates.my_cluster"
+                    placeholder="e.g., osac.templates.my_cluster"
                     validated={templateIdError ? 'error' : 'default'}
                     isRequired
                   />

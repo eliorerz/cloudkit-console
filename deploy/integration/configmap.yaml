@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cloudkit-console-config
+  name: osac-ui-config
   namespace: osac
   labels:
-    app: cloudkit-console
+    app: osac-ui
 data:
   # API URLs
   FULFILLMENT_API_URL: "https://fulfillment-api-osac.apps.osac.service.demo"
@@ -12,7 +12,7 @@ data:
 
   # Keycloak/OIDC Configuration
   KEYCLOAK_REALM: "osac"
-  OIDC_CLIENT_ID: "cloudkit-console"
+  OIDC_CLIENT_ID: "osac-ui"
 
   # Kubernetes Configuration
   NAMESPACE: "osac"

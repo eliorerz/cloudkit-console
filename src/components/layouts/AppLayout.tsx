@@ -146,7 +146,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </Button>
             <img
               src="/logo.png"
-              alt="CloudKit"
+              alt="OSAC"
               style={{
                 height: '60px',
                 width: '60px'
