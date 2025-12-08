@@ -24,3 +24,11 @@ data:
   # Set to "true" to enable React StrictMode (development mode with double-invocation of effects)
   # Set to "false" to disable StrictMode (production mode with single invocation)
   REACT_STRICT_MODE: "true"
+
+  # Logging Configuration
+  # Set the minimum log level: debug, info, warn, error
+  # debug: All messages (verbose, for development)
+  # info: Info, warn, and error messages (default for production)
+  # warn: Only warnings and errors
+  # error: Only errors
+  LOG_LEVEL: "debug"

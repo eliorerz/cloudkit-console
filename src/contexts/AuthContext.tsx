@@ -54,25 +54,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const initAuth = async () => {
       try {
+        logger.debug('Starting auth initialization')
+
         // Load runtime configuration first
         await loadConfig()
+        logger.debug('Runtime configuration loaded')
 
         // Initialize userManager with loaded config
         userManager = getUserManager()
+        logger.debug('UserManager initialized')
 
         // Attach event listeners BEFORE checking for user
         // This ensures they're ready when signinRedirectCallback fires
         userManager.events.addUserLoaded(handleUserLoaded)
         userManager.events.addUserUnloaded(handleUserUnloaded)
         userManager.events.addSilentRenewError(handleSilentRenewError)
+        logger.debug('Auth event listeners attached')
 
         // Try to get the current user from storage
         const currentUser = await userManager.getUser()
 
         if (currentUser && !currentUser.expired) {
+          logger.info('User session restored from storage', {
+            username: currentUser.profile?.preferred_username,
+            expiresAt: currentUser.expires_at ? new Date(currentUser.expires_at * 1000).toISOString() : 'unknown'
+          })
           setUser(currentUser)
           setIsAuthenticated(true)
         } else {
+          logger.debug('No valid user session found in storage', {
+            hasUser: !!currentUser,
+            expired: currentUser?.expired
+          })
           setIsAuthenticated(false)
         }
       } catch (error) {
@@ -80,6 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsAuthenticated(false)
       } finally {
         setIsLoading(false)
+        logger.debug('Auth initialization complete')
       }
     }
 
@@ -115,6 +129,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ? '/dashboard'
         : window.location.pathname
 
+      logger.info('Initiating login redirect', { returnUrl })
+
       // Redirect to Keycloak login page
       await userManager.signinRedirect({
         state: { returnUrl }
@@ -132,10 +148,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
+      logger.info('Initiating logout')
+
       // Clear token from localStorage before logout
       localStorage.removeItem('osac_ui_token')
+
       // Redirect to Keycloak logout page
       await userManager.signoutRedirect()
+
+      logger.debug('Logout redirect completed')
     } catch (error) {
       logger.error('Logout error', error)
       // Even if redirect fails, clear local state

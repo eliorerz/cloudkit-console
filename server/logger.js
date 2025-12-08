@@ -13,7 +13,24 @@ const LOG_LEVELS = {
 class Logger {
   constructor() {
     this.isDevelopment = process.env.NODE_ENV !== 'production';
-    this.minLevel = this.isDevelopment ? LOG_LEVELS.DEBUG : LOG_LEVELS.INFO;
+    this.minLevel = this.parseLogLevel(process.env.LOG_LEVEL) || (this.isDevelopment ? LOG_LEVELS.DEBUG : LOG_LEVELS.INFO);
+  }
+
+  parseLogLevel(level) {
+    if (!level) return null;
+    const normalized = level.toLowerCase();
+    switch (normalized) {
+      case 'debug':
+        return LOG_LEVELS.DEBUG;
+      case 'info':
+        return LOG_LEVELS.INFO;
+      case 'warn':
+        return LOG_LEVELS.WARN;
+      case 'error':
+        return LOG_LEVELS.ERROR;
+      default:
+        return null;
+    }
   }
 
   shouldLog(level) {

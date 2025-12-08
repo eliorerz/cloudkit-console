@@ -77,6 +77,8 @@ class APIClient {
   }
 
   async get<T>(endpoint: string): Promise<T> {
+    logger.debug('API GET request', { endpoint })
+
     return retryWithBackoff(async () => {
       const response = await this.client.get<T>(endpoint, {
         validateStatus: (status) => status >= 200 && status < 300,
@@ -88,38 +90,52 @@ class APIClient {
       // Validate that we got JSON, not HTML
       const contentType = response.headers['content-type']
       if (contentType && !contentType.includes('application/json')) {
-        logger.error('Expected JSON but received different content type', undefined, { contentType })
+        logger.error('Expected JSON but received different content type', undefined, { contentType, endpoint })
         throw new Error(`API returned ${contentType} instead of JSON`)
       }
+
+      logger.debug('API GET response', { endpoint, status: response.status })
 
       return response.data
     })
   }
 
   async post<T>(endpoint: string, data?: unknown): Promise<T> {
+    logger.debug('API POST request', { endpoint })
+
     return retryWithBackoff(async () => {
       const response = await this.client.post<T>(endpoint, data)
+      logger.debug('API POST response', { endpoint, status: response.status })
       return response.data
     }, { maxRetries: 2 }) // Fewer retries for mutations
   }
 
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
+    logger.debug('API PUT request', { endpoint })
+
     return retryWithBackoff(async () => {
       const response = await this.client.put<T>(endpoint, data)
+      logger.debug('API PUT response', { endpoint, status: response.status })
       return response.data
     }, { maxRetries: 2 })
   }
 
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+    logger.debug('API PATCH request', { endpoint })
+
     return retryWithBackoff(async () => {
       const response = await this.client.patch<T>(endpoint, data)
+      logger.debug('API PATCH response', { endpoint, status: response.status })
       return response.data
     }, { maxRetries: 2 })
   }
 
   async delete<T>(endpoint: string): Promise<T> {
+    logger.debug('API DELETE request', { endpoint })
+
     return retryWithBackoff(async () => {
       const response = await this.client.delete<T>(endpoint)
+      logger.debug('API DELETE response', { endpoint, status: response.status })
       return response.data
     }, { maxRetries: 2 })
   }

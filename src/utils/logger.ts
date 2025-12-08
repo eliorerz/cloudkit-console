@@ -20,7 +20,26 @@ class Logger {
 
   constructor() {
     this.isDevelopment = import.meta.env.DEV
-    this.minLevel = this.isDevelopment ? LogLevel.DEBUG : LogLevel.INFO
+    // Support runtime log level configuration via window.LOG_LEVEL
+    const configuredLevel = (window as typeof window & { LOG_LEVEL?: string }).LOG_LEVEL || import.meta.env.VITE_LOG_LEVEL
+    this.minLevel = this.parseLogLevel(configuredLevel) || (this.isDevelopment ? LogLevel.DEBUG : LogLevel.INFO)
+  }
+
+  private parseLogLevel(level: string | undefined): LogLevel | undefined {
+    if (!level) return undefined
+    const normalized = level.toLowerCase()
+    switch (normalized) {
+      case 'debug':
+        return LogLevel.DEBUG
+      case 'info':
+        return LogLevel.INFO
+      case 'warn':
+        return LogLevel.WARN
+      case 'error':
+        return LogLevel.ERROR
+      default:
+        return undefined
+    }
   }
 
   private shouldLog(level: LogLevel): boolean {

@@ -69,9 +69,31 @@ app.use((req, res, next) => {
 // Middleware
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  // Log on response finish
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logLevel = res.statusCode >= 400 ? 'warn' : 'debug';
+
+    logger[logLevel]('HTTP Request', {
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      userAgent: req.get('user-agent')?.substring(0, 50)
+    });
+  });
+
+  next();
+});
+
 // Configuration endpoint - provides runtime config to frontend
 // This allows the frontend to discover API URLs without hardcoding
 app.get('/api/config', (req, res) => {
+  logger.debug('Serving runtime configuration');
   res.json({
     keycloakUrl: KEYCLOAK_URL,
     keycloakRealm: KEYCLOAK_REALM,

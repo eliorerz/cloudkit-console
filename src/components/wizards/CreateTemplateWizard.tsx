@@ -237,12 +237,20 @@ export const CreateTemplateWizard: React.FC<CreateTemplateWizardProps> = ({
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
+      logger.debug('Template wizard: proceeding to next step', {
+        from: currentStep.name,
+        to: steps[currentStepIndex + 1].name
+      })
       setCurrentStepIndex(currentStepIndex + 1)
     }
   }
 
   const handleBack = () => {
     if (currentStepIndex > 0) {
+      logger.debug('Template wizard: going back to previous step', {
+        from: currentStep.name,
+        to: steps[currentStepIndex - 1].name
+      })
       setCurrentStepIndex(currentStepIndex - 1)
     }
   }
@@ -252,11 +260,15 @@ export const CreateTemplateWizard: React.FC<CreateTemplateWizardProps> = ({
       setIsCreating(true)
       setCreationError(null)
 
+      logger.info('Creating template', { templateId, title, paramCount: parameters.length })
+
       await onCreate(templateId, title, description, parameters)
+
+      logger.info('Template created successfully', { templateId, title })
 
       handleClose()
     } catch (error) {
-      logger.error('Failed to create template', error)
+      logger.error('Failed to create template', error, { templateId, title })
       setCreationError(error instanceof Error ? error.message : 'Failed to create template')
     } finally {
       setIsCreating(false)
