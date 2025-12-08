@@ -14,34 +14,19 @@ import {
   Spinner,
   EmptyState,
   EmptyStateBody,
-  Label,
   Button,
-  Modal,
-  ModalVariant,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Pagination,
-  Dropdown,
-  DropdownList,
-  DropdownItem,
-  MenuToggle,
   ButtonVariant,
   Flex,
   FlexItem,
 } from '@patternfly/react-core'
-import {
-  Table,
-  Thead,
-  Tr,
-  Th,
-  Tbody,
-  Td,
-} from '@patternfly/react-table'
-import { VirtualMachineIcon, SearchIcon, EllipsisVIcon, ThIcon, ListIcon, PlayIcon, PowerOffIcon, RedoIcon, TrashIcon, FilterIcon } from '@patternfly/react-icons'
+import { VirtualMachineIcon, SearchIcon, FilterIcon, ThIcon, ListIcon } from '@patternfly/react-icons'
 import AppLayout from '../components/layouts/AppLayout'
 import { getVirtualMachines, deleteVirtualMachine } from '../api/vms'
-import { VirtualMachine } from '../api/types'
+import { VirtualMachine } from '../types'
+import { VMCard } from '../components/virtual-machines/VMCard'
+import { VMTable } from '../components/virtual-machines/VMTable'
+import { ConfirmDialog } from '../components/common/ConfirmDialog'
 
 type ViewType = 'cards' | 'table'
 
@@ -98,32 +83,6 @@ const VirtualMachines: React.FC = () => {
   useEffect(() => {
     setPage(1)
   }, [searchValue, showOnlyMyVMs])
-
-
-  const getStateBadge = (state?: string) => {
-    if (!state) return <Label color="grey">{t('common:status.unknown')}</Label>
-
-    const normalizedState = state.toUpperCase()
-
-    if (normalizedState.includes('READY')) {
-      return <Label color="green">{t('common:status.ready')}</Label>
-    } else if (normalizedState.includes('PROGRESSING')) {
-      return <Label color="blue">{t('common:status.pending')}</Label>
-    } else if (normalizedState.includes('FAILED')) {
-      return <Label color="red">{t('common:status.failed')}</Label>
-    }
-
-    return <Label color="grey">{state}</Label>
-  }
-
-  const formatTimestamp = (timestamp?: string) => {
-    if (!timestamp) return 'N/A'
-    try {
-      return new Date(timestamp).toLocaleString()
-    } catch {
-      return timestamp
-    }
-  }
 
   const handleDeleteClick = (vm: VirtualMachine) => {
     setVmToDelete(vm)
@@ -212,22 +171,6 @@ const VirtualMachines: React.FC = () => {
   const endIndex = startIndex + perPage
   const paginatedVMs = filteredVMs.slice(startIndex, endIndex)
 
-  // Helper to get image name from source
-  const getImageName = (vm: VirtualMachine): string => {
-    const imageSource = vm.spec?.template_parameters?.vm_image_source?.value || vm.spec?.template_parameters?.vm_image_source
-    if (!imageSource) return 'N/A'
-
-    // Extract image name from containerdisk URL
-    // e.g., "docker://quay.io/containerdisks/fedora:43" -> "Fedora 43"
-    const match = imageSource.match(/\/([^/:]+):([^/:]+)$/)
-    if (match) {
-      const [, os, version] = match
-      return `${os.charAt(0).toUpperCase() + os.slice(1)} ${version}`
-    }
-
-    return imageSource
-  }
-
   const renderCardsView = () => (
     <div style={{
       display: 'grid',
@@ -236,169 +179,17 @@ const VirtualMachines: React.FC = () => {
       width: '100%',
       justifyContent: 'start'
     }}>
-      {paginatedVMs.map((vm) => {
-        return (
-        <Card
+      {paginatedVMs.map((vm) => (
+        <VMCard
           key={vm.id}
-          isCompact
-          style={{
-            border: '1px solid #d2d2d2',
-            borderRadius: '18px',
-            transition: 'all 0.2s ease',
-            cursor: 'pointer',
-            maxWidth: '400px',
-            minHeight: '250px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-          onClick={() => handleRowClick(vm)}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#0066cc'
-            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,102,204,0.1)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#d2d2d2'
-            e.currentTarget.style.boxShadow = 'none'
-          }}
-        >
-          <CardBody style={{ padding: '1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-            {/* Top row: VM name and status */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '0.75rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ color: '#0066cc', fontSize: '1.25rem' }}>●</span>
-                <div>
-                  <div style={{ fontWeight: 500, fontSize: '1.15rem', color: '#151515' }}>
-                    {vm.metadata?.name || vm.id}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: '#6a6e73' }}>
-                    {vm.id}
-                  </div>
-                </div>
-              </div>
-              <div>
-                {getStateBadge(vm.status?.state)}
-              </div>
-            </div>
-
-            {/* Metrics grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '1rem',
-              padding: '0.75rem',
-              backgroundColor: '#f5f5f5',
-              borderRadius: '4px',
-              marginBottom: '0.75rem'
-            }}>
-              <div>
-                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-                  CPU
-                </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
-                  {vm.spec?.template_parameters?.vm_cpu_cores?.value || vm.spec?.template_parameters?.vm_cpu_cores || 'N/A'} vCPU
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-                  Memory
-                </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
-                  {vm.spec?.template_parameters?.vm_memory_size?.value || vm.spec?.template_parameters?.vm_memory_size || 'N/A'}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-                  Storage
-                </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
-                  {vm.spec?.template_parameters?.vm_disk_size?.value || vm.spec?.template_parameters?.vm_disk_size || 'N/A'}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.6875rem', color: '#6a6e73', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-                  Image
-                </div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
-                  {getImageName(vm)}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom row: Created timestamp */}
-            <div style={{
-              fontSize: '0.8125rem',
-              color: '#6a6e73'
-            }}>
-              {t('virtualMachines:list.created')}: {formatTimestamp(vm.metadata?.creation_timestamp)}
-            </div>
-
-            {/* Spacer to push buttons to bottom */}
-            <div style={{ flex: 1 }} />
-
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-              <Dropdown
-                isOpen={openActionMenuId === vm.id}
-                onSelect={() => setOpenActionMenuId(null)}
-                toggle={(toggleRef) => (
-                  <MenuToggle
-                    ref={toggleRef}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setOpenActionMenuId(openActionMenuId === vm.id ? null : vm.id)
-                    }}
-                    variant="primary"
-                    size="sm"
-                  >
-                    {t('common:common.actions')}
-                  </MenuToggle>
-                )}
-              >
-                <DropdownList>
-                  <DropdownItem key="start" onClick={(e) => { e?.stopPropagation(); }} icon={<PlayIcon style={{ color: '#3e8635' }} />}>
-                    {t('virtualMachines:start')}
-                  </DropdownItem>
-                  <DropdownItem key="stop" onClick={(e) => { e?.stopPropagation(); }} icon={<PowerOffIcon style={{ color: '#f0ab00' }} />}>
-                    {t('virtualMachines:stop')}
-                  </DropdownItem>
-                  <DropdownItem key="restart" onClick={(e) => { e?.stopPropagation(); }} icon={<RedoIcon style={{ color: '#0066cc' }} />}>
-                    {t('virtualMachines:restart')}
-                  </DropdownItem>
-                  <DropdownItem key="delete" onClick={(e) => { e?.stopPropagation(); handleDeleteClick(vm); }} icon={<TrashIcon style={{ color: '#c9190b' }} />}>
-                    {t('virtualMachines:delete')}
-                  </DropdownItem>
-                </DropdownList>
-              </Dropdown>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  // TODO: Implement console action
-                }}
-              >
-                {t('virtualMachines:console')}
-              </Button>
-              <Button
-                variant="link"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleRowClick(vm)
-                }}
-              >
-                {t('virtualMachines:list.viewDetails')}
-              </Button>
-            </div>
-          </CardBody>
-        </Card>
-        )
-      })}
+          vm={vm}
+          isActionMenuOpen={openActionMenuId === vm.id}
+          onActionMenuToggle={(vmId) => setOpenActionMenuId(openActionMenuId === vmId ? null : vmId)}
+          onActionMenuClose={() => setOpenActionMenuId(null)}
+          onDeleteClick={handleDeleteClick}
+          onClick={handleRowClick}
+        />
+      ))}
     </div>
   )
 
@@ -486,72 +277,17 @@ const VirtualMachines: React.FC = () => {
             ) : viewType === 'cards' ? (
               renderCardsView()
             ) : (
-              <Table aria-label="Virtual Machines Table" variant="compact">
-                <Thead>
-                  <Tr>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 0 }}>
-                      {t('common:common.name')}
-                    </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 1 }}>
-                      {t('common:common.status')}
-                    </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 2 }}>
-                      {t('virtualMachines:list.columns.ip')}
-                    </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 3 }}>
-                      {t('virtualMachines:list.columns.hub')}
-                    </Th>
-                    <Th sort={{ sortBy: { index: activeSortIndex, direction: activeSortDirection }, onSort, columnIndex: 4 }}>
-                      {t('common:common.created')}
-                    </Th>
-                    <Th></Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {paginatedVMs.map((vm) => (
-                    <Tr key={vm.id} style={{ cursor: 'pointer' }}>
-                      <Td dataLabel={t('common:common.name')} onClick={() => handleRowClick(vm)}>{vm.metadata?.name || vm.id}</Td>
-                      <Td dataLabel={t('common:common.status')} onClick={() => handleRowClick(vm)}>{getStateBadge(vm.status?.state)}</Td>
-                      <Td dataLabel={t('virtualMachines:list.columns.ip')} onClick={() => handleRowClick(vm)}>{vm.status?.ip_address || 'N/A'}</Td>
-                      <Td dataLabel={t('virtualMachines:list.columns.hub')} onClick={() => handleRowClick(vm)}>{vm.status?.hub || 'N/A'}</Td>
-                      <Td dataLabel={t('common:common.created')} onClick={() => handleRowClick(vm)}>{formatTimestamp(vm.metadata?.creation_timestamp)}</Td>
-                      <Td isActionCell>
-                        <Dropdown
-                          isOpen={openActionMenuId === vm.id}
-                          onSelect={() => setOpenActionMenuId(null)}
-                          toggle={(toggleRef) => (
-                            <MenuToggle
-                              ref={toggleRef}
-                              onClick={() => setOpenActionMenuId(openActionMenuId === vm.id ? null : vm.id)}
-                              variant="plain"
-                            >
-                              <EllipsisVIcon />
-                            </MenuToggle>
-                          )}
-                        >
-                          <DropdownList>
-                            <DropdownItem key="start" onClick={() => { /* TODO: Implement start */ }} icon={<PlayIcon style={{ color: '#3e8635' }} />}>
-                              {t('virtualMachines:start')}
-                            </DropdownItem>
-                            <DropdownItem key="stop" onClick={() => { /* TODO: Implement stop */ }} icon={<PowerOffIcon style={{ color: '#f0ab00' }} />}>
-                              {t('virtualMachines:stop')}
-                            </DropdownItem>
-                            <DropdownItem key="restart" onClick={() => { /* TODO: Implement restart */ }} icon={<RedoIcon style={{ color: '#0066cc' }} />}>
-                              {t('virtualMachines:restart')}
-                            </DropdownItem>
-                            <DropdownItem key="console" onClick={() => { /* TODO: Implement console */ }}>
-                              {t('virtualMachines:console')}
-                            </DropdownItem>
-                            <DropdownItem key="delete" onClick={() => handleDeleteClick(vm)} icon={<TrashIcon style={{ color: '#c9190b' }} />}>
-                              {t('virtualMachines:delete')}
-                            </DropdownItem>
-                          </DropdownList>
-                        </Dropdown>
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
+              <VMTable
+                vms={paginatedVMs}
+                activeSortIndex={activeSortIndex}
+                activeSortDirection={activeSortDirection}
+                onSort={onSort}
+                openActionMenuId={openActionMenuId}
+                onActionMenuToggle={(vmId) => setOpenActionMenuId(openActionMenuId === vmId ? null : vmId)}
+                onActionMenuClose={() => setOpenActionMenuId(null)}
+                onDeleteClick={handleDeleteClick}
+                onRowClick={handleRowClick}
+              />
             )}
           </CardBody>
 
@@ -577,31 +313,17 @@ const VirtualMachines: React.FC = () => {
         </Card>
       </PageSection>
 
-      <Modal
-        variant={ModalVariant.small}
+      <ConfirmDialog
         isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        aria-labelledby="delete-vm-modal-title"
-      >
-        <ModalHeader title={t('virtualMachines:delete')} labelId="delete-vm-modal-title" />
-        <ModalBody>
-          {t('virtualMachines:list.deleteConfirm', { name: vmToDelete?.id })}
-        </ModalBody>
-        <ModalFooter>
-          <Button key="cancel" variant="link" onClick={() => setDeleteModalOpen(false)} isDisabled={deleting}>
-            {t('common:actions.cancel')}
-          </Button>
-          <Button
-            key="confirm"
-            variant="danger"
-            onClick={handleDeleteConfirm}
-            isDisabled={deleting}
-            isLoading={deleting}
-          >
-            {deleting ? t('virtualMachines:list.deleting') : t('common:actions.delete')}
-          </Button>
-        </ModalFooter>
-      </Modal>
+        title={t('virtualMachines:delete')}
+        message={t('virtualMachines:list.deleteConfirm', { name: vmToDelete?.id })}
+        confirmLabel={deleting ? t('virtualMachines:list.deleting') : t('common:actions.delete')}
+        cancelLabel={t('common:actions.cancel')}
+        variant="danger"
+        isLoading={deleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteModalOpen(false)}
+      />
     </AppLayout>
   )
 }
