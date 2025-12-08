@@ -133,21 +133,31 @@ const VirtualMachineDetail: React.FC = () => {
     return osImage?.displayName || 'N/A'
   }
 
-  const parseTemplateParameters = (params: any) => {
+  const parseTemplateParameters = (params?: Record<string, unknown>) => {
     if (!params) return null
 
+    const getParamValue = (key: string) => {
+      const param = params[key] as { value?: unknown } | undefined
+      return param?.value
+    }
+
+    const getValue = (key: string, defaultValue: string = 'N/A'): string => {
+      const value = getParamValue(key)
+      return value ? String(value) : defaultValue
+    }
+
     return {
-      cpu: params.vm_cpu_cores?.value || 'N/A',
-      memory: params.vm_memory_size?.value || 'N/A',
-      disk: params.vm_disk_size?.value || 'N/A',
-      osType: params.vm_os_type?.value || 'Unknown',
-      imageSource: params.vm_image_source?.value || 'N/A',
-      namespace: params.vm_namespace?.value || 'N/A',
-      networkType: params.vm_network_type?.value || 'N/A',
-      storageClass: params.storage_class?.value || 'N/A',
-      exposeService: params.vm_expose_service?.value || false,
-      runStrategy: params.vm_run_strategy?.value || 'N/A',
-      serviceType: params.vm_service_type?.value || 'N/A',
+      cpu: getValue('vm_cpu_cores'),
+      memory: getValue('vm_memory_size'),
+      disk: getValue('vm_disk_size'),
+      osType: getValue('vm_os_type', 'Unknown'),
+      imageSource: getValue('vm_image_source'),
+      namespace: getValue('vm_namespace'),
+      networkType: getValue('vm_network_type'),
+      storageClass: getValue('storage_class'),
+      exposeService: Boolean(getParamValue('vm_expose_service')),
+      runStrategy: getValue('vm_run_strategy'),
+      serviceType: getValue('vm_service_type'),
     }
   }
 
@@ -201,8 +211,8 @@ const VirtualMachineDetail: React.FC = () => {
                   <Card isFullHeight>
                     <CardBody style={{ position: 'relative' }}>
                       {(() => {
-                        const params = parseTemplateParameters(vm.spec?.template_parameters)
-                        const iconUrl = getOSIcon(params?.imageSource)
+                        const params = parseTemplateParameters(vm.spec?.template_parameters as Record<string, unknown> | undefined)
+                        const iconUrl = getOSIcon(params?.imageSource as string | undefined)
                         return iconUrl ? (
                           <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
                             <img src={iconUrl} alt="OS" style={{ width: '64px', height: '64px' }} />
@@ -226,8 +236,8 @@ const VirtualMachineDetail: React.FC = () => {
                           <DescriptionListTerm>Operating System</DescriptionListTerm>
                           <DescriptionListDescription>
                             {(() => {
-                              const params = parseTemplateParameters(vm.spec?.template_parameters)
-                              return getOSName(params?.imageSource)
+                              const params = parseTemplateParameters(vm.spec?.template_parameters as Record<string, unknown> | undefined)
+                              return getOSName(params?.imageSource as string | undefined)
                             })()}
                           </DescriptionListDescription>
                         </DescriptionListGroup>
@@ -316,7 +326,7 @@ const VirtualMachineDetail: React.FC = () => {
             <div style={{ padding: '1.5rem 0' }}>
               <Grid hasGutter>
                 {(() => {
-                  const params = parseTemplateParameters(vm.spec?.template_parameters)
+                  const params = parseTemplateParameters(vm.spec?.template_parameters as Record<string, unknown> | undefined)
                   if (!params) {
                     return (
                       <GridItem span={12}>

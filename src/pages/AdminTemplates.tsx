@@ -195,7 +195,7 @@ const AdminTemplates: React.FC = () => {
     }
   }
 
-  const handleFileInputChange = (_event: any, file: File) => {
+  const handleFileInputChange = (_event: React.SyntheticEvent, file: File) => {
     setJsonFile(file)
     setUploadError(null)
     setUploadSuccess(false)
@@ -219,7 +219,7 @@ const AdminTemplates: React.FC = () => {
     setUploadSuccess(false)
   }
 
-  const validateTemplateJson = (template: any): string | null => {
+  const validateTemplateJson = (template: Record<string, unknown>): string | null => {
     if (!template.id || typeof template.id !== 'string') {
       return 'Template must have a valid "id" field'
     }
@@ -291,7 +291,7 @@ const AdminTemplates: React.FC = () => {
     }
   }
 
-  const onSort = (_event: any, index: number, direction: 'asc' | 'desc') => {
+  const onSort = (_event: React.SyntheticEvent, index: number, direction: 'asc' | 'desc') => {
     setActiveSortIndex(index)
     setActiveSortDirection(direction)
   }
@@ -610,7 +610,7 @@ const AdminTemplates: React.FC = () => {
             value={jsonFileContent}
             filename={jsonFile?.name}
             filenamePlaceholder="Drag and drop a file or browse"
-            onFileInputChange={handleFileInputChange}
+            onFileInputChange={(event: unknown, file: File) => handleFileInputChange(event as React.SyntheticEvent, file)}
             onClearClick={handleFileClear}
             browseButtonText="Browse..."
             clearButtonText="Clear"

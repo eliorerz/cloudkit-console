@@ -7,7 +7,7 @@ export interface VirtualMachine {
   }
   spec?: {
     template?: string
-    template_parameters?: Record<string, any>
+    template_parameters?: Record<string, unknown>
   }
   status?: {
     state?: string

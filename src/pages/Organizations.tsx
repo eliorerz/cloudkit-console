@@ -14,7 +14,7 @@ import {
 } from '@patternfly/react-core'
 import { BuildingIcon, UsersIcon } from '@patternfly/react-icons'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import AppLayout from '../components/layouts/AppLayout'
 
 const Organizations: React.FC = () => {

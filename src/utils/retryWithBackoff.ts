@@ -8,7 +8,7 @@ export interface RetryOptions {
   initialDelay?: number
   maxDelay?: number
   backoffFactor?: number
-  shouldRetry?: (error: any) => boolean
+  shouldRetry?: (error: unknown) => boolean
 }
 
 const DEFAULT_OPTIONS: Required<RetryOptions> = {
@@ -16,12 +16,15 @@ const DEFAULT_OPTIONS: Required<RetryOptions> = {
   initialDelay: 1000, // 1 second
   maxDelay: 10000, // 10 seconds
   backoffFactor: 2,
-  shouldRetry: (error: any) => {
+  shouldRetry: (error: unknown) => {
     // Retry on network errors and 5xx server errors
-    if (error.name === 'AbortError') return false
-    if (error.response?.status >= 500) return true
-    if (error.message?.includes('fetch')) return true
-    if (error.message?.includes('network')) return true
+    if (error instanceof Error && error.name === 'AbortError') return false
+    if (typeof error === 'object' && error !== null) {
+      const err = error as { response?: { status?: number }; message?: string }
+      if (err.response?.status && err.response.status >= 500) return true
+      if (err.message?.includes('fetch')) return true
+      if (err.message?.includes('network')) return true
+    }
     return false
   },
 }
@@ -34,7 +37,7 @@ export async function retryWithBackoff<T>(
   options: RetryOptions = {}
 ): Promise<T> {
   const opts = { ...DEFAULT_OPTIONS, ...options }
-  let lastError: any
+  let lastError: unknown
 
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {

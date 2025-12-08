@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -33,7 +33,7 @@ import { createVirtualMachine } from '../api/vms'
 import { Template } from '../api/types'
 
 // Machine size presets - moved to component to access t()
-const getMachineSizeTiers = (t: any) => ({
+const getMachineSizeTiers = (t: (key: string) => string) => ({
   standard: {
     title: t('vmCreate:machineSizes.standard'),
     sizes: [
@@ -110,38 +110,8 @@ const VirtualMachineCreate: React.FC = () => {
   const [runStrategyOpen, setRunStrategyOpen] = useState(false)
   const [selectedSeries, setSelectedSeries] = useState<'standard' | 'highPerformance'>('standard')
 
-  // Machine size tiers with translations
-  const machineSizeTiers = useMemo(() => getMachineSizeTiers(t), [t])
-
-  // Steps - dynamically build based on customization
-  const steps: WizardStep[] = useMemo(() => {
-    const allSteps = [
-      { id: 'vm-details', name: t('vmCreate:steps.vmDetails'), completed: currentStepIndex > 0 },
-      ...(customizeTemplate ? [{ id: 'hardware', name: t('vmCreate:steps.hardware'), completed: currentStepIndex > 1 }] : []),
-      { id: 'review', name: t('vmCreate:steps.review'), completed: currentStepIndex > (customizeTemplate ? 2 : 1) },
-    ]
-    return allSteps
-  }, [currentStepIndex, customizeTemplate, t])
-
-  useEffect(() => {
-    loadTemplate()
-  }, [templateId])
-
-  // Sync preset selection with hardware values
-  useEffect(() => {
-    if (selectedSizePreset) {
-      let preset = machineSizeTiers.standard.sizes.find(p => p.id === selectedSizePreset)
-      if (!preset) {
-        preset = machineSizeTiers.highPerformance.sizes.find(p => p.id === selectedSizePreset)
-      }
-      if (preset) {
-        setVmCpuCores(preset.cpu)
-        setVmMemoryGi(preset.memory)
-      }
-    }
-  }, [selectedSizePreset])
-
-  const loadTemplate = async () => {
+  // Load template callback
+  const loadTemplate = useCallback(async () => {
     if (!templateId) {
       setError('No template specified')
       setLoading(false)
@@ -167,13 +137,45 @@ const VirtualMachineCreate: React.FC = () => {
       if (imageParam?.default?.value) {
         setVmImageSource(String(imageParam.default.value))
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load template:', err)
-      setError(err.message || 'Failed to load template')
+      const error = err as { message?: string }
+      setError(error.message || 'Failed to load template')
     } finally {
       setLoading(false)
     }
-  }
+  }, [templateId])
+
+  // Machine size tiers with translations
+  const machineSizeTiers = useMemo(() => getMachineSizeTiers(t), [t])
+
+  // Steps - dynamically build based on customization
+  const steps: WizardStep[] = useMemo(() => {
+    const allSteps = [
+      { id: 'vm-details', name: t('vmCreate:steps.vmDetails'), completed: currentStepIndex > 0 },
+      ...(customizeTemplate ? [{ id: 'hardware', name: t('vmCreate:steps.hardware'), completed: currentStepIndex > 1 }] : []),
+      { id: 'review', name: t('vmCreate:steps.review'), completed: currentStepIndex > (customizeTemplate ? 2 : 1) },
+    ]
+    return allSteps
+  }, [currentStepIndex, customizeTemplate, t])
+
+  useEffect(() => {
+    loadTemplate()
+  }, [loadTemplate])
+
+  // Sync preset selection with hardware values
+  useEffect(() => {
+    if (selectedSizePreset) {
+      let preset = machineSizeTiers.standard.sizes.find(p => p.id === selectedSizePreset)
+      if (!preset) {
+        preset = machineSizeTiers.highPerformance.sizes.find(p => p.id === selectedSizePreset)
+      }
+      if (preset) {
+        setVmCpuCores(preset.cpu)
+        setVmMemoryGi(preset.memory)
+      }
+    }
+  }, [selectedSizePreset, machineSizeTiers.highPerformance.sizes, machineSizeTiers.standard.sizes])
 
   const handleCreate = async () => {
     try {
@@ -183,7 +185,7 @@ const VirtualMachineCreate: React.FC = () => {
       if (!template) return
 
       // Helper to wrap value in protobuf type
-      const wrapProtobufValue = (paramType: string, value: any) => {
+      const wrapProtobufValue = (paramType: string, value: unknown) => {
         return {
           '@type': paramType,
           value: value
@@ -191,7 +193,7 @@ const VirtualMachineCreate: React.FC = () => {
       }
 
       // Build request payload
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         metadata: {
           name: vmName
         },
@@ -201,12 +203,12 @@ const VirtualMachineCreate: React.FC = () => {
       }
 
       // Build template_parameters
-      const parameters: Record<string, any> = {}
+      const parameters: Record<string, unknown> = {}
       let hasParameters = false
 
       template.parameters?.forEach(param => {
         if (param.type && (param.default?.value !== undefined && param.default?.value !== null)) {
-          let value: any
+          let value: unknown
           let shouldInclude = false
 
           // When customizing, include all parameters (override specific ones with user values)
@@ -247,15 +249,16 @@ const VirtualMachineCreate: React.FC = () => {
 
       // Only add template_parameters if there are any
       if (hasParameters) {
-        payload.spec.template_parameters = parameters
+        (payload.spec as Record<string, unknown>).template_parameters = parameters
       }
 
       await createVirtualMachine(payload)
 
       navigate('/virtual-machines')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create VM:', err)
-      setError(err.message || 'Failed to create VM')
+      const error = err as { message?: string }
+      setError(error.message || 'Failed to create VM')
     } finally {
       setCreating(false)
     }
@@ -574,13 +577,13 @@ const VirtualMachineCreate: React.FC = () => {
                 </Title>
                 <div style={{ padding: '1rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>{t('vmCreate:review.cpu')}:</strong> {customizeTemplate ? vmCpuCores : (template?.parameters?.find(p => p.name === 'vm_cpu_cores')?.default?.value || vmCpuCores)}
+                    <strong>{t('vmCreate:review.cpu')}:</strong> {customizeTemplate ? vmCpuCores : (template?.parameters?.find(p => p.name === 'vm_cpu_cores')?.default?.value as string | number || vmCpuCores)}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>{t('vmCreate:review.memory')}:</strong> {customizeTemplate ? `${vmMemoryGi} Gi` : (template?.parameters?.find(p => p.name === 'vm_memory_size')?.default?.value || `${vmMemoryGi} Gi`)}
+                    <strong>{t('vmCreate:review.memory')}:</strong> {customizeTemplate ? `${vmMemoryGi} Gi` : (template?.parameters?.find(p => p.name === 'vm_memory_size')?.default?.value as string || `${vmMemoryGi} Gi`)}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73', marginBottom: '0.5rem' }}>
-                    <strong>{t('vmCreate:review.disk')}:</strong> {customizeTemplate ? formatDiskSize(vmDiskGi) : (template?.parameters?.find(p => p.name === 'vm_disk_size')?.default?.value || formatDiskSize(vmDiskGi))}
+                    <strong>{t('vmCreate:review.disk')}:</strong> {customizeTemplate ? formatDiskSize(vmDiskGi) : (template?.parameters?.find(p => p.name === 'vm_disk_size')?.default?.value as string || formatDiskSize(vmDiskGi))}
                   </div>
                   <div style={{ fontSize: '0.82rem', color: '#6a6e73' }}>
                     <strong>{t('vmCreate:review.runStrategy')}:</strong> {vmRunStrategy}

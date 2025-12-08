@@ -18,8 +18,8 @@ import {
   MenuToggle,
 } from '@patternfly/react-core'
 import { CheckIcon } from '@patternfly/react-icons'
-import { useAuth } from '../contexts/AuthContext'
-import { useTheme } from '../contexts/ThemeContext'
+import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../hooks/useTheme'
 import AppLayout from '../components/layouts/AppLayout'
 
 const Settings: React.FC = () => {

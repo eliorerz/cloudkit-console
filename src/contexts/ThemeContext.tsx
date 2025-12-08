@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import React, { createContext, useEffect, useState, ReactNode } from 'react'
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 
@@ -8,15 +8,9 @@ interface ThemeContextType {
   setTheme: (theme: ThemeMode) => void
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
-
-export const useTheme = () => {
-  const context = useContext(ThemeContext)
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
-  return context
-}
+// Context must be exported from the same file as the Provider for React Context pattern
+/* eslint-disable react-refresh/only-export-components */
+export const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 interface ThemeProviderProps {
   children: ReactNode

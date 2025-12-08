@@ -7,8 +7,19 @@ import { ClusterTemplate } from './types'
 import { listClusterTemplates as listClusterTemplatesFromAPI } from './clustersApi'
 import { getConfig } from './config'
 
+interface RawTemplate {
+  id?: string
+  metadata?: {
+    version?: string
+    gpu_type?: string
+  }
+  version?: string
+  description?: string
+  node_sets?: Record<string, { host_class?: string; size?: number }>
+}
+
 // Helper function to extract version from template
-function extractVersion(template: any): string {
+function extractVersion(template: RawTemplate): string {
   // First, check if version is explicitly set in the template metadata or root
   if (template.metadata?.version) {
     return template.metadata.version
@@ -28,21 +39,21 @@ function extractVersion(template: any): string {
 }
 
 // Helper function to determine architecture based on host_class
-function getArchitecture(_template: any): 'x86' | 'ARM' {
+function getArchitecture(_template: RawTemplate): 'x86' | 'ARM' {
   // For now, assume all are x86 unless specified otherwise
   // TODO: determine architecture from host_class when needed
   return 'x86'
 }
 
 // Helper function to check if template has GPU
-function hasGPU(template: any): boolean {
+function hasGPU(template: RawTemplate): boolean {
   // Check metadata for GPU info
   if (template.metadata?.gpu_type) {
     return true
   }
 
   // Check if host_class contains GPU indicators
-  const hostClasses = template.node_sets ? Object.values(template.node_sets).map((ns: any) => ns.host_class) : []
+  const hostClasses = template.node_sets ? Object.values(template.node_sets).map(ns => ns.host_class || '') : []
   return hostClasses.some((hc: string) =>
     hc.toLowerCase().includes('gb200') ||
     hc.toLowerCase().includes('h100') ||
@@ -52,12 +63,12 @@ function hasGPU(template: any): boolean {
 }
 
 // Helper function to determine if template is advanced
-function isAdvancedTemplate(template: any): boolean {
-  return hasGPU(template) || template.id?.includes('ncp') || template.id?.includes('rhoai')
+function isAdvancedTemplate(template: RawTemplate): boolean {
+  return hasGPU(template) || Boolean(template.id?.includes('ncp')) || Boolean(template.id?.includes('rhoai'))
 }
 
 // Helper function to generate tags
-function generateTags(template: any): string[] {
+function generateTags(template: RawTemplate): string[] {
   const tags: string[] = []
 
   if (template.id?.includes('rhoai') || template.description?.toLowerCase().includes('ai/ml')) {
@@ -100,7 +111,7 @@ function generateTags(template: any): string[] {
 }
 
 // Helper function to determine icon type
-function getIconType(template: any): 'server' | 'openshift' | 'cube' {
+function getIconType(template: RawTemplate): 'server' | 'openshift' | 'cube' {
   if (template.id?.includes('ncp') || hasGPU(template)) {
     return 'cube'
   }
@@ -111,9 +122,9 @@ function getIconType(template: any): 'server' | 'openshift' | 'cube' {
 }
 
 // Helper function to get node count
-function getNodeCount(template: any): number {
+function getNodeCount(template: RawTemplate): number {
   if (!template.node_sets) return 3
-  return Object.values(template.node_sets).reduce((sum: number, ns: any) => sum + (ns.size || 0), 0)
+  return Object.values(template.node_sets).reduce((sum: number, ns) => sum + (ns.size || 0), 0)
 }
 
 /**

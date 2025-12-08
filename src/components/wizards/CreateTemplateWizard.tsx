@@ -229,7 +229,7 @@ export const CreateTemplateWizard: React.FC<CreateTemplateWizardProps> = ({
       setParamDescription(knownParam.description || '')
       setParamType(knownParam.type || 'type.googleapis.com/google.protobuf.StringValue')
       setParamRequired(knownParam.required || false)
-      setParamDefaultValue(knownParam.default?.value || '')
+      setParamDefaultValue(String(knownParam.default?.value || ''))
     }
     setKnownParamDropdownOpen(false)
   }
@@ -290,7 +290,7 @@ export const CreateTemplateWizard: React.FC<CreateTemplateWizardProps> = ({
     setParamDescription(param.description || '')
     setParamType(param.type || 'type.googleapis.com/google.protobuf.StringValue')
     setParamRequired(param.required || false)
-    setParamDefaultValue(param.default?.value || '')
+    setParamDefaultValue(String(param.default?.value || ''))
     setIsAddingParameter(true)
   }
 
@@ -334,7 +334,7 @@ export const CreateTemplateWizard: React.FC<CreateTemplateWizardProps> = ({
     resetParameterForm()
   }
 
-  const convertDefaultValue = (value: string, type: string): any => {
+  const convertDefaultValue = (value: string, type: string): unknown => {
     if (!value) return undefined
 
     switch (type) {

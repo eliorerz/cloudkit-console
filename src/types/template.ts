@@ -6,7 +6,7 @@ export interface TemplateParameter {
   type?: string
   default?: {
     '@type': string
-    value?: any
+    value?: unknown
   }
 }
 

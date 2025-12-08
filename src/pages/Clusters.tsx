@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   PageSection,
@@ -52,8 +52,8 @@ const Clusters: React.FC = () => {
   const [scaleSize, setScaleSize] = useState('')
   const [scalingSizeError, setScalingSizeError] = useState('')
   const [isScaling, setIsScaling] = useState(false)
-  const [hostClassesData, setHostClassesData] = useState<Record<string, any>>({})
-  const [staticHostClasses, setStaticHostClasses] = useState<Record<string, any>>({})
+  const [hostClassesData, setHostClassesData] = useState<Record<string, unknown>>({})
+  const [staticHostClasses, setStaticHostClasses] = useState<Record<string, unknown>>({})
 
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -89,9 +89,9 @@ const Clusters: React.FC = () => {
       setError(null)
       const response = await listClusters()
       setClusters(response.items || [])
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load clusters:', err)
-      setError(err.message || 'Failed to load clusters')
+      setError((err as { message?: string })?.message || 'Failed to load clusters')
     } finally {
       setLoading(false)
     }
@@ -110,7 +110,7 @@ const Clusters: React.FC = () => {
     }
   }
 
-  const formatState = (state?: ClusterState) => {
+  const formatState = useCallback((state?: ClusterState) => {
     if (!state) return t('common:status.unknown')
     const normalizedState = state.toUpperCase()
     if (normalizedState.includes('READY')) {
@@ -123,14 +123,19 @@ const Clusters: React.FC = () => {
     // Fallback: Remove CLUSTER_STATE_ prefix and capitalize first letter only
     const cleaned = state.replace('CLUSTER_STATE_', '')
     return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase()
-  }
+  }, [t])
 
   const getVersion = (cluster: Cluster): string => {
-    const params = cluster.spec?.template_parameters
+    const params = cluster.spec?.template_parameters as Record<string, { value?: unknown }> | undefined
     if (!params) return '-'
 
-    // Try common parameter names for version
-    return params.ocp_version || params.openshift_version || params.version || params.cluster_version || '4.20.4'
+    // Try common parameter names for version - extract value from protobuf wrapper
+    const getVal = (key: string) => {
+      const param = params[key] as { value?: unknown } | undefined
+      return param?.value ? String(param.value) : null
+    }
+
+    return getVal('ocp_version') || getVal('openshift_version') || getVal('version') || getVal('cluster_version') || '4.20.4'
   }
 
   const getHostsCount = (cluster: Cluster): number => {
@@ -166,7 +171,7 @@ const Clusters: React.FC = () => {
       }
     })
     return Array.from(states).sort()
-  }, [clusters])
+  }, [clusters, formatState])
 
   // Sorting logic
   const getSortableValue = (cluster: Cluster, columnIndex: number): string => {
@@ -180,7 +185,7 @@ const Clusters: React.FC = () => {
     }
   }
 
-  const onSort = (_event: any, index: number, direction: 'asc' | 'desc') => {
+  const onSort = (_event: React.SyntheticEvent, index: number, direction: 'asc' | 'desc') => {
     setActiveSortIndex(index)
     setActiveSortDirection(direction)
   }
@@ -256,7 +261,7 @@ const Clusters: React.FC = () => {
     setStaticHostClasses(staticClasses)
 
     // Load hosts data for this cluster
-    const hostClassesMap: Record<string, any> = {}
+    const hostClassesMap: Record<string, unknown> = {}
 
     if (cluster.status?.node_sets) {
       for (const [, nodeSet] of Object.entries(cluster.status.node_sets)) {
@@ -330,9 +335,9 @@ const Clusters: React.FC = () => {
 
       // Reload clusters list
       loadClusters()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to scale cluster:', err)
-      setScalingSizeError(err.message || 'Failed to scale cluster')
+      setScalingSizeError((err as { message?: string })?.message || 'Failed to scale cluster')
     } finally {
       setIsScaling(false)
     }
@@ -363,9 +368,9 @@ const Clusters: React.FC = () => {
 
       // Reload clusters list
       loadClusters()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete cluster:', err)
-      setError(err.message || 'Failed to delete cluster')
+      setError((err as { message?: string })?.message || 'Failed to delete cluster')
     } finally {
       setIsDeleting(false)
     }
@@ -675,9 +680,15 @@ const Clusters: React.FC = () => {
           {selectedCluster?.status?.node_sets && Object.keys(selectedCluster.status.node_sets).length > 0 && (() => {
             const nodeSet = Object.values(selectedCluster.status.node_sets)[0]
             const hostClassId = nodeSet.host_class
-            const fulfillmentClass = hostClassId ? hostClassesData[hostClassId] : null
+            const fulfillmentClass = hostClassId ? hostClassesData[hostClassId] as { metadata?: { name?: string } } : null
             const className = fulfillmentClass?.metadata?.name
-            const staticClass = className ? staticHostClasses[className] : null
+            const staticClass = className ? staticHostClasses[className] as {
+              name?: string
+              description?: string
+              cpu?: { type?: string; cores?: number; sockets?: number }
+              ram?: { size?: string }
+              gpu?: { model?: string; count?: number }
+            } | null : null
 
             return (
               <>
@@ -721,7 +732,7 @@ const Clusters: React.FC = () => {
                       <div>{staticClass.cpu?.type || '-'}</div>
 
                       <div style={{ color: '#6a6e73' }}>CPU Cores:</div>
-                      <div>{staticClass.cpu ? (staticClass.cpu.cores * staticClass.cpu.sockets) : '-'}</div>
+                      <div>{staticClass.cpu ? ((staticClass.cpu.cores || 0) * (staticClass.cpu.sockets || 0)) : '-'}</div>
 
                       <div style={{ color: '#6a6e73' }}>RAM Size:</div>
                       <div>{staticClass.ram?.size || '-'}</div>

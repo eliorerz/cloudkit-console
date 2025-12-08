@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useState, useEffect, ReactNode } from 'react'
 import { User } from 'oidc-client-ts'
 import { loadConfig, getUserManager } from '../auth/oidcConfig'
 
@@ -18,7 +18,9 @@ interface AuthContextType {
   logout: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+// Context must be exported from the same file as the Provider for React Context pattern
+/* eslint-disable react-refresh/only-export-components */
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -146,8 +148,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const token = user?.access_token || null
 
   // Username (actual username from preferred_username or username field)
+  const profile = user?.profile as Record<string, unknown> | undefined
   const username = user?.profile?.preferred_username
-    || (user?.profile as any)?.username
+    || (profile?.username as string | undefined)
     || user?.profile?.email?.split('@')[0]
     || user?.profile?.sub
     || null
@@ -160,13 +163,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     || null
 
   // Determine role based on groups and roles
-  const groups = (user?.profile?.groups as string[]) || []
-  const organizations = (user?.profile?.organizations as string[]) || groups  // organizations and groups are the same
+  const groups = (profile?.groups as string[] | undefined) || []
+  const organizations = (profile?.organizations as string[] | undefined) || groups  // organizations and groups are the same
 
   // Extract roles from different possible locations in the token
-  const realmRoles = (user?.profile as any)?.realm_access?.roles || []
-  const resourceRoles = (user?.profile as any)?.resource_access?.['osac-ui']?.roles || []
-  const directRoles = (user?.profile as any)?.roles || []
+  const realmAccess = profile?.realm_access as { roles?: string[] } | undefined
+  const resourceAccess = profile?.resource_access as Record<string, { roles?: string[] }> | undefined
+  const realmRoles = realmAccess?.roles || []
+  const resourceRoles = resourceAccess?.['cloudkit-console']?.roles || []
+  const directRoles = (profile?.roles as string[] | undefined) || []
   const allRoles = [...realmRoles, ...resourceRoles, ...directRoles]
 
   // User is admin if:
@@ -195,12 +200,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       {children}
     </AuthContext.Provider>
   )
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }

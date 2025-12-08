@@ -22,8 +22,9 @@ interface VMCardProps {
 }
 
 const getImageName = (vm: VirtualMachine): string => {
-  const imageSource = vm.spec?.template_parameters?.vm_image_source?.value || vm.spec?.template_parameters?.vm_image_source
-  if (!imageSource) return 'N/A'
+  const params = vm.spec?.template_parameters as Record<string, { value?: unknown }> | undefined
+  const imageSource = params?.vm_image_source?.value || params?.vm_image_source
+  if (!imageSource || typeof imageSource !== 'string') return 'N/A'
 
   // Extract image name from containerdisk URL
   // e.g., "docker://quay.io/containerdisks/fedora:43" -> "Fedora 43"
@@ -117,7 +118,11 @@ export const VMCard: React.FC<VMCardProps> = ({
               CPU
             </div>
             <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
-              {vm.spec?.template_parameters?.vm_cpu_cores?.value || vm.spec?.template_parameters?.vm_cpu_cores || 'N/A'} vCPU
+              {(() => {
+                const params = vm.spec?.template_parameters as Record<string, { value?: unknown }> | undefined
+                const value = params?.vm_cpu_cores?.value || params?.vm_cpu_cores
+                return value ? String(value) : 'N/A'
+              })()} vCPU
             </div>
           </div>
           <div>
@@ -125,7 +130,11 @@ export const VMCard: React.FC<VMCardProps> = ({
               Memory
             </div>
             <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
-              {vm.spec?.template_parameters?.vm_memory_size?.value || vm.spec?.template_parameters?.vm_memory_size || 'N/A'}
+              {(() => {
+                const params = vm.spec?.template_parameters as Record<string, { value?: unknown }> | undefined
+                const value = params?.vm_memory_size?.value || params?.vm_memory_size
+                return value ? String(value) : 'N/A'
+              })()}
             </div>
           </div>
           <div>
@@ -133,7 +142,11 @@ export const VMCard: React.FC<VMCardProps> = ({
               Storage
             </div>
             <div style={{ fontSize: '0.875rem', fontWeight: 500, color: '#151515' }}>
-              {vm.spec?.template_parameters?.vm_disk_size?.value || vm.spec?.template_parameters?.vm_disk_size || 'N/A'}
+              {(() => {
+                const params = vm.spec?.template_parameters as Record<string, { value?: unknown }> | undefined
+                const value = params?.vm_disk_size?.value || params?.vm_disk_size
+                return value ? String(value) : 'N/A'
+              })()}
             </div>
           </div>
           <div>

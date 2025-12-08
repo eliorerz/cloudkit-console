@@ -40,7 +40,7 @@ import { listClusters, listClusterTemplates } from '../api/clustersApi'
 import { getHosts } from '../api/hosts'
 import { DashboardMetrics, VirtualMachine, Template, Cluster } from '../api/types'
 import AppLayout from '../components/layouts/AppLayout'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation(['dashboard', 'common'])
@@ -105,8 +105,8 @@ const Dashboard: React.FC = () => {
         if (isActive) {
           setMetrics(data)
         }
-      } catch (error: any) {
-        if (error.name === 'AbortError') return // Ignore aborted requests
+      } catch (error: unknown) {
+        if ((error as { name?: string })?.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch metrics:', error)
         if (isActive && !isInitialMetricsLoad.current) {
           addAlert('Failed to fetch dashboard metrics. Showing cached data.')
@@ -137,7 +137,7 @@ const Dashboard: React.FC = () => {
       try {
         const response = await getTemplates()
         setTemplates(response.items || [])
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Failed to fetch templates:', error)
         addAlert('Failed to load VM templates')
         // Don't clear existing data on error - keep showing previous data
@@ -160,7 +160,7 @@ const Dashboard: React.FC = () => {
       try {
         const response = await listClusterTemplates()
         setClusterTemplatesCount(response.total || 0)
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Failed to fetch cluster templates:', error)
         addAlert('Failed to load cluster templates')
         setClusterTemplatesCount(0)
@@ -205,8 +205,8 @@ const Dashboard: React.FC = () => {
             addAlert('Failed to load virtual machines after multiple attempts')
           }
         }
-      } catch (error: any) {
-        if (error.name === 'AbortError') return // Ignore aborted requests
+      } catch (error: unknown) {
+        if ((error as { name?: string })?.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch VMs:', error)
         retryCount++
         if (retryCount >= maxRetries && isActive && vmsFetched) {
@@ -229,6 +229,8 @@ const Dashboard: React.FC = () => {
       abortController.abort()
       clearInterval(pollInterval)
     }
+    // vmsFetched is intentionally excluded to prevent infinite loops - it's used for conditional error messages only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, username, token])
 
   // Fetch clusters for admin users
@@ -274,8 +276,8 @@ const Dashboard: React.FC = () => {
         setClustersReady(ready)
         setClustersProgressing(progressing)
         setClustersError(error)
-      } catch (error: any) {
-        if (error.name === 'AbortError') return // Ignore aborted requests
+      } catch (error: unknown) {
+        if ((error as { name?: string })?.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch clusters:', error)
         if (isActive && !isFirstClusterLoad.current) {
           addAlert('Failed to refresh clusters. Showing cached data.')
@@ -340,8 +342,8 @@ const Dashboard: React.FC = () => {
         })
         setHostsAssigned(assigned)
         setHostsUnassigned(unassigned)
-      } catch (error: any) {
-        if (error.name === 'AbortError') return // Ignore aborted requests
+      } catch (error: unknown) {
+        if ((error as { name?: string })?.name === 'AbortError') return // Ignore aborted requests
         console.error('Failed to fetch hosts:', error)
         if (isActive && !isFirstHostsLoad.current) {
           addAlert('Failed to refresh bare metal hosts. Showing cached data.')

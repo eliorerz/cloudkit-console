@@ -8,7 +8,7 @@ interface PendingRequest<T> {
   timestamp: number
 }
 
-const pendingRequests = new Map<string, PendingRequest<any>>()
+const pendingRequests = new Map<string, PendingRequest<unknown>>()
 const CACHE_DURATION = 1000 // Cache for 1 second to prevent rapid duplicate calls
 
 /**
@@ -23,10 +23,10 @@ export async function deduplicateRequest<T>(
   const now = Date.now()
 
   // Check if there's a pending request for this key
-  const pending = pendingRequests.get(key)
+  const pending = pendingRequests.get(key) as PendingRequest<T> | undefined
   if (pending && (now - pending.timestamp) < CACHE_DURATION) {
     // Return the existing promise
-    return pending.promise
+    return pending.promise as Promise<T>
   }
 
   // Create new request

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   PageSection,
@@ -73,7 +73,7 @@ const ClusterCreate: React.FC = () => {
   // Form state
   const [clusterName, setClusterName] = useState('')
   const [pullSecret, setPullSecret] = useState('')
-  const [parameters, setParameters] = useState<Record<string, any>>({})
+  const [parameters, setParameters] = useState<Record<string, unknown>>({})
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [hasDefaults, setHasDefaults] = useState(false)
 
@@ -82,31 +82,6 @@ const ClusterCreate: React.FC = () => {
   const [selectedTenants, setSelectedTenants] = useState<string[]>([])
   const [loadingTenants, setLoadingTenants] = useState(false)
   const [isTenantSelectOpen, setIsTenantSelectOpen] = useState(false)
-
-  useEffect(() => {
-    // Load default values from localStorage
-    const defaultPullSecret = localStorage.getItem('default_pull_secret')
-    const defaultSshKey = localStorage.getItem('default_ssh_key')
-
-    if (defaultPullSecret) {
-      setPullSecret(defaultPullSecret)
-    }
-
-    if (defaultPullSecret || defaultSshKey) {
-      setHasDefaults(true)
-      // Also set the ssh key in parameters if it exists
-      if (defaultSshKey) {
-        setParameters(prev => ({
-          ...prev,
-          ssh_public_key: defaultSshKey
-        }))
-      }
-    }
-
-    loadTemplate()
-    loadHostClasses()
-    loadTenants()
-  }, [templateId])
 
   const loadTenants = async () => {
     try {
@@ -132,7 +107,7 @@ const ClusterCreate: React.FC = () => {
     }
   }
 
-  const loadTemplate = async () => {
+  const loadTemplate = useCallback(async () => {
     if (!templateId) {
       setError('No template specified')
       setLoading(false)
@@ -155,7 +130,7 @@ const ClusterCreate: React.FC = () => {
       setTemplate(foundTemplate)
 
       // Initialize parameter defaults
-      const initialParams: Record<string, any> = {}
+      const initialParams: Record<string, unknown> = {}
       if (foundTemplate.parameters) {
         foundTemplate.parameters.forEach(param => {
           if (param.default !== undefined) {
@@ -164,15 +139,41 @@ const ClusterCreate: React.FC = () => {
         })
       }
       setParameters(initialParams)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load template:', err)
-      setError(err.message || 'Failed to load template')
+      const error = err as { message?: string }
+      setError(error.message || 'Failed to load template')
     } finally {
       setLoading(false)
     }
-  }
+  }, [templateId])
 
-  const handleParameterChange = (paramName: string, value: any) => {
+  useEffect(() => {
+    // Load default values from localStorage
+    const defaultPullSecret = localStorage.getItem('default_pull_secret')
+    const defaultSshKey = localStorage.getItem('default_ssh_key')
+
+    if (defaultPullSecret) {
+      setPullSecret(defaultPullSecret)
+    }
+
+    if (defaultPullSecret || defaultSshKey) {
+      setHasDefaults(true)
+      // Also set the ssh key in parameters if it exists
+      if (defaultSshKey) {
+        setParameters(prev => ({
+          ...prev,
+          ssh_public_key: defaultSshKey
+        }))
+      }
+    }
+
+    loadTemplate()
+    loadHostClasses()
+    loadTenants()
+  }, [loadTemplate])
+
+  const handleParameterChange = (paramName: string, value: unknown) => {
     setParameters(prev => ({
       ...prev,
       [paramName]: value,
@@ -180,7 +181,7 @@ const ClusterCreate: React.FC = () => {
   }
 
   // Helper function to wrap parameter values in google.protobuf.Any format
-  const wrapParameterValue = (type: string, value: any) => {
+  const wrapParameterValue = (type: string, value: unknown) => {
     // If type already contains the full type URL, use it directly
     if (type.startsWith('type.googleapis.com/')) {
       return {
@@ -245,7 +246,7 @@ const ClusterCreate: React.FC = () => {
       setError(null)
 
       // Wrap all parameters in google.protobuf.Any format
-      const wrappedParameters: Record<string, any> = {}
+      const wrappedParameters: Record<string, unknown> = {}
       if (template.parameters) {
         template.parameters.forEach(param => {
           const value = param.name === 'pull_secret' ? pullSecret : parameters[param.name]
@@ -260,7 +261,7 @@ const ClusterCreate: React.FC = () => {
       console.log('Wrapped parameters:', wrappedParameters)
 
       // Build cluster spec with optional tenants
-      const metadata: any = {
+      const metadata: Record<string, unknown> = {
         name: clusterName,
       }
 
@@ -281,9 +282,9 @@ const ClusterCreate: React.FC = () => {
 
       // Redirect to cluster detail page
       navigate(`/admin/clusters/${newCluster.id}`)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create cluster:', err)
-      setError(err.message || 'Failed to create cluster')
+      setError((err as { message?: string })?.message || 'Failed to create cluster')
     } finally {
       setCreating(false)
     }
@@ -557,9 +558,9 @@ const ClusterCreate: React.FC = () => {
                         >
                           <NumberInput
                             id={`param-${param.name}`}
-                            value={paramValue || 0}
-                            onMinus={() => handleParameterChange(param.name, (paramValue || 0) - 1)}
-                            onPlus={() => handleParameterChange(param.name, (paramValue || 0) + 1)}
+                            value={Number(paramValue) || 0}
+                            onMinus={() => handleParameterChange(param.name, (Number(paramValue) || 0) - 1)}
+                            onPlus={() => handleParameterChange(param.name, (Number(paramValue) || 0) + 1)}
                             onChange={(event) => {
                               const value = (event.target as HTMLInputElement).value
                               handleParameterChange(param.name, parseInt(value, 10) || 0)
@@ -601,7 +602,7 @@ const ClusterCreate: React.FC = () => {
                             isRequired={param.required}
                             type="text"
                             id={`param-${param.name}`}
-                            value={paramValue || ''}
+                            value={String(paramValue || '')}
                             onChange={(_event, value) => handleParameterChange(param.name, value)}
                           />
                         </FormGroup>
@@ -702,7 +703,7 @@ const ClusterCreate: React.FC = () => {
                           <TextArea
                             id="ssh-public-key"
                             name="ssh-public-key"
-                            value={parameters.ssh_public_key || ''}
+                            value={String(parameters.ssh_public_key || '')}
                             onChange={(_event, value) => handleParameterChange('ssh_public_key', value)}
                             rows={4}
                             placeholder="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC..."

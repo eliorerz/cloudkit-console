@@ -30,7 +30,7 @@ export interface ClusterTemplateParameterDefinition {
   type?: string
   default?: {
     '@type': string
-    value?: any
+    value?: unknown
   }
 }
 
@@ -53,7 +53,7 @@ export interface Cluster {
 
 export interface ClusterSpec {
   template?: string
-  template_parameters?: Record<string, any>
+  template_parameters?: Record<string, unknown>
   node_sets?: Record<string, ClusterNodeSet>
 }
 

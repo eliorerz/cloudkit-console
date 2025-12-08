@@ -7,7 +7,7 @@ import {
   AlertActionCloseButton,
   Button,
 } from '@patternfly/react-core'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import './Login.css'
 
 const Login: React.FC = () => {

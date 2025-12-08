@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import {
   PageSection,
   Title,
@@ -121,7 +121,7 @@ const VirtualMachines: React.FC = () => {
     }
   }
 
-  const onSort = (_event: any, index: number, direction: 'asc' | 'desc') => {
+  const onSort = (_event: React.SyntheticEvent, index: number, direction: 'asc' | 'desc') => {
     setActiveSortIndex(index)
     setActiveSortDirection(direction)
   }

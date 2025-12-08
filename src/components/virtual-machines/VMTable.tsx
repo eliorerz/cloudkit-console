@@ -21,7 +21,7 @@ interface VMTableProps {
   vms: VirtualMachine[]
   activeSortIndex?: number
   activeSortDirection: 'asc' | 'desc'
-  onSort: (event: any, index: number, direction: 'asc' | 'desc') => void
+  onSort: (event: React.SyntheticEvent, index: number, direction: 'asc' | 'desc') => void
   openActionMenuId: string | null
   onActionMenuToggle: (vmId: string) => void
   onActionMenuClose: () => void

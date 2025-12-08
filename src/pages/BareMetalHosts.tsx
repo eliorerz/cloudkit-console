@@ -131,7 +131,7 @@ const BareMetalHosts: React.FC = () => {
     }
   }
 
-  const onSort = (_event: any, index: number, direction: 'asc' | 'desc') => {
+  const onSort = (_event: React.SyntheticEvent, index: number, direction: 'asc' | 'desc') => {
     setActiveSortIndex(index)
     setActiveSortDirection(direction)
   }

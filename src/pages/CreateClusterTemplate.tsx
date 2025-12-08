@@ -138,7 +138,7 @@ const CreateClusterTemplate: React.FC = () => {
       }
     }
     loadHostClasses()
-  }, [])
+  }, [hostClass])
 
   // Validate snake_case with dots
   const isValidSnakeCase = (str: string): boolean => {
@@ -239,7 +239,7 @@ const CreateClusterTemplate: React.FC = () => {
       }
 
       // Build template - @type and metadata are automatically added by the server
-      const templateData: any = {
+      const templateData: Record<string, unknown> = {
         id: templateId,
         title: title,
         description: description,
@@ -252,9 +252,9 @@ const CreateClusterTemplate: React.FC = () => {
 
       // Navigate back to catalog
       navigate('/admin/cluster-catalog')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create template:', err)
-      setError(err.message || 'Failed to create cluster template')
+      setError((err as { message?: string })?.message || 'Failed to create cluster template')
     } finally {
       setIsCreating(false)
     }

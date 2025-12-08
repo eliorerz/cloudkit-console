@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react'
 
-interface ConfirmDialogState<T = any> {
+interface ConfirmDialogState<T = unknown> {
   isOpen: boolean
   item: T | null
   isLoading: boolean
 }
 
-interface UseConfirmDialogReturn<T = any> {
+interface UseConfirmDialogReturn<T = unknown> {
   isOpen: boolean
   item: T | null
   isLoading: boolean
@@ -20,7 +20,7 @@ interface UseConfirmDialogReturn<T = any> {
  * Custom hook for managing confirmation dialog state
  * @returns Dialog state and control functions
  */
-export function useConfirmDialog<T = any>(): UseConfirmDialogReturn<T> {
+export function useConfirmDialog<T = unknown>(): UseConfirmDialogReturn<T> {
   const [state, setState] = useState<ConfirmDialogState<T>>({
     isOpen: false,
     item: null,

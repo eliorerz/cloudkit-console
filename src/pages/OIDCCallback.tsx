@@ -11,7 +11,7 @@ import {
 } from '@patternfly/react-core'
 import { ExclamationCircleIcon } from '@patternfly/react-icons'
 import { loadConfig, getUserManager } from '../auth/oidcConfig'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 export const OIDCCallback: React.FC = () => {
   const navigate = useNavigate()

@@ -257,7 +257,7 @@ const Templates: React.FC = () => {
     setCreateError(null)
 
     try {
-      const parameters: Record<string, any> = {}
+      const parameters: Record<string, unknown> = {}
       selectedTemplate.parameters?.forEach(param => {
         if (param.default?.value !== undefined && param.default?.value !== null) {
           parameters[param.name] = param.default.value

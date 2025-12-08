@@ -34,7 +34,7 @@ import {
   Divider,
 } from '@patternfly/react-core'
 import { BarsIcon, BellIcon, QuestionCircleIcon, CopyIcon, GlobeIcon, ThIcon, ExternalLinkAltIcon } from '@patternfly/react-icons'
-import { useAuth } from '../../contexts/AuthContext'
+import { useAuth } from '../../hooks/useAuth'
 import { useNavigate, useLocation } from 'react-router-dom'
 import '../../styles/app.css'
 

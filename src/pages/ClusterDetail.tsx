@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -44,7 +44,7 @@ import { getHost } from '../api/hosts'
 import { getHostClassById, getHostClasses, FulfillmentHostClass, HostClass } from '../api/host-classes'
 
 // Mock networking data for demo
-const mockNetworking: Record<string, any> = {
+const mockNetworking: Record<string, unknown> = {
   default: {
     vlan: 'VLAN 100',
     imex_channel: 'NVL72 Channel 3',
@@ -116,7 +116,7 @@ const ClusterDetail: React.FC = () => {
       document.body.removeChild(a)
 
       addAlert('Kubeconfig downloaded successfully')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to download kubeconfig:', err)
       addAlert('Failed to download kubeconfig')
     }
@@ -146,7 +146,7 @@ const ClusterDetail: React.FC = () => {
       setTimeout(() => {
         navigate('/admin/clusters')
       }, 1500)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete cluster:', err)
       addAlert('Failed to delete cluster')
       setIsDeleting(false)
@@ -205,28 +205,13 @@ const ClusterDetail: React.FC = () => {
       setScaleSize('')
 
       loadCluster()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to scale cluster:', err)
-      setScalingSizeError(err.message || 'Failed to scale cluster')
+      setScalingSizeError((err as { message?: string })?.message || 'Failed to scale cluster')
     } finally {
       setIsScaling(false)
     }
   }
-
-  useEffect(() => {
-    if (id) {
-      checkAdminStatus()
-      loadCluster()
-      loadPassword()
-
-      // Poll for updates every 10 seconds
-      const interval = setInterval(() => {
-        loadCluster(true) // Pass true to indicate this is a background refresh
-      }, 10000)
-
-      return () => clearInterval(interval)
-    }
-  }, [id])
 
   const checkAdminStatus = async () => {
     try {
@@ -240,7 +225,7 @@ const ClusterDetail: React.FC = () => {
     }
   }
 
-  const loadCluster = async (isBackgroundRefresh = false) => {
+  const loadCluster = useCallback(async (isBackgroundRefresh = false) => {
     if (!id) return
 
     try {
@@ -256,31 +241,47 @@ const ClusterDetail: React.FC = () => {
           JSON.stringify(cluster.status.node_sets) !== JSON.stringify(clusterData.status?.node_sets))) {
         loadHostsData(clusterData)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load cluster:', err)
+      const error = err as { message?: string }
       if (!isBackgroundRefresh) {
-        setError(err.message || 'Failed to load cluster')
+        setError((error as { message?: string })?.message || 'Failed to load cluster')
       }
     } finally {
       if (!isBackgroundRefresh) {
         setLoading(false)
       }
     }
-  }
+  }, [id, cluster?.status?.node_sets])
 
-  const loadPassword = async () => {
+  const loadPassword = useCallback(async () => {
     if (!id) return
 
     try {
       setLoadingPassword(true)
       const pwd = await getClusterPassword(id)
       setPassword(pwd)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load password:', err)
     } finally {
       setLoadingPassword(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    if (id) {
+      checkAdminStatus()
+      loadCluster()
+      loadPassword()
+
+      // Poll for updates every 10 seconds
+      const interval = setInterval(() => {
+        loadCluster(true) // Pass true to indicate this is a background refresh
+      }, 10000)
+
+      return () => clearInterval(interval)
+    }
+  }, [id, loadCluster, loadPassword])
 
   const loadHostsData = async (clusterData: Cluster) => {
     if (!clusterData.status?.node_sets) return
@@ -316,7 +317,7 @@ const ClusterDetail: React.FC = () => {
 
       setHostsData(hostsMap)
       setHostClassesData(hostClassesMap)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load hosts data:', err)
     } finally {
       setLoadingHosts(false)
@@ -361,7 +362,12 @@ const ClusterDetail: React.FC = () => {
     )
   }
 
-  const networking = mockNetworking[cluster.id] || mockNetworking.default
+  const networking = (mockNetworking[cluster.id] || mockNetworking.default) as {
+    vlan?: string
+    imex_channel?: string
+    ib_slot?: string
+    topology?: string
+  }
 
   return (
     <AppLayout>
