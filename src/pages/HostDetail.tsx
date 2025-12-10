@@ -277,10 +277,14 @@ const HostDetail: React.FC = () => {
                         </Title>
                         <DescriptionList isHorizontal columnModifier={{ default: '1Col' }}>
                           <DescriptionListGroup>
-                            <DescriptionListTerm>BCM Link</DescriptionListTerm>
+                            <DescriptionListTerm>BCM Node</DescriptionListTerm>
                             <DescriptionListDescription>
-                              <a href={host.spec.bcm_link} target="_blank" rel="noopener noreferrer" style={{ color: '#06c', wordBreak: 'break-all' }}>
-                                {host.spec.bcm_link} <ExternalLinkAltIcon style={{ fontSize: '0.75rem' }} />
+                              <a href={host.spec.bcm_link} target="_blank" rel="noopener noreferrer" style={{ color: '#06c' }}>
+                                {(() => {
+                                  // Extract node ID from URL like: https://bcm.service.demo:8081/base-view/device/5d0ac70b-0b46-4338-9003-3d785d46b7e4
+                                  const match = host.spec.bcm_link.match(/\/device\/([a-f0-9-]+)/i)
+                                  return match ? match[1] : host.spec.bcm_link
+                                })()} <ExternalLinkAltIcon style={{ fontSize: '0.75rem' }} />
                               </a>
                             </DescriptionListDescription>
                           </DescriptionListGroup>

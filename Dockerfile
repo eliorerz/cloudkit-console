@@ -12,15 +12,6 @@ RUN npm run build
 # Production stage
 FROM node:20-alpine
 
-# Install kubectl
-RUN apk add --no-cache curl && \
-    KUBECTL_VERSION="v1.31.4" && \
-    echo "Installing kubectl version: ${KUBECTL_VERSION}" && \
-    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
-    chmod +x kubectl && \
-    mv kubectl /usr/local/bin/ && \
-    apk del curl
-
 WORKDIR /app
 
 # Copy built application and server
